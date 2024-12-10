@@ -23,10 +23,6 @@ pub type Msg {
   ApiReturnedCats(Result(List(Cat), lustre_http.HttpError))
 }
 
-pub type Cat {
-  Cat(id: String, url: String)
-}
-
 pub type Model {
   Model(count: Int, cats: List(Cat))
 }
@@ -64,6 +60,10 @@ pub fn view(model: Model) -> element.Element(Msg) {
       }),
     ),
   ])
+}
+
+pub type Cat {
+  Cat(id: String, url: String)
 }
 
 fn get_cat() -> effect.Effect(Msg) {

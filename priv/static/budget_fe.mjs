@@ -3421,18 +3421,18 @@ var ApiReturnedCats = class extends CustomType {
     this[0] = x0;
   }
 };
-var Cat = class extends CustomType {
-  constructor(id, url) {
-    super();
-    this.id = id;
-    this.url = url;
-  }
-};
 var Model2 = class extends CustomType {
   constructor(count, cats) {
     super();
     this.count = count;
     this.cats = cats;
+  }
+};
+var Cat = class extends CustomType {
+  constructor(id, url) {
+    super();
+    this.id = id;
+    this.url = url;
   }
 };
 function view(model) {
@@ -3497,7 +3497,7 @@ function update(model, msg) {
       throw makeError(
         "let_assert",
         "budget_fe",
-        42,
+        38,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: api_cats }
