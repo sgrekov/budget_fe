@@ -1,5 +1,5 @@
 import birl.{type Day}
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 
 pub type User {
   User(id: String, name: String)

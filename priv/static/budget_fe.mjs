@@ -3497,7 +3497,7 @@ function update(model, msg) {
       throw makeError(
         "let_assert",
         "budget_fe",
-        38,
+        37,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: api_cats }
@@ -3522,7 +3522,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      15,
+      14,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

@@ -1,6 +1,5 @@
 import gleam/dynamic
 import gleam/int
-import gleam/io
 import gleam/list
 import lustre
 import lustre/attribute
