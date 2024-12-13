@@ -77,90 +77,6 @@ var NonEmpty = class extends List {
     this.tail = tail;
   }
 };
-var BitArray = class _BitArray {
-  constructor(buffer) {
-    if (!(buffer instanceof Uint8Array)) {
-      throw "BitArray can only be constructed from a Uint8Array";
-    }
-    this.buffer = buffer;
-  }
-  // @internal
-  get length() {
-    return this.buffer.length;
-  }
-  // @internal
-  byteAt(index3) {
-    return this.buffer[index3];
-  }
-  // @internal
-  floatFromSlice(start3, end, isBigEndian) {
-    return byteArrayToFloat(this.buffer, start3, end, isBigEndian);
-  }
-  // @internal
-  intFromSlice(start3, end, isBigEndian, isSigned) {
-    return byteArrayToInt(this.buffer, start3, end, isBigEndian, isSigned);
-  }
-  // @internal
-  binaryFromSlice(start3, end) {
-    return new _BitArray(this.buffer.slice(start3, end));
-  }
-  // @internal
-  sliceAfter(index3) {
-    return new _BitArray(this.buffer.slice(index3));
-  }
-};
-function byteArrayToInt(byteArray, start3, end, isBigEndian, isSigned) {
-  const byteSize = end - start3;
-  if (byteSize <= 6) {
-    let value = 0;
-    if (isBigEndian) {
-      for (let i = start3; i < end; i++) {
-        value = value * 256 + byteArray[i];
-      }
-    } else {
-      for (let i = end - 1; i >= start3; i--) {
-        value = value * 256 + byteArray[i];
-      }
-    }
-    if (isSigned) {
-      const highBit = 2 ** (byteSize * 8 - 1);
-      if (value >= highBit) {
-        value -= highBit * 2;
-      }
-    }
-    return value;
-  } else {
-    let value = 0n;
-    if (isBigEndian) {
-      for (let i = start3; i < end; i++) {
-        value = (value << 8n) + BigInt(byteArray[i]);
-      }
-    } else {
-      for (let i = end - 1; i >= start3; i--) {
-        value = (value << 8n) + BigInt(byteArray[i]);
-      }
-    }
-    if (isSigned) {
-      const highBit = 1n << BigInt(byteSize * 8 - 1);
-      if (value >= highBit) {
-        value -= highBit * 2n;
-      }
-    }
-    return Number(value);
-  }
-}
-function byteArrayToFloat(byteArray, start3, end, isBigEndian) {
-  const view2 = new DataView(byteArray.buffer);
-  const byteSize = end - start3;
-  if (byteSize === 8) {
-    return view2.getFloat64(start3, !isBigEndian);
-  } else if (byteSize === 4) {
-    return view2.getFloat32(start3, !isBigEndian);
-  } else {
-    const msg = `Sized floats must be 32-bit or 64-bit on JavaScript, got size of ${byteSize * 8} bits`;
-    throw new globalThis.Error(msg);
-  }
-}
 var Result = class _Result extends CustomType {
   // @internal
   static isResult(data) {
@@ -190,28 +106,28 @@ var Error = class extends Result {
 function isEqual(x, y) {
   let values = [x, y];
   while (values.length) {
-    let a = values.pop();
+    let a2 = values.pop();
     let b = values.pop();
-    if (a === b)
+    if (a2 === b)
       continue;
-    if (!isObject(a) || !isObject(b))
+    if (!isObject(a2) || !isObject(b))
       return false;
-    let unequal = !structurallyCompatibleObjects(a, b) || unequalDates(a, b) || unequalBuffers(a, b) || unequalArrays(a, b) || unequalMaps(a, b) || unequalSets(a, b) || unequalRegExps(a, b);
+    let unequal = !structurallyCompatibleObjects(a2, b) || unequalDates(a2, b) || unequalBuffers(a2, b) || unequalArrays(a2, b) || unequalMaps(a2, b) || unequalSets(a2, b) || unequalRegExps(a2, b);
     if (unequal)
       return false;
-    const proto = Object.getPrototypeOf(a);
+    const proto = Object.getPrototypeOf(a2);
     if (proto !== null && typeof proto.equals === "function") {
       try {
-        if (a.equals(b))
+        if (a2.equals(b))
           continue;
         else
           return false;
       } catch {
       }
     }
-    let [keys2, get2] = getters(a);
-    for (let k of keys2(a)) {
-      values.push(get2(a, k), get2(b, k));
+    let [keys2, get] = getters(a2);
+    for (let k of keys2(a2)) {
+      values.push(get(a2, k), get(b, k));
     }
   }
   return true;
@@ -224,34 +140,34 @@ function getters(object3) {
     return [(x) => [...extra, ...Object.keys(x)], (x, y) => x[y]];
   }
 }
-function unequalDates(a, b) {
-  return a instanceof Date && (a > b || a < b);
+function unequalDates(a2, b) {
+  return a2 instanceof Date && (a2 > b || a2 < b);
 }
-function unequalBuffers(a, b) {
-  return a.buffer instanceof ArrayBuffer && a.BYTES_PER_ELEMENT && !(a.byteLength === b.byteLength && a.every((n, i) => n === b[i]));
+function unequalBuffers(a2, b) {
+  return a2.buffer instanceof ArrayBuffer && a2.BYTES_PER_ELEMENT && !(a2.byteLength === b.byteLength && a2.every((n, i) => n === b[i]));
 }
-function unequalArrays(a, b) {
-  return Array.isArray(a) && a.length !== b.length;
+function unequalArrays(a2, b) {
+  return Array.isArray(a2) && a2.length !== b.length;
 }
-function unequalMaps(a, b) {
-  return a instanceof Map && a.size !== b.size;
+function unequalMaps(a2, b) {
+  return a2 instanceof Map && a2.size !== b.size;
 }
-function unequalSets(a, b) {
-  return a instanceof Set && (a.size != b.size || [...a].some((e) => !b.has(e)));
+function unequalSets(a2, b) {
+  return a2 instanceof Set && (a2.size != b.size || [...a2].some((e) => !b.has(e)));
 }
-function unequalRegExps(a, b) {
-  return a instanceof RegExp && (a.source !== b.source || a.flags !== b.flags);
+function unequalRegExps(a2, b) {
+  return a2 instanceof RegExp && (a2.source !== b.source || a2.flags !== b.flags);
 }
-function isObject(a) {
-  return typeof a === "object" && a !== null;
+function isObject(a2) {
+  return typeof a2 === "object" && a2 !== null;
 }
-function structurallyCompatibleObjects(a, b) {
-  if (typeof a !== "object" && typeof b !== "object" && (!a || !b))
+function structurallyCompatibleObjects(a2, b) {
+  if (typeof a2 !== "object" && typeof b !== "object" && (!a2 || !b))
     return false;
   let nonstructural = [Promise, WeakSet, WeakMap, Function];
-  if (nonstructural.some((c) => a instanceof c))
+  if (nonstructural.some((c) => a2 instanceof c))
     return false;
-  return a.constructor === b.constructor;
+  return a2.constructor === b.constructor;
 }
 function makeError(variant, module, line, fn, message, extra) {
   let error = new globalThis.Error(message);
@@ -265,6 +181,15 @@ function makeError(variant, module, line, fn, message, extra) {
   return error;
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/bool.mjs
+function guard(requirement, consequence, alternative) {
+  if (requirement) {
+    return consequence;
+  } else {
+    return alternative();
+  }
+}
+
 // build/dev/javascript/gleam_stdlib/gleam/option.mjs
 var Some = class extends CustomType {
   constructor(x0) {
@@ -274,20 +199,147 @@ var Some = class extends CustomType {
 };
 var None = class extends CustomType {
 };
-function to_result(option, e) {
-  if (option instanceof Some) {
-    let a = option[0];
-    return new Ok(a);
-  } else {
-    return new Error(e);
+
+// build/dev/javascript/gleam_stdlib/gleam/dict.mjs
+function insert(dict, key, value) {
+  return map_insert(key, value, dict);
+}
+function reverse_and_concat(loop$remaining, loop$accumulator) {
+  while (true) {
+    let remaining = loop$remaining;
+    let accumulator = loop$accumulator;
+    if (remaining.hasLength(0)) {
+      return accumulator;
+    } else {
+      let item = remaining.head;
+      let rest = remaining.tail;
+      loop$remaining = rest;
+      loop$accumulator = prepend(item, accumulator);
+    }
   }
 }
-function unwrap(option, default$) {
-  if (option instanceof Some) {
-    let x = option[0];
-    return x;
+function do_keys_loop(loop$list, loop$acc) {
+  while (true) {
+    let list2 = loop$list;
+    let acc = loop$acc;
+    if (list2.hasLength(0)) {
+      return reverse_and_concat(acc, toList([]));
+    } else {
+      let first3 = list2.head;
+      let rest = list2.tail;
+      loop$list = rest;
+      loop$acc = prepend(first3[0], acc);
+    }
+  }
+}
+function keys(dict) {
+  let list_of_pairs = map_to_list(dict);
+  return do_keys_loop(list_of_pairs, toList([]));
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/list.mjs
+function reverse_loop(loop$remaining, loop$accumulator) {
+  while (true) {
+    let remaining = loop$remaining;
+    let accumulator = loop$accumulator;
+    if (remaining.hasLength(0)) {
+      return accumulator;
+    } else {
+      let item = remaining.head;
+      let rest$1 = remaining.tail;
+      loop$remaining = rest$1;
+      loop$accumulator = prepend(item, accumulator);
+    }
+  }
+}
+function reverse(list2) {
+  return reverse_loop(list2, toList([]));
+}
+function map_loop(loop$list, loop$fun, loop$acc) {
+  while (true) {
+    let list2 = loop$list;
+    let fun = loop$fun;
+    let acc = loop$acc;
+    if (list2.hasLength(0)) {
+      return reverse(acc);
+    } else {
+      let first$1 = list2.head;
+      let rest$1 = list2.tail;
+      loop$list = rest$1;
+      loop$fun = fun;
+      loop$acc = prepend(fun(first$1), acc);
+    }
+  }
+}
+function map(list2, fun) {
+  return map_loop(list2, fun, toList([]));
+}
+function fold(loop$list, loop$initial, loop$fun) {
+  while (true) {
+    let list2 = loop$list;
+    let initial = loop$initial;
+    let fun = loop$fun;
+    if (list2.hasLength(0)) {
+      return initial;
+    } else {
+      let x = list2.head;
+      let rest$1 = list2.tail;
+      loop$list = rest$1;
+      loop$initial = fun(initial, x);
+      loop$fun = fun;
+    }
+  }
+}
+function index_fold_loop(loop$over, loop$acc, loop$with, loop$index) {
+  while (true) {
+    let over = loop$over;
+    let acc = loop$acc;
+    let with$ = loop$with;
+    let index3 = loop$index;
+    if (over.hasLength(0)) {
+      return acc;
+    } else {
+      let first$1 = over.head;
+      let rest$1 = over.tail;
+      loop$over = rest$1;
+      loop$acc = with$(acc, first$1, index3);
+      loop$with = with$;
+      loop$index = index3 + 1;
+    }
+  }
+}
+function index_fold(list2, initial, fun) {
+  return index_fold_loop(list2, initial, fun, 0);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/string.mjs
+function drop_start(loop$string, loop$num_graphemes) {
+  while (true) {
+    let string3 = loop$string;
+    let num_graphemes = loop$num_graphemes;
+    let $ = num_graphemes > 0;
+    if (!$) {
+      return string3;
+    } else {
+      let $1 = pop_grapheme(string3);
+      if ($1.isOk()) {
+        let string$1 = $1[0][1];
+        loop$string = string$1;
+        loop$num_graphemes = num_graphemes - 1;
+      } else {
+        return string3;
+      }
+    }
+  }
+}
+function split2(x, substring) {
+  if (substring === "") {
+    return graphemes(x);
   } else {
-    return default$;
+    let _pipe = x;
+    let _pipe$1 = identity(_pipe);
+    let _pipe$2 = split(_pipe$1, substring);
+    return map(_pipe$2, identity);
   }
 }
 
@@ -307,8 +359,8 @@ function hashByReference(o) {
   referenceMap.set(o, hash);
   return hash;
 }
-function hashMerge(a, b) {
-  return a ^ b + 2654435769 + (a << 6) + (a >> 2) | 0;
+function hashMerge(a2, b) {
+  return a2 ^ b + 2654435769 + (a2 << 6) + (a2 >> 2) | 0;
 }
 function hashString(s) {
   let hash = 0;
@@ -999,12 +1051,19 @@ var unequalDictSymbol = Symbol();
 
 // build/dev/javascript/gleam_stdlib/gleam_stdlib.mjs
 var Nil = void 0;
-var NOT_FOUND = {};
 function identity(x) {
   return x;
 }
 function to_string(term) {
   return term.toString();
+}
+function graphemes(string3) {
+  const iterator = graphemes_iterator(string3);
+  if (iterator) {
+    return List.fromArray(Array.from(iterator).map((item) => item.segment));
+  } else {
+    return List.fromArray(string3.match(/./gsu));
+  }
 }
 var segmenter = void 0;
 function graphemes_iterator(string3) {
@@ -1014,37 +1073,21 @@ function graphemes_iterator(string3) {
   }
 }
 function pop_grapheme(string3) {
-  let first2;
+  let first3;
   const iterator = graphemes_iterator(string3);
   if (iterator) {
-    first2 = iterator.next().value?.segment;
+    first3 = iterator.next().value?.segment;
   } else {
-    first2 = string3.match(/./su)?.[0];
+    first3 = string3.match(/./su)?.[0];
   }
-  if (first2) {
-    return new Ok([first2, string3.slice(first2.length)]);
+  if (first3) {
+    return new Ok([first3, string3.slice(first3.length)]);
   } else {
     return new Error(Nil);
   }
 }
-function pop_codeunit(str) {
-  return [str.charCodeAt(0) | 0, str.slice(1)];
-}
-function lowercase(string3) {
-  return string3.toLowerCase();
-}
-function concat(xs) {
-  let result = "";
-  for (const x of xs) {
-    result = result + x;
-  }
-  return result;
-}
-function string_codeunit_slice(str, from2, length4) {
-  return str.slice(from2, from2 + length4);
-}
-function starts_with(haystack, needle) {
-  return haystack.startsWith(needle);
+function split(xs, pattern) {
+  return List.fromArray(xs.split(pattern));
 }
 var unicode_whitespaces = [
   " ",
@@ -1074,583 +1117,72 @@ function new_map() {
 function map_to_list(map6) {
   return List.fromArray(map6.entries());
 }
-function map_get(map6, key) {
-  const value = map6.get(key, NOT_FOUND);
-  if (value === NOT_FOUND) {
-    return new Error(Nil);
-  }
-  return new Ok(value);
-}
 function map_insert(key, value, map6) {
   return map6.set(key, value);
 }
-function classify_dynamic(data) {
-  if (typeof data === "string") {
-    return "String";
-  } else if (typeof data === "boolean") {
-    return "Bool";
-  } else if (data instanceof Result) {
-    return "Result";
-  } else if (data instanceof List) {
-    return "List";
-  } else if (data instanceof BitArray) {
-    return "BitArray";
-  } else if (data instanceof Dict) {
-    return "Dict";
-  } else if (Number.isInteger(data)) {
-    return "Int";
-  } else if (Array.isArray(data)) {
-    return `Tuple of ${data.length} elements`;
-  } else if (typeof data === "number") {
-    return "Float";
-  } else if (data === null) {
-    return "Null";
-  } else if (data === void 0) {
-    return "Nil";
-  } else {
-    const type = typeof data;
-    return type.charAt(0).toUpperCase() + type.slice(1);
-  }
-}
-function decoder_error(expected, got) {
-  return decoder_error_no_classify(expected, classify_dynamic(got));
-}
-function decoder_error_no_classify(expected, got) {
-  return new Error(
-    List.fromArray([new DecodeError(expected, got, List.fromArray([]))])
-  );
-}
-function decode_string(data) {
-  return typeof data === "string" ? new Ok(data) : decoder_error("String", data);
-}
-function decode_int(data) {
-  return Number.isInteger(data) ? new Ok(data) : decoder_error("Int", data);
-}
-function decode_list(data) {
-  if (Array.isArray(data)) {
-    return new Ok(List.fromArray(data));
-  }
-  return data instanceof List ? new Ok(data) : decoder_error("List", data);
-}
-function decode_field(value, name) {
-  const not_a_map_error = () => decoder_error("Dict", value);
-  if (value instanceof Dict || value instanceof WeakMap || value instanceof Map) {
-    const entry = map_get(value, name);
-    return new Ok(entry.isOk() ? new Some(entry[0]) : new None());
-  } else if (value === null) {
-    return not_a_map_error();
-  } else if (Object.getPrototypeOf(value) == Object.prototype) {
-    return try_get_field(value, name, () => new Ok(new None()));
-  } else {
-    return try_get_field(value, name, not_a_map_error);
-  }
-}
-function try_get_field(value, field2, or_else) {
-  try {
-    return field2 in value ? new Ok(new Some(value[field2])) : or_else();
-  } catch {
-    return or_else();
-  }
-}
 
-// build/dev/javascript/gleam_stdlib/gleam/dict.mjs
-function insert(dict, key, value) {
-  return map_insert(key, value, dict);
-}
-function reverse_and_concat(loop$remaining, loop$accumulator) {
-  while (true) {
-    let remaining = loop$remaining;
-    let accumulator = loop$accumulator;
-    if (remaining.hasLength(0)) {
-      return accumulator;
-    } else {
-      let item = remaining.head;
-      let rest = remaining.tail;
-      loop$remaining = rest;
-      loop$accumulator = prepend(item, accumulator);
-    }
-  }
-}
-function do_keys_loop(loop$list, loop$acc) {
-  while (true) {
-    let list2 = loop$list;
-    let acc = loop$acc;
-    if (list2.hasLength(0)) {
-      return reverse_and_concat(acc, toList([]));
-    } else {
-      let first2 = list2.head;
-      let rest = list2.tail;
-      loop$list = rest;
-      loop$acc = prepend(first2[0], acc);
-    }
-  }
-}
-function keys(dict) {
-  let list_of_pairs = map_to_list(dict);
-  return do_keys_loop(list_of_pairs, toList([]));
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/list.mjs
-function reverse_loop(loop$remaining, loop$accumulator) {
-  while (true) {
-    let remaining = loop$remaining;
-    let accumulator = loop$accumulator;
-    if (remaining.hasLength(0)) {
-      return accumulator;
-    } else {
-      let item = remaining.head;
-      let rest$1 = remaining.tail;
-      loop$remaining = rest$1;
-      loop$accumulator = prepend(item, accumulator);
-    }
-  }
-}
-function reverse(list2) {
-  return reverse_loop(list2, toList([]));
-}
-function map_loop(loop$list, loop$fun, loop$acc) {
-  while (true) {
-    let list2 = loop$list;
-    let fun = loop$fun;
-    let acc = loop$acc;
-    if (list2.hasLength(0)) {
-      return reverse(acc);
-    } else {
-      let first$1 = list2.head;
-      let rest$1 = list2.tail;
-      loop$list = rest$1;
-      loop$fun = fun;
-      loop$acc = prepend(fun(first$1), acc);
-    }
-  }
-}
-function map(list2, fun) {
-  return map_loop(list2, fun, toList([]));
-}
-function try_map_loop(loop$list, loop$fun, loop$acc) {
-  while (true) {
-    let list2 = loop$list;
-    let fun = loop$fun;
-    let acc = loop$acc;
-    if (list2.hasLength(0)) {
-      return new Ok(reverse(acc));
-    } else {
-      let first$1 = list2.head;
-      let rest$1 = list2.tail;
-      let $ = fun(first$1);
-      if ($.isOk()) {
-        let first$2 = $[0];
-        loop$list = rest$1;
-        loop$fun = fun;
-        loop$acc = prepend(first$2, acc);
-      } else {
-        let error = $[0];
-        return new Error(error);
-      }
-    }
-  }
-}
-function try_map(list2, fun) {
-  return try_map_loop(list2, fun, toList([]));
-}
-function drop(loop$list, loop$n) {
-  while (true) {
-    let list2 = loop$list;
-    let n = loop$n;
-    let $ = n <= 0;
-    if ($) {
-      return list2;
-    } else {
-      if (list2.hasLength(0)) {
-        return toList([]);
-      } else {
-        let rest$1 = list2.tail;
-        loop$list = rest$1;
-        loop$n = n - 1;
-      }
-    }
-  }
-}
-function reverse_and_prepend(loop$prefix, loop$suffix) {
-  while (true) {
-    let prefix = loop$prefix;
-    let suffix = loop$suffix;
-    if (prefix.hasLength(0)) {
-      return suffix;
-    } else {
-      let first$1 = prefix.head;
-      let rest$1 = prefix.tail;
-      loop$prefix = rest$1;
-      loop$suffix = prepend(first$1, suffix);
-    }
-  }
-}
-function concat_loop(loop$lists, loop$acc) {
-  while (true) {
-    let lists = loop$lists;
-    let acc = loop$acc;
-    if (lists.hasLength(0)) {
-      return reverse(acc);
-    } else {
-      let list2 = lists.head;
-      let further_lists = lists.tail;
-      loop$lists = further_lists;
-      loop$acc = reverse_and_prepend(list2, acc);
-    }
-  }
-}
-function flatten(lists) {
-  return concat_loop(lists, toList([]));
-}
-function fold(loop$list, loop$initial, loop$fun) {
-  while (true) {
-    let list2 = loop$list;
-    let initial = loop$initial;
-    let fun = loop$fun;
-    if (list2.hasLength(0)) {
-      return initial;
-    } else {
-      let x = list2.head;
-      let rest$1 = list2.tail;
-      loop$list = rest$1;
-      loop$initial = fun(initial, x);
-      loop$fun = fun;
-    }
-  }
-}
-function index_fold_loop(loop$over, loop$acc, loop$with, loop$index) {
-  while (true) {
-    let over = loop$over;
-    let acc = loop$acc;
-    let with$ = loop$with;
-    let index3 = loop$index;
-    if (over.hasLength(0)) {
-      return acc;
-    } else {
-      let first$1 = over.head;
-      let rest$1 = over.tail;
-      loop$over = rest$1;
-      loop$acc = with$(acc, first$1, index3);
-      loop$with = with$;
-      loop$index = index3 + 1;
-    }
-  }
-}
-function index_fold(list2, initial, fun) {
-  return index_fold_loop(list2, initial, fun, 0);
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/string.mjs
-function concat2(strings) {
-  let _pipe = strings;
-  let _pipe$1 = concat(_pipe);
-  return identity(_pipe$1);
-}
-function drop_start(loop$string, loop$num_graphemes) {
-  while (true) {
-    let string3 = loop$string;
-    let num_graphemes = loop$num_graphemes;
-    let $ = num_graphemes > 0;
-    if (!$) {
-      return string3;
-    } else {
-      let $1 = pop_grapheme(string3);
-      if ($1.isOk()) {
-        let string$1 = $1[0][1];
-        loop$string = string$1;
-        loop$num_graphemes = num_graphemes - 1;
-      } else {
-        return string3;
-      }
-    }
-  }
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/result.mjs
-function map2(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return new Ok(fun(x));
-  } else {
-    let e = result[0];
-    return new Error(e);
-  }
-}
-function map_error(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return new Ok(x);
-  } else {
-    let error = result[0];
-    return new Error(fun(error));
-  }
-}
-function try$(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return fun(x);
-  } else {
-    let e = result[0];
-    return new Error(e);
-  }
-}
-function then$(result, fun) {
-  return try$(result, fun);
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
-var DecodeError = class extends CustomType {
-  constructor(expected, found, path) {
+// build/dev/javascript/birl/birl.mjs
+var Day2 = class extends CustomType {
+  constructor(year, month, date) {
     super();
-    this.expected = expected;
-    this.found = found;
+    this.year = year;
+    this.month = month;
+    this.date = date;
+  }
+};
+var Dec = class extends CustomType {
+};
+
+// build/dev/javascript/gleam_stdlib/gleam/uri.mjs
+var Uri = class extends CustomType {
+  constructor(scheme, userinfo, host, port, path, query, fragment) {
+    super();
+    this.scheme = scheme;
+    this.userinfo = userinfo;
+    this.host = host;
+    this.port = port;
     this.path = path;
+    this.query = query;
+    this.fragment = fragment;
   }
 };
-function int(data) {
-  return decode_int(data);
-}
-function shallow_list(value) {
-  return decode_list(value);
-}
-function any(decoders) {
-  return (data) => {
-    if (decoders.hasLength(0)) {
-      return new Error(
-        toList([new DecodeError("another type", classify_dynamic(data), toList([]))])
-      );
+function remove_dot_segments_loop(loop$input, loop$accumulator) {
+  while (true) {
+    let input = loop$input;
+    let accumulator = loop$accumulator;
+    if (input.hasLength(0)) {
+      return reverse(accumulator);
     } else {
-      let decoder = decoders.head;
-      let decoders$1 = decoders.tail;
-      let $ = decoder(data);
-      if ($.isOk()) {
-        let decoded = $[0];
-        return new Ok(decoded);
-      } else {
-        return any(decoders$1)(data);
-      }
-    }
-  };
-}
-function all_errors(result) {
-  if (result.isOk()) {
-    return toList([]);
-  } else {
-    let errors = result[0];
-    return errors;
-  }
-}
-function push_path(error, name) {
-  let name$1 = identity(name);
-  let decoder = any(
-    toList([string, (x) => {
-      return map2(int(x), to_string);
-    }])
-  );
-  let name$2 = (() => {
-    let $ = decoder(name$1);
-    if ($.isOk()) {
-      let name$22 = $[0];
-      return name$22;
-    } else {
-      let _pipe = toList(["<", classify_dynamic(name$1), ">"]);
-      let _pipe$1 = concat(_pipe);
-      return identity(_pipe$1);
-    }
-  })();
-  return error.withFields({ path: prepend(name$2, error.path) });
-}
-function list(decoder_type) {
-  return (dynamic) => {
-    return try$(
-      shallow_list(dynamic),
-      (list2) => {
-        let _pipe = list2;
-        let _pipe$1 = try_map(_pipe, decoder_type);
-        return map_errors(
-          _pipe$1,
-          (_capture) => {
-            return push_path(_capture, "*");
-          }
-        );
-      }
-    );
-  };
-}
-function map_errors(result, f) {
-  return map_error(
-    result,
-    (_capture) => {
-      return map(_capture, f);
-    }
-  );
-}
-function string(data) {
-  return decode_string(data);
-}
-function field(name, inner_type) {
-  return (value) => {
-    let missing_field_error = new DecodeError("field", "nothing", toList([]));
-    return try$(
-      decode_field(value, name),
-      (maybe_inner) => {
-        let _pipe = maybe_inner;
-        let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
-        let _pipe$2 = try$(_pipe$1, inner_type);
-        return map_errors(
-          _pipe$2,
-          (_capture) => {
-            return push_path(_capture, name);
-          }
-        );
-      }
-    );
-  };
-}
-function decode2(constructor, t1, t2) {
-  return (value) => {
-    let $ = t1(value);
-    let $1 = t2(value);
-    if ($.isOk() && $1.isOk()) {
-      let a = $[0];
-      let b = $1[0];
-      return new Ok(constructor(a, b));
-    } else {
-      let a = $;
-      let b = $1;
-      return new Error(flatten(toList([all_errors(a), all_errors(b)])));
-    }
-  };
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/bool.mjs
-function guard(requirement, consequence, alternative) {
-  if (requirement) {
-    return consequence;
-  } else {
-    return alternative();
-  }
-}
-
-// build/dev/javascript/gleam_json/gleam_json_ffi.mjs
-function decode(string3) {
-  try {
-    const result = JSON.parse(string3);
-    return new Ok(result);
-  } catch (err) {
-    return new Error(getJsonDecodeError(err, string3));
-  }
-}
-function getJsonDecodeError(stdErr, json) {
-  if (isUnexpectedEndOfInput(stdErr))
-    return new UnexpectedEndOfInput();
-  return toUnexpectedByteError(stdErr, json);
-}
-function isUnexpectedEndOfInput(err) {
-  const unexpectedEndOfInputRegex = /((unexpected (end|eof))|(end of data)|(unterminated string)|(json( parse error|\.parse)\: expected '(\:|\}|\])'))/i;
-  return unexpectedEndOfInputRegex.test(err.message);
-}
-function toUnexpectedByteError(err, json) {
-  let converters = [
-    v8UnexpectedByteError,
-    oldV8UnexpectedByteError,
-    jsCoreUnexpectedByteError,
-    spidermonkeyUnexpectedByteError
-  ];
-  for (let converter of converters) {
-    let result = converter(err, json);
-    if (result)
-      return result;
-  }
-  return new UnexpectedByte("", 0);
-}
-function v8UnexpectedByteError(err) {
-  const regex = /unexpected token '(.)', ".+" is not valid JSON/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const byte = toHex(match[1]);
-  return new UnexpectedByte(byte, -1);
-}
-function oldV8UnexpectedByteError(err) {
-  const regex = /unexpected token (.) in JSON at position (\d+)/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const byte = toHex(match[1]);
-  const position = Number(match[2]);
-  return new UnexpectedByte(byte, position);
-}
-function spidermonkeyUnexpectedByteError(err, json) {
-  const regex = /(unexpected character|expected .*) at line (\d+) column (\d+)/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const line = Number(match[2]);
-  const column = Number(match[3]);
-  const position = getPositionFromMultiline(line, column, json);
-  const byte = toHex(json[position]);
-  return new UnexpectedByte(byte, position);
-}
-function jsCoreUnexpectedByteError(err) {
-  const regex = /unexpected (identifier|token) "(.)"/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const byte = toHex(match[2]);
-  return new UnexpectedByte(byte, 0);
-}
-function toHex(char) {
-  return "0x" + char.charCodeAt(0).toString(16).toUpperCase();
-}
-function getPositionFromMultiline(line, column, string3) {
-  if (line === 1)
-    return column - 1;
-  let currentLn = 1;
-  let position = 0;
-  string3.split("").find((char, idx) => {
-    if (char === "\n")
-      currentLn += 1;
-    if (currentLn === line) {
-      position = idx + column;
-      return true;
-    }
-    return false;
-  });
-  return position;
-}
-
-// build/dev/javascript/gleam_json/gleam/json.mjs
-var UnexpectedEndOfInput = class extends CustomType {
-};
-var UnexpectedByte = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UnexpectedFormat = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-function do_decode(json, decoder) {
-  return then$(
-    decode(json),
-    (dynamic_value) => {
-      let _pipe = decoder(dynamic_value);
-      return map_error(
-        _pipe,
-        (var0) => {
-          return new UnexpectedFormat(var0);
+      let segment = input.head;
+      let rest = input.tail;
+      let accumulator$1 = (() => {
+        if (segment === "") {
+          let accumulator$12 = accumulator;
+          return accumulator$12;
+        } else if (segment === ".") {
+          let accumulator$12 = accumulator;
+          return accumulator$12;
+        } else if (segment === ".." && accumulator.hasLength(0)) {
+          return toList([]);
+        } else if (segment === ".." && accumulator.atLeastLength(1)) {
+          let accumulator$12 = accumulator.tail;
+          return accumulator$12;
+        } else {
+          let segment$1 = segment;
+          let accumulator$12 = accumulator;
+          return prepend(segment$1, accumulator$12);
         }
-      );
+      })();
+      loop$input = rest;
+      loop$accumulator = accumulator$1;
     }
-  );
+  }
 }
-function decode3(json, decoder) {
-  return do_decode(json, decoder);
+function remove_dot_segments(input) {
+  return remove_dot_segments_loop(input, toList([]));
+}
+function path_segments(path) {
+  return remove_dot_segments(split2(path, "/"));
 }
 
 // build/dev/javascript/lustre/lustre/effect.mjs
@@ -1709,13 +1241,6 @@ var Attribute = class extends CustomType {
     this[0] = x0;
     this[1] = x1;
     this.as_property = as_property;
-  }
-};
-var Event = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
   }
 };
 function attribute_to_event_handler(attribute2) {
@@ -1779,20 +1304,17 @@ function handlers(element2) {
 function attribute(name, value) {
   return new Attribute(name, identity(value), false);
 }
-function property(name, value) {
-  return new Attribute(name, identity(value), true);
+function class$(name) {
+  return attribute("class", name);
 }
-function on(name, handler) {
-  return new Event("on" + name, handler);
+function role(name) {
+  return attribute("role", name);
 }
-function src(uri) {
-  return attribute("src", uri);
+function type_(name) {
+  return attribute("type", name);
 }
-function height(val) {
-  return property("height", val);
-}
-function width(val) {
-  return property("width", val);
+function href(uri) {
+  return attribute("href", uri);
 }
 
 // build/dev/javascript/lustre/lustre/element.mjs
@@ -1840,7 +1362,7 @@ var Set2 = class extends CustomType {
     this.dict = dict;
   }
 };
-function new$2() {
+function new$3() {
   return new Set2(new_map());
 }
 
@@ -1868,7 +1390,7 @@ var Init = class extends CustomType {
 function is_empty_element_diff(diff2) {
   return isEqual(diff2.created, new_map()) && isEqual(
     diff2.removed,
-    new$2()
+    new$3()
   ) && isEqual(diff2.updated, new_map());
 }
 
@@ -1996,7 +1518,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
     handlersForEl = registeredHandlers.get(el);
   }
   const prevHandlers = canMorph ? new Set(handlersForEl.keys()) : null;
-  const prevAttributes = canMorph ? new Set(Array.from(prev.attributes, (a) => a.name)) : null;
+  const prevAttributes = canMorph ? new Set(Array.from(prev.attributes, (a2) => a2.name)) : null;
   let className = null;
   let style2 = null;
   let innerHTML = null;
@@ -2152,8 +1674,8 @@ function lustreServerEventHandler(event2) {
   return {
     tag,
     data: include.reduce(
-      (data2, property2) => {
-        const path = property2.split(".");
+      (data2, property) => {
+        const path = property.split(".");
         for (let i = 0, o = data2, e = event2; i < path.length; i++) {
           if (i === path.length - 1) {
             o[path[i]] = e[path[i]];
@@ -2244,13 +1766,13 @@ var LustreClientApplication = class _LustreClientApplication {
    *
    * @returns {Gleam.Ok<(action: Lustre.Action<Lustre.Client, Msg>>) => void>}
    */
-  static start({ init: init3, update: update2, view: view2 }, selector, flags) {
+  static start({ init: init4, update: update2, view: view2 }, selector, flags) {
     if (!is_browser())
       return new Error(new NotABrowser());
     const root = selector instanceof HTMLElement ? selector : document.querySelector(selector);
     if (!root)
       return new Error(new ElementNotFound(selector));
-    const app = new _LustreClientApplication(root, init3(flags), update2, view2);
+    const app = new _LustreClientApplication(root, init4(flags), update2, view2);
     return new Ok((action) => app.send(action));
   }
   /**
@@ -2261,9 +1783,9 @@ var LustreClientApplication = class _LustreClientApplication {
    *
    * @returns {LustreClientApplication}
    */
-  constructor(root, [init3, effects], update2, view2) {
+  constructor(root, [init4, effects], update2, view2) {
     this.root = root;
-    this.#model = init3;
+    this.#model = init4;
     this.#update = update2;
     this.#view = view2;
     this.#tickScheduled = window.requestAnimationFrame(
@@ -2379,9 +1901,9 @@ var LustreClientApplication = class _LustreClientApplication {
 };
 var start = LustreClientApplication.start;
 var LustreServerApplication = class _LustreServerApplication {
-  static start({ init: init3, update: update2, view: view2, on_attribute_change }, flags) {
+  static start({ init: init4, update: update2, view: view2, on_attribute_change }, flags) {
     const app = new _LustreServerApplication(
-      init3(flags),
+      init4(flags),
       update2,
       view2,
       on_attribute_change
@@ -2493,9 +2015,9 @@ var is_browser = () => globalThis.window && window.document;
 
 // build/dev/javascript/lustre/lustre.mjs
 var App = class extends CustomType {
-  constructor(init3, update2, view2, on_attribute_change) {
+  constructor(init4, update2, view2, on_attribute_change) {
     super();
-    this.init = init3;
+    this.init = init4;
     this.update = update2;
     this.view = view2;
     this.on_attribute_change = on_attribute_change;
@@ -2509,8 +2031,8 @@ var ElementNotFound = class extends CustomType {
 };
 var NotABrowser = class extends CustomType {
 };
-function application(init3, update2, view2) {
-  return new App(init3, update2, view2, new None());
+function application(init4, update2, view2) {
+  return new App(init4, update2, view2, new None());
 }
 function start2(app, selector, flags) {
   return guard(
@@ -2523,942 +2045,403 @@ function start2(app, selector, flags) {
 }
 
 // build/dev/javascript/lustre/lustre/element/html.mjs
+function text2(content) {
+  return text(content);
+}
 function div(attrs, children2) {
   return element("div", attrs, children2);
 }
-function img(attrs) {
-  return element("img", attrs, toList([]));
+function a(attrs, children2) {
+  return element("a", attrs, children2);
+}
+function table(attrs, children2) {
+  return element("table", attrs, children2);
+}
+function tbody(attrs, children2) {
+  return element("tbody", attrs, children2);
+}
+function td(attrs, children2) {
+  return element("td", attrs, children2);
+}
+function th(attrs, children2) {
+  return element("th", attrs, children2);
+}
+function thead(attrs, children2) {
+  return element("thead", attrs, children2);
+}
+function tr(attrs, children2) {
+  return element("tr", attrs, children2);
 }
 function button(attrs, children2) {
   return element("button", attrs, children2);
 }
 
-// build/dev/javascript/lustre/lustre/event.mjs
-function on2(name, handler) {
-  return on(name, handler);
-}
-function on_click(msg) {
-  return on2("click", (_) => {
-    return new Ok(msg);
+// build/dev/javascript/modem/modem.ffi.mjs
+var defaults = {
+  handle_external_links: false,
+  handle_internal_links: true
+};
+var initial_location = window?.location?.href;
+var do_init = (dispatch, options = defaults) => {
+  document.addEventListener("click", (event2) => {
+    const a2 = find_anchor(event2.target);
+    if (!a2)
+      return;
+    try {
+      const url = new URL(a2.href);
+      const uri = uri_from_url(url);
+      const is_external = url.host !== window.location.host;
+      if (!options.handle_external_links && is_external)
+        return;
+      if (!options.handle_internal_links && !is_external)
+        return;
+      event2.preventDefault();
+      if (!is_external) {
+        window.history.pushState({}, "", a2.href);
+        window.requestAnimationFrame(() => {
+          if (url.hash) {
+            document.getElementById(url.hash.slice(1))?.scrollIntoView();
+          }
+        });
+      }
+      return dispatch(uri);
+    } catch {
+      return;
+    }
   });
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/uri.mjs
-var Uri = class extends CustomType {
-  constructor(scheme, userinfo, host, port, path, query, fragment) {
-    super();
-    this.scheme = scheme;
-    this.userinfo = userinfo;
-    this.host = host;
-    this.port = port;
-    this.path = path;
-    this.query = query;
-    this.fragment = fragment;
-  }
-};
-function is_valid_host_within_brackets_char(char) {
-  return 48 >= char && char <= 57 || 65 >= char && char <= 90 || 97 >= char && char <= 122 || char === 58 || char === 46;
-}
-function parse_fragment(rest, pieces) {
-  return new Ok(pieces.withFields({ fragment: new Some(rest) }));
-}
-function parse_query_with_question_mark_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string.startsWith("#") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_fragment(rest, pieces);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let query = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ query: new Some(query) });
-      return parse_fragment(rest, pieces$1);
-    } else if (uri_string === "") {
-      return new Ok(pieces.withFields({ query: new Some(original) }));
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let rest = $[1];
-      loop$original = original;
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$size = size + 1;
-    }
-  }
-}
-function parse_query_with_question_mark(uri_string, pieces) {
-  return parse_query_with_question_mark_loop(uri_string, uri_string, pieces, 0);
-}
-function parse_path_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string.startsWith("?")) {
-      let rest = uri_string.slice(1);
-      let path = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ path });
-      return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let path = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ path });
-      return parse_fragment(rest, pieces$1);
-    } else if (uri_string === "") {
-      return new Ok(pieces.withFields({ path: original }));
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let rest = $[1];
-      loop$original = original;
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$size = size + 1;
-    }
-  }
-}
-function parse_path(uri_string, pieces) {
-  return parse_path_loop(uri_string, uri_string, pieces, 0);
-}
-function parse_port_loop(loop$uri_string, loop$pieces, loop$port) {
-  while (true) {
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let port = loop$port;
-    if (uri_string.startsWith("0")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10;
-    } else if (uri_string.startsWith("1")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 1;
-    } else if (uri_string.startsWith("2")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 2;
-    } else if (uri_string.startsWith("3")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 3;
-    } else if (uri_string.startsWith("4")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 4;
-    } else if (uri_string.startsWith("5")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 5;
-    } else if (uri_string.startsWith("6")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 6;
-    } else if (uri_string.startsWith("7")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 7;
-    } else if (uri_string.startsWith("8")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 8;
-    } else if (uri_string.startsWith("9")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 9;
-    } else if (uri_string.startsWith("?")) {
-      let rest = uri_string.slice(1);
-      let pieces$1 = pieces.withFields({ port: new Some(port) });
-      return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let pieces$1 = pieces.withFields({ port: new Some(port) });
-      return parse_fragment(rest, pieces$1);
-    } else if (uri_string.startsWith("/")) {
-      let pieces$1 = pieces.withFields({ port: new Some(port) });
-      return parse_path(uri_string, pieces$1);
-    } else if (uri_string === "") {
-      return new Ok(pieces.withFields({ port: new Some(port) }));
-    } else {
-      return new Error(void 0);
-    }
-  }
-}
-function parse_port(uri_string, pieces) {
-  if (uri_string.startsWith(":0")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 0);
-  } else if (uri_string.startsWith(":1")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 1);
-  } else if (uri_string.startsWith(":2")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 2);
-  } else if (uri_string.startsWith(":3")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 3);
-  } else if (uri_string.startsWith(":4")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 4);
-  } else if (uri_string.startsWith(":5")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 5);
-  } else if (uri_string.startsWith(":6")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 6);
-  } else if (uri_string.startsWith(":7")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 7);
-  } else if (uri_string.startsWith(":8")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 8);
-  } else if (uri_string.startsWith(":9")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 9);
-  } else if (uri_string.startsWith(":")) {
-    return new Error(void 0);
-  } else if (uri_string.startsWith("?")) {
-    let rest = uri_string.slice(1);
-    return parse_query_with_question_mark(rest, pieces);
-  } else if (uri_string.startsWith("#")) {
-    let rest = uri_string.slice(1);
-    return parse_fragment(rest, pieces);
-  } else if (uri_string.startsWith("/")) {
-    return parse_path(uri_string, pieces);
-  } else if (uri_string === "") {
-    return new Ok(pieces);
-  } else {
-    return new Error(void 0);
-  }
-}
-function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string === "") {
-      return new Ok(pieces.withFields({ host: new Some(original) }));
-    } else if (uri_string.startsWith(":")) {
-      let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
-      return parse_port(uri_string, pieces$1);
-    } else if (uri_string.startsWith("/")) {
-      let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
-      return parse_path(uri_string, pieces$1);
-    } else if (uri_string.startsWith("?")) {
-      let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
-      return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
-      return parse_fragment(rest, pieces$1);
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let rest = $[1];
-      loop$original = original;
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$size = size + 1;
-    }
-  }
-}
-function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string === "") {
-      return new Ok(pieces.withFields({ host: new Some(uri_string) }));
-    } else if (uri_string.startsWith("]") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_port(rest, pieces);
-    } else if (uri_string.startsWith("]")) {
-      let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size + 1);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
-      return parse_port(rest, pieces$1);
-    } else if (uri_string.startsWith("/") && size === 0) {
-      return parse_path(uri_string, pieces);
-    } else if (uri_string.startsWith("/")) {
-      let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
-      return parse_path(uri_string, pieces$1);
-    } else if (uri_string.startsWith("?") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_query_with_question_mark(rest, pieces);
-    } else if (uri_string.startsWith("?")) {
-      let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
-      return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_fragment(rest, pieces);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
-      return parse_fragment(rest, pieces$1);
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let char = $[0];
-      let rest = $[1];
-      let $1 = is_valid_host_within_brackets_char(char);
-      if ($1) {
-        loop$original = original;
-        loop$uri_string = rest;
-        loop$pieces = pieces;
-        loop$size = size + 1;
-      } else {
-        return parse_host_outside_of_brackets_loop(
-          original,
-          original,
-          pieces,
-          0
-        );
+  window.addEventListener("popstate", (e) => {
+    e.preventDefault();
+    const url = new URL(window.location.href);
+    const uri = uri_from_url(url);
+    window.requestAnimationFrame(() => {
+      if (url.hash) {
+        document.getElementById(url.hash.slice(1))?.scrollIntoView();
       }
-    }
-  }
-}
-function parse_host_within_brackets(uri_string, pieces) {
-  return parse_host_within_brackets_loop(uri_string, uri_string, pieces, 0);
-}
-function parse_host_outside_of_brackets(uri_string, pieces) {
-  return parse_host_outside_of_brackets_loop(uri_string, uri_string, pieces, 0);
-}
-function parse_host(uri_string, pieces) {
-  if (uri_string.startsWith("[")) {
-    return parse_host_within_brackets(uri_string, pieces);
-  } else if (uri_string.startsWith(":")) {
-    let pieces$1 = pieces.withFields({ host: new Some("") });
-    return parse_port(uri_string, pieces$1);
-  } else if (uri_string === "") {
-    return new Ok(pieces.withFields({ host: new Some("") }));
+    });
+    dispatch(uri);
+  });
+  window.addEventListener("modem-push", ({ detail }) => {
+    dispatch(detail);
+  });
+  window.addEventListener("modem-replace", ({ detail }) => {
+    dispatch(detail);
+  });
+};
+var find_anchor = (el) => {
+  if (!el || el.tagName === "BODY") {
+    return null;
+  } else if (el.tagName === "A") {
+    return el;
   } else {
-    return parse_host_outside_of_brackets(uri_string, pieces);
-  }
-}
-function parse_userinfo_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string.startsWith("@") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_host(rest, pieces);
-    } else if (uri_string.startsWith("@")) {
-      let rest = uri_string.slice(1);
-      let userinfo = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ userinfo: new Some(userinfo) });
-      return parse_host(rest, pieces$1);
-    } else if (uri_string === "") {
-      return parse_host(original, pieces);
-    } else if (uri_string.startsWith("/")) {
-      return parse_host(original, pieces);
-    } else if (uri_string.startsWith("?")) {
-      return parse_host(original, pieces);
-    } else if (uri_string.startsWith("#")) {
-      return parse_host(original, pieces);
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let rest = $[1];
-      loop$original = original;
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$size = size + 1;
-    }
-  }
-}
-function parse_authority_pieces(string3, pieces) {
-  return parse_userinfo_loop(string3, string3, pieces, 0);
-}
-function parse_authority_with_slashes(uri_string, pieces) {
-  if (uri_string === "//") {
-    return new Ok(pieces.withFields({ host: new Some("") }));
-  } else if (uri_string.startsWith("//")) {
-    let rest = uri_string.slice(2);
-    return parse_authority_pieces(rest, pieces);
-  } else {
-    return parse_path(uri_string, pieces);
-  }
-}
-function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string.startsWith("/") && size === 0) {
-      return parse_authority_with_slashes(uri_string, pieces);
-    } else if (uri_string.startsWith("/")) {
-      let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({
-        scheme: new Some(lowercase(scheme))
-      });
-      return parse_authority_with_slashes(uri_string, pieces$1);
-    } else if (uri_string.startsWith("?") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_query_with_question_mark(rest, pieces);
-    } else if (uri_string.startsWith("?")) {
-      let rest = uri_string.slice(1);
-      let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({
-        scheme: new Some(lowercase(scheme))
-      });
-      return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_fragment(rest, pieces);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({
-        scheme: new Some(lowercase(scheme))
-      });
-      return parse_fragment(rest, pieces$1);
-    } else if (uri_string.startsWith(":") && size === 0) {
-      return new Error(void 0);
-    } else if (uri_string.startsWith(":")) {
-      let rest = uri_string.slice(1);
-      let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({
-        scheme: new Some(lowercase(scheme))
-      });
-      return parse_authority_with_slashes(rest, pieces$1);
-    } else if (uri_string === "") {
-      return new Ok(pieces.withFields({ path: original }));
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let rest = $[1];
-      loop$original = original;
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$size = size + 1;
-    }
-  }
-}
-function parse(uri_string) {
-  let default_pieces = new Uri(
-    new None(),
-    new None(),
-    new None(),
-    new None(),
-    "",
-    new None(),
-    new None()
-  );
-  return parse_scheme_loop(uri_string, uri_string, default_pieces, 0);
-}
-function to_string2(uri) {
-  let parts = (() => {
-    let $ = uri.fragment;
-    if ($ instanceof Some) {
-      let fragment = $[0];
-      return toList(["#", fragment]);
-    } else {
-      return toList([]);
-    }
-  })();
-  let parts$1 = (() => {
-    let $ = uri.query;
-    if ($ instanceof Some) {
-      let query = $[0];
-      return prepend("?", prepend(query, parts));
-    } else {
-      return parts;
-    }
-  })();
-  let parts$2 = prepend(uri.path, parts$1);
-  let parts$3 = (() => {
-    let $ = uri.host;
-    let $1 = starts_with(uri.path, "/");
-    if ($ instanceof Some && !$1 && $[0] !== "") {
-      let host = $[0];
-      return prepend("/", parts$2);
-    } else {
-      return parts$2;
-    }
-  })();
-  let parts$4 = (() => {
-    let $ = uri.host;
-    let $1 = uri.port;
-    if ($ instanceof Some && $1 instanceof Some) {
-      let port = $1[0];
-      return prepend(":", prepend(to_string(port), parts$3));
-    } else {
-      return parts$3;
-    }
-  })();
-  let parts$5 = (() => {
-    let $ = uri.scheme;
-    let $1 = uri.userinfo;
-    let $2 = uri.host;
-    if ($ instanceof Some && $1 instanceof Some && $2 instanceof Some) {
-      let s = $[0];
-      let u = $1[0];
-      let h = $2[0];
-      return prepend(
-        s,
-        prepend(
-          "://",
-          prepend(u, prepend("@", prepend(h, parts$4)))
-        )
-      );
-    } else if ($ instanceof Some && $1 instanceof None && $2 instanceof Some) {
-      let s = $[0];
-      let h = $2[0];
-      return prepend(s, prepend("://", prepend(h, parts$4)));
-    } else if ($ instanceof Some && $1 instanceof Some && $2 instanceof None) {
-      let s = $[0];
-      return prepend(s, prepend(":", parts$4));
-    } else if ($ instanceof Some && $1 instanceof None && $2 instanceof None) {
-      let s = $[0];
-      return prepend(s, prepend(":", parts$4));
-    } else if ($ instanceof None && $1 instanceof None && $2 instanceof Some) {
-      let h = $2[0];
-      return prepend("//", prepend(h, parts$4));
-    } else {
-      return parts$4;
-    }
-  })();
-  return concat2(parts$5);
-}
-
-// build/dev/javascript/gleam_http/gleam/http.mjs
-var Get = class extends CustomType {
-};
-var Post = class extends CustomType {
-};
-var Head = class extends CustomType {
-};
-var Put = class extends CustomType {
-};
-var Delete = class extends CustomType {
-};
-var Trace = class extends CustomType {
-};
-var Connect = class extends CustomType {
-};
-var Options = class extends CustomType {
-};
-var Patch = class extends CustomType {
-};
-var Http = class extends CustomType {
-};
-var Https = class extends CustomType {
-};
-function method_to_string(method) {
-  if (method instanceof Connect) {
-    return "connect";
-  } else if (method instanceof Delete) {
-    return "delete";
-  } else if (method instanceof Get) {
-    return "get";
-  } else if (method instanceof Head) {
-    return "head";
-  } else if (method instanceof Options) {
-    return "options";
-  } else if (method instanceof Patch) {
-    return "patch";
-  } else if (method instanceof Post) {
-    return "post";
-  } else if (method instanceof Put) {
-    return "put";
-  } else if (method instanceof Trace) {
-    return "trace";
-  } else {
-    let s = method[0];
-    return s;
-  }
-}
-function scheme_to_string(scheme) {
-  if (scheme instanceof Http) {
-    return "http";
-  } else {
-    return "https";
-  }
-}
-function scheme_from_string(scheme) {
-  let $ = lowercase(scheme);
-  if ($ === "http") {
-    return new Ok(new Http());
-  } else if ($ === "https") {
-    return new Ok(new Https());
-  } else {
-    return new Error(void 0);
-  }
-}
-
-// build/dev/javascript/gleam_http/gleam/http/request.mjs
-var Request = class extends CustomType {
-  constructor(method, headers, body, scheme, host, port, path, query) {
-    super();
-    this.method = method;
-    this.headers = headers;
-    this.body = body;
-    this.scheme = scheme;
-    this.host = host;
-    this.port = port;
-    this.path = path;
-    this.query = query;
+    return find_anchor(el.parentElement);
   }
 };
-function to_uri(request) {
+var uri_from_url = (url) => {
   return new Uri(
-    new Some(scheme_to_string(request.scheme)),
+    /* scheme   */
+    url.protocol ? new Some(url.protocol.slice(0, -1)) : new None(),
+    /* userinfo */
     new None(),
-    new Some(request.host),
-    request.port,
-    request.path,
-    request.query,
-    new None()
+    /* host     */
+    url.hostname ? new Some(url.hostname) : new None(),
+    /* port     */
+    url.port ? new Some(Number(url.port)) : new None(),
+    /* path     */
+    url.pathname,
+    /* query    */
+    url.search ? new Some(url.search.slice(1)) : new None(),
+    /* fragment */
+    url.hash ? new Some(url.hash.slice(1)) : new None()
   );
-}
-function from_uri(uri) {
-  return then$(
-    (() => {
-      let _pipe = uri.scheme;
-      let _pipe$1 = unwrap(_pipe, "");
-      return scheme_from_string(_pipe$1);
-    })(),
-    (scheme) => {
-      return then$(
-        (() => {
-          let _pipe = uri.host;
-          return to_result(_pipe, void 0);
-        })(),
-        (host) => {
-          let req = new Request(
-            new Get(),
-            toList([]),
-            "",
-            scheme,
-            host,
-            uri.port,
-            uri.path,
-            uri.query
-          );
-          return new Ok(req);
-        }
-      );
-    }
-  );
-}
-function to(url) {
-  let _pipe = url;
-  let _pipe$1 = parse(_pipe);
-  return then$(_pipe$1, from_uri);
-}
-
-// build/dev/javascript/gleam_http/gleam/http/response.mjs
-var Response = class extends CustomType {
-  constructor(status, headers, body) {
-    super();
-    this.status = status;
-    this.headers = headers;
-    this.body = body;
-  }
 };
 
-// build/dev/javascript/gleam_javascript/gleam_javascript_ffi.mjs
-var PromiseLayer = class _PromiseLayer {
-  constructor(promise) {
-    this.promise = promise;
-  }
-  static wrap(value) {
-    return value instanceof Promise ? new _PromiseLayer(value) : value;
-  }
-  static unwrap(value) {
-    return value instanceof _PromiseLayer ? value.promise : value;
-  }
-};
-function resolve(value) {
-  return Promise.resolve(PromiseLayer.wrap(value));
-}
-function then_await(promise, fn) {
-  return promise.then((value) => fn(PromiseLayer.unwrap(value)));
-}
-function map_promise(promise, fn) {
-  return promise.then(
-    (value) => PromiseLayer.wrap(fn(PromiseLayer.unwrap(value)))
-  );
-}
-function rescue(promise, fn) {
-  return promise.catch((error) => fn(error));
-}
-
-// build/dev/javascript/gleam_javascript/gleam/javascript/promise.mjs
-function tap(promise, callback) {
-  let _pipe = promise;
-  return map_promise(
-    _pipe,
-    (a) => {
-      callback(a);
-      return a;
-    }
-  );
-}
-function try_await(promise, callback) {
-  let _pipe = promise;
-  return then_await(
-    _pipe,
-    (result) => {
-      if (result.isOk()) {
-        let a = result[0];
-        return callback(a);
-      } else {
-        let e = result[0];
-        return resolve(new Error(e));
-      }
-    }
-  );
-}
-
-// build/dev/javascript/gleam_fetch/ffi.mjs
-async function raw_send(request) {
-  try {
-    return new Ok(await fetch(request));
-  } catch (error) {
-    return new Error(new NetworkError(error.toString()));
-  }
-}
-function from_fetch_response(response) {
-  return new Response(
-    response.status,
-    List.fromArray([...response.headers]),
-    response
-  );
-}
-function to_fetch_request(request) {
-  let url = to_string2(to_uri(request));
-  let method = method_to_string(request.method).toUpperCase();
-  let options = {
-    headers: make_headers(request.headers),
-    method
-  };
-  if (method !== "GET" && method !== "HEAD")
-    options.body = request.body;
-  return new globalThis.Request(url, options);
-}
-function make_headers(headersList) {
-  let headers = new globalThis.Headers();
-  for (let [k, v] of headersList)
-    headers.append(k.toLowerCase(), v);
-  return headers;
-}
-async function read_text_body(response) {
-  let body;
-  try {
-    body = await response.body.text();
-  } catch (error) {
-    return new Error(new UnableToReadBody());
-  }
-  return new Ok(response.withFields({ body }));
-}
-
-// build/dev/javascript/gleam_fetch/gleam/fetch.mjs
-var NetworkError = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UnableToReadBody = class extends CustomType {
-};
-function send(request) {
-  let _pipe = request;
-  let _pipe$1 = to_fetch_request(_pipe);
-  let _pipe$2 = raw_send(_pipe$1);
-  return try_await(
-    _pipe$2,
-    (resp) => {
-      return resolve(new Ok(from_fetch_response(resp)));
-    }
-  );
-}
-
-// build/dev/javascript/lustre_http/lustre_http.mjs
-var BadUrl = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var InternalServerError = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var JsonError = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var NetworkError2 = class extends CustomType {
-};
-var NotFound = class extends CustomType {
-};
-var OtherError = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
-  }
-};
-var Unauthorized = class extends CustomType {
-};
-var ExpectTextResponse = class extends CustomType {
-  constructor(run) {
-    super();
-    this.run = run;
-  }
-};
-function do_send(req, expect, dispatch) {
-  let _pipe = send(req);
-  let _pipe$1 = try_await(_pipe, read_text_body);
-  let _pipe$2 = map_promise(
-    _pipe$1,
-    (response) => {
-      if (response.isOk()) {
-        let res = response[0];
-        return expect.run(new Ok(res));
-      } else {
-        return expect.run(new Error(new NetworkError2()));
-      }
-    }
-  );
-  let _pipe$3 = rescue(
-    _pipe$2,
-    (_) => {
-      return expect.run(new Error(new NetworkError2()));
-    }
-  );
-  tap(_pipe$3, dispatch);
-  return void 0;
-}
-function get(url, expect) {
+// build/dev/javascript/modem/modem.mjs
+function init2(handler) {
   return from(
     (dispatch) => {
-      let $ = to(url);
-      if ($.isOk()) {
-        let req = $[0];
-        return do_send(req, expect, dispatch);
-      } else {
-        return dispatch(expect.run(new Error(new BadUrl(url))));
-      }
-    }
-  );
-}
-function response_to_result(response) {
-  if (response instanceof Response && (200 <= response.status && response.status <= 299)) {
-    let status = response.status;
-    let body = response.body;
-    return new Ok(body);
-  } else if (response instanceof Response && response.status === 401) {
-    return new Error(new Unauthorized());
-  } else if (response instanceof Response && response.status === 404) {
-    return new Error(new NotFound());
-  } else if (response instanceof Response && response.status === 500) {
-    let body = response.body;
-    return new Error(new InternalServerError(body));
-  } else {
-    let code = response.status;
-    let body = response.body;
-    return new Error(new OtherError(code, body));
-  }
-}
-function expect_json(decoder, to_msg) {
-  return new ExpectTextResponse(
-    (response) => {
-      let _pipe = response;
-      let _pipe$1 = then$(_pipe, response_to_result);
-      let _pipe$2 = then$(
-        _pipe$1,
-        (body) => {
-          let $ = decode3(body, decoder);
-          if ($.isOk()) {
-            let json = $[0];
-            return new Ok(json);
-          } else {
-            let json_error = $[0];
-            return new Error(new JsonError(json_error));
-          }
+      return guard(
+        !is_browser(),
+        void 0,
+        () => {
+          return do_init(
+            (uri) => {
+              let _pipe = uri;
+              let _pipe$1 = handler(_pipe);
+              return dispatch(_pipe$1);
+            }
+          );
         }
       );
-      return to_msg(_pipe$2);
     }
   );
 }
 
 // build/dev/javascript/budget_fe/budget_fe.mjs
-var UserIncrementedCount = class extends CustomType {
+var Home = class extends CustomType {
 };
-var UserDecrementedCount = class extends CustomType {
+var TransactionsRoute = class extends CustomType {
 };
-var ApiReturnedCats = class extends CustomType {
-  constructor(x0) {
+var OnRouteChange = class extends CustomType {
+  constructor(route) {
     super();
-    this[0] = x0;
+    this.route = route;
   }
 };
-var Model2 = class extends CustomType {
-  constructor(count, cats) {
+var Initial = class extends CustomType {
+  constructor(user, cycle) {
     super();
-    this.count = count;
+    this.user = user;
+    this.cycle = cycle;
+  }
+};
+var Categories = class extends CustomType {
+  constructor(cats) {
+    super();
     this.cats = cats;
   }
 };
-var Cat = class extends CustomType {
-  constructor(id, url) {
+var Transactions = class extends CustomType {
+  constructor(trans) {
     super();
-    this.id = id;
-    this.url = url;
+    this.trans = trans;
   }
 };
-function view(model) {
-  let count = to_string(model.count);
-  return div(
-    toList([]),
+var Model2 = class extends CustomType {
+  constructor(user, cycle, route, categories, transactions) {
+    super();
+    this.user = user;
+    this.cycle = cycle;
+    this.route = route;
+    this.categories = categories;
+    this.transactions = transactions;
+  }
+};
+var Cycle = class extends CustomType {
+  constructor(year, month) {
+    super();
+    this.year = year;
+    this.month = month;
+  }
+};
+var User = class extends CustomType {
+  constructor(id, name) {
+    super();
+    this.id = id;
+    this.name = name;
+  }
+};
+var Category = class extends CustomType {
+  constructor(id, name, assigned, target) {
+    super();
+    this.id = id;
+    this.name = name;
+    this.assigned = assigned;
+    this.target = target;
+  }
+};
+var Money = class extends CustomType {
+  constructor(s, b) {
+    super();
+    this.s = s;
+    this.b = b;
+  }
+};
+var Transaction = class extends CustomType {
+  constructor(id, date, payee, category_id, value, is_inflow) {
+    super();
+    this.id = id;
+    this.date = date;
+    this.payee = payee;
+    this.category_id = category_id;
+    this.value = value;
+    this.is_inflow = is_inflow;
+  }
+};
+function on_route_change(uri) {
+  let $ = path_segments(uri.path);
+  if ($.hasLength(1) && $.head === "transactions") {
+    return new OnRouteChange(new TransactionsRoute());
+  } else {
+    return new OnRouteChange(new Home());
+  }
+}
+function init3(_) {
+  return [
+    new Model2(
+      new User("id1", "Sergey"),
+      new Cycle(2024, new Dec()),
+      new Home(),
+      toList([]),
+      toList([])
+    ),
+    init2(on_route_change)
+  ];
+}
+function get_categories() {
+  return from(
+    (dispatch) => {
+      return dispatch(
+        new Categories(
+          new Ok(
+            toList([
+              new Category(
+                "1",
+                "Subscriptions",
+                new Money(100, 0),
+                new None()
+              ),
+              new Category(
+                "2",
+                "Shopping",
+                new Money(1e3, 0),
+                new None()
+              ),
+              new Category("3", "Goals", new Money(500, 0), new None()),
+              new Category(
+                "4",
+                "Vacation",
+                new Money(200, 0),
+                new None()
+              ),
+              new Category(
+                "5",
+                "Entertainment",
+                new Money(300, 0),
+                new None()
+              ),
+              new Category(
+                "6",
+                "Groceries",
+                new Money(300, 0),
+                new None()
+              )
+            ])
+          )
+        )
+      );
+    }
+  );
+}
+function get_transactions() {
+  return from(
+    (dispatch) => {
+      return dispatch(
+        new Transactions(
+          new Ok(
+            toList([
+              new Transaction(
+                "1",
+                new Day2(2024, 12, 1),
+                "Amazon",
+                "5",
+                new Money(50, 0),
+                false
+              ),
+              new Transaction(
+                "2",
+                new Day2(2024, 12, 2),
+                "Bauhaus",
+                "5",
+                new Money(50, 0),
+                false
+              ),
+              new Transaction(
+                "3",
+                new Day2(2024, 12, 3),
+                "Rewe",
+                "6",
+                new Money(50, 0),
+                false
+              ),
+              new Transaction(
+                "4",
+                new Day2(2024, 12, 4),
+                "Vodafone",
+                "1",
+                new Money(50, 0),
+                false
+              ),
+              new Transaction(
+                "5",
+                new Day2(2024, 12, 5),
+                "Steam",
+                "5",
+                new Money(50, 0),
+                false
+              ),
+              new Transaction(
+                "6",
+                new Day2(2024, 12, 6),
+                "Duo",
+                "1",
+                new Money(50, 0),
+                false
+              ),
+              new Transaction(
+                "7",
+                new Day2(2024, 12, 7),
+                "O2",
+                "1",
+                new Money(50, 0),
+                false
+              )
+            ])
+          )
+        )
+      );
+    }
+  );
+}
+function update(model, msg) {
+  if (msg instanceof OnRouteChange) {
+    let route = msg.route;
+    return [model.withFields({ route }), get_categories()];
+  } else if (msg instanceof Initial) {
+    let user = msg.user;
+    let cycle = msg.cycle;
+    return [model.withFields({ user, cycle }), get_categories()];
+  } else if (msg instanceof Categories && msg.cats.isOk()) {
+    let cats = msg.cats[0];
+    return [model.withFields({ categories: cats }), get_transactions()];
+  } else if (msg instanceof Categories && !msg.cats.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof Transactions && msg.trans.isOk()) {
+    let t = msg.trans[0];
+    return [model.withFields({ transactions: t }), none()];
+  } else {
+    return [model, none()];
+  }
+}
+function budget_transactions(transactions) {
+  return table(
+    toList([class$("table table-sm")]),
     toList([
-      button(
-        toList([on_click(new UserIncrementedCount())]),
-        toList([text("+")])
+      thead(
+        toList([]),
+        toList([
+          tr(
+            toList([]),
+            toList([
+              th(toList([]), toList([text2("Date")])),
+              th(toList([]), toList([text2("Payee")])),
+              th(toList([]), toList([text2("Category")])),
+              th(toList([]), toList([text2("Amount")]))
+            ])
+          )
+        ])
       ),
-      text(count),
-      button(
-        toList([on_click(new UserDecrementedCount())]),
-        toList([text("-")])
-      ),
-      div(
+      tbody(
         toList([]),
         map(
-          model.cats,
-          (cat) => {
-            return img(
+          transactions,
+          (t) => {
+            return tr(
+              toList([]),
               toList([
-                src(cat.url),
-                width(400),
-                height(400)
+                td(toList([]), toList([text2("TB - Monthly")])),
+                td(toList([]), toList([text2("01/04/2012")])),
+                td(toList([]), toList([text2("TB - Monthly")])),
+                td(toList([]), toList([text2("Default")]))
               ])
             );
           }
@@ -3467,62 +2450,109 @@ function view(model) {
     ])
   );
 }
-function get_cat() {
-  let decoder = decode2(
-    (var0, var1) => {
-      return new Cat(var0, var1);
-    },
-    field("id", string),
-    field("url", string)
+function budget_categories(categories) {
+  return table(
+    toList([class$("table table-sm")]),
+    toList([
+      thead(
+        toList([]),
+        toList([
+          tr(
+            toList([]),
+            toList([
+              th(toList([]), toList([text2("Category")])),
+              th(toList([]), toList([text2("Assigned")])),
+              th(toList([]), toList([text2("Activity")])),
+              th(toList([]), toList([text2("Available")]))
+            ])
+          )
+        ])
+      ),
+      tbody(
+        toList([]),
+        map(
+          categories,
+          (t) => {
+            return tr(
+              toList([]),
+              toList([
+                td(toList([]), toList([text2("TB - Monthly")])),
+                td(toList([]), toList([text2("01/04/2012")])),
+                td(toList([]), toList([text2("TB - Monthly")])),
+                td(toList([]), toList([text2("Default")]))
+              ])
+            );
+          }
+        )
+      )
+    ])
   );
-  let expect = expect_json(
-    list(decoder),
-    (var0) => {
-      return new ApiReturnedCats(var0);
-    }
+}
+function view(model) {
+  return div(
+    toList([class$("container-fluid")]),
+    toList([
+      div(
+        toList([class$("row")]),
+        toList([
+          div(
+            toList([class$("col-md-12")]),
+            toList([
+              div(
+                toList([
+                  role("group"),
+                  class$("btn-group")
+                ]),
+                toList([
+                  button(
+                    toList([
+                      type_("button"),
+                      class$("btn btn-secondary")
+                    ]),
+                    toList([
+                      a(
+                        toList([href("/")]),
+                        toList([text("Budget")])
+                      )
+                    ])
+                  ),
+                  button(
+                    toList([
+                      type_("button"),
+                      class$("btn btn-secondary")
+                    ]),
+                    toList([
+                      a(
+                        toList([href("/transactions")]),
+                        toList([text("Transactions")])
+                      )
+                    ])
+                  )
+                ])
+              )
+            ])
+          ),
+          (() => {
+            let $ = model.route;
+            if ($ instanceof Home) {
+              return budget_categories(model.categories);
+            } else {
+              return budget_transactions(model.transactions);
+            }
+          })()
+        ])
+      )
+    ])
   );
-  return get("https://api.thecatapi.com/v1/images/search", expect);
-}
-function update(model, msg) {
-  if (msg instanceof UserIncrementedCount) {
-    return [model.withFields({ count: model.count + 1 }), get_cat()];
-  } else if (msg instanceof UserDecrementedCount) {
-    return [
-      new Model2(model.count - 1, drop(model.cats, 1)),
-      none()
-    ];
-  } else if (msg instanceof ApiReturnedCats && msg[0].isOk()) {
-    let api_cats = msg[0][0];
-    if (!api_cats.atLeastLength(1)) {
-      throw makeError(
-        "let_assert",
-        "budget_fe",
-        37,
-        "update",
-        "Pattern match failed, no pattern matched the value.",
-        { value: api_cats }
-      );
-    }
-    let cat = api_cats.head;
-    return [
-      model.withFields({ cats: prepend(cat, model.cats) }),
-      none()
-    ];
-  } else {
-    return [model, none()];
-  }
-}
-function init2(_) {
-  return [new Model2(0, toList([])), none()];
 }
 function main() {
-  let app = application(init2, update, view);
+  let app = application(init3, update, view);
   let $ = start2(app, "#app", void 0);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
       "budget_fe",
-      14,
+      18,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
