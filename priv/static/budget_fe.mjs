@@ -77,6 +77,95 @@ var NonEmpty = class extends List {
     this.tail = tail;
   }
 };
+var BitArray = class _BitArray {
+  constructor(buffer) {
+    if (!(buffer instanceof Uint8Array)) {
+      throw "BitArray can only be constructed from a Uint8Array";
+    }
+    this.buffer = buffer;
+  }
+  // @internal
+  get length() {
+    return this.buffer.length;
+  }
+  // @internal
+  byteAt(index3) {
+    return this.buffer[index3];
+  }
+  // @internal
+  floatFromSlice(start3, end, isBigEndian) {
+    return byteArrayToFloat(this.buffer, start3, end, isBigEndian);
+  }
+  // @internal
+  intFromSlice(start3, end, isBigEndian, isSigned) {
+    return byteArrayToInt(this.buffer, start3, end, isBigEndian, isSigned);
+  }
+  // @internal
+  binaryFromSlice(start3, end) {
+    return new _BitArray(this.buffer.slice(start3, end));
+  }
+  // @internal
+  sliceAfter(index3) {
+    return new _BitArray(this.buffer.slice(index3));
+  }
+};
+var UtfCodepoint = class {
+  constructor(value) {
+    this.value = value;
+  }
+};
+function byteArrayToInt(byteArray, start3, end, isBigEndian, isSigned) {
+  const byteSize = end - start3;
+  if (byteSize <= 6) {
+    let value = 0;
+    if (isBigEndian) {
+      for (let i = start3; i < end; i++) {
+        value = value * 256 + byteArray[i];
+      }
+    } else {
+      for (let i = end - 1; i >= start3; i--) {
+        value = value * 256 + byteArray[i];
+      }
+    }
+    if (isSigned) {
+      const highBit = 2 ** (byteSize * 8 - 1);
+      if (value >= highBit) {
+        value -= highBit * 2;
+      }
+    }
+    return value;
+  } else {
+    let value = 0n;
+    if (isBigEndian) {
+      for (let i = start3; i < end; i++) {
+        value = (value << 8n) + BigInt(byteArray[i]);
+      }
+    } else {
+      for (let i = end - 1; i >= start3; i--) {
+        value = (value << 8n) + BigInt(byteArray[i]);
+      }
+    }
+    if (isSigned) {
+      const highBit = 1n << BigInt(byteSize * 8 - 1);
+      if (value >= highBit) {
+        value -= highBit * 2n;
+      }
+    }
+    return Number(value);
+  }
+}
+function byteArrayToFloat(byteArray, start3, end, isBigEndian) {
+  const view2 = new DataView(byteArray.buffer);
+  const byteSize = end - start3;
+  if (byteSize === 8) {
+    return view2.getFloat64(start3, !isBigEndian);
+  } else if (byteSize === 4) {
+    return view2.getFloat32(start3, !isBigEndian);
+  } else {
+    const msg = `Sized floats must be 32-bit or 64-bit on JavaScript, got size of ${byteSize * 8} bits`;
+    throw new globalThis.Error(msg);
+  }
+}
 var Result = class _Result extends CustomType {
   // @internal
   static isResult(data) {
@@ -169,6 +258,23 @@ function structurallyCompatibleObjects(a2, b) {
     return false;
   return a2.constructor === b.constructor;
 }
+function remainderInt(a2, b) {
+  if (b === 0) {
+    return 0;
+  } else {
+    return a2 % b;
+  }
+}
+function divideInt(a2, b) {
+  return Math.trunc(divideFloat(a2, b));
+}
+function divideFloat(a2, b) {
+  if (b === 0) {
+    return 0;
+  } else {
+    return a2 / b;
+  }
+}
 function makeError(variant, module, line, fn, message, extra) {
   let error = new globalThis.Error(message);
   error.gleam_error = variant;
@@ -255,6 +361,33 @@ function reverse_loop(loop$remaining, loop$accumulator) {
 function reverse(list2) {
   return reverse_loop(list2, toList([]));
 }
+function filter_loop(loop$list, loop$fun, loop$acc) {
+  while (true) {
+    let list2 = loop$list;
+    let fun = loop$fun;
+    let acc = loop$acc;
+    if (list2.hasLength(0)) {
+      return reverse(acc);
+    } else {
+      let first$1 = list2.head;
+      let rest$1 = list2.tail;
+      let new_acc = (() => {
+        let $ = fun(first$1);
+        if ($) {
+          return prepend(first$1, acc);
+        } else {
+          return acc;
+        }
+      })();
+      loop$list = rest$1;
+      loop$fun = fun;
+      loop$acc = new_acc;
+    }
+  }
+}
+function filter(list2, predicate) {
+  return filter_loop(list2, predicate, toList([]));
+}
 function map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
     let list2 = loop$list;
@@ -273,6 +406,23 @@ function map_loop(loop$list, loop$fun, loop$acc) {
 }
 function map(list2, fun) {
   return map_loop(list2, fun, toList([]));
+}
+function append_loop(loop$first, loop$second) {
+  while (true) {
+    let first3 = loop$first;
+    let second = loop$second;
+    if (first3.hasLength(0)) {
+      return second;
+    } else {
+      let item = first3.head;
+      let rest$1 = first3.tail;
+      loop$first = rest$1;
+      loop$second = prepend(item, second);
+    }
+  }
+}
+function append(first3, second) {
+  return append_loop(reverse(first3), second);
 }
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
@@ -311,8 +461,83 @@ function index_fold_loop(loop$over, loop$acc, loop$with, loop$index) {
 function index_fold(list2, initial, fun) {
   return index_fold_loop(list2, initial, fun, 0);
 }
+function find(loop$list, loop$is_desired) {
+  while (true) {
+    let list2 = loop$list;
+    let is_desired = loop$is_desired;
+    if (list2.hasLength(0)) {
+      return new Error(void 0);
+    } else {
+      let x = list2.head;
+      let rest$1 = list2.tail;
+      let $ = is_desired(x);
+      if ($) {
+        return new Ok(x);
+      } else {
+        loop$list = rest$1;
+        loop$is_desired = is_desired;
+      }
+    }
+  }
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/string.mjs
+function slice(string3, idx, len) {
+  let $ = len < 0;
+  if ($) {
+    return "";
+  } else {
+    let $1 = idx < 0;
+    if ($1) {
+      let translated_idx = string_length(string3) + idx;
+      let $2 = translated_idx < 0;
+      if ($2) {
+        return "";
+      } else {
+        return string_slice(string3, translated_idx, len);
+      }
+    } else {
+      return string_slice(string3, idx, len);
+    }
+  }
+}
+function repeat_loop(loop$string, loop$times, loop$acc) {
+  while (true) {
+    let string3 = loop$string;
+    let times = loop$times;
+    let acc = loop$acc;
+    let $ = times <= 0;
+    if ($) {
+      return acc;
+    } else {
+      loop$string = string3;
+      loop$times = times - 1;
+      loop$acc = acc + string3;
+    }
+  }
+}
+function repeat(string3, times) {
+  return repeat_loop(string3, times, "");
+}
+function padding(size, pad_string) {
+  let pad_string_length = string_length(pad_string);
+  let num_pads = divideInt(size, pad_string_length);
+  let extra = remainderInt(size, pad_string_length);
+  return repeat(pad_string, num_pads) + slice(pad_string, 0, extra);
+}
+function pad_start(string3, desired_length, pad_string) {
+  let current_length = string_length(string3);
+  let to_pad_length = desired_length - current_length;
+  let $ = to_pad_length <= 0;
+  if ($) {
+    return string3;
+  } else {
+    return padding(to_pad_length, pad_string) + string3;
+  }
+}
+function pad_left(string3, desired_length, pad_string) {
+  return pad_start(string3, desired_length, pad_string);
+}
 function drop_start(loop$string, loop$num_graphemes) {
   while (true) {
     let string3 = loop$string;
@@ -341,6 +566,10 @@ function split2(x, substring) {
     let _pipe$2 = split(_pipe$1, substring);
     return map(_pipe$2, identity);
   }
+}
+function inspect2(term) {
+  let _pipe = inspect(term);
+  return identity(_pipe);
 }
 
 // build/dev/javascript/gleam_stdlib/dict.mjs
@@ -715,7 +944,7 @@ function collisionIndexOf(root, key) {
   }
   return -1;
 }
-function find(root, shift, hash, key) {
+function find2(root, shift, hash, key) {
   switch (root.type) {
     case ARRAY_NODE:
       return findArray(root, shift, hash, key);
@@ -732,7 +961,7 @@ function findArray(root, shift, hash, key) {
     return void 0;
   }
   if (node.type !== ENTRY) {
-    return find(node, shift + SHIFT, hash, key);
+    return find2(node, shift + SHIFT, hash, key);
   }
   if (isEqual(key, node.k)) {
     return node;
@@ -747,7 +976,7 @@ function findIndex(root, shift, hash, key) {
   const idx = index(root.bitmap, bit);
   const node = root.array[idx];
   if (node.type !== ENTRY) {
-    return find(node, shift + SHIFT, hash, key);
+    return find2(node, shift + SHIFT, hash, key);
   }
   if (isEqual(key, node.k)) {
     return node;
@@ -952,7 +1181,7 @@ var Dict = class _Dict {
     if (this.root === void 0) {
       return notFound;
     }
-    const found = find(this.root, 0, getHash(key), key);
+    const found = find2(this.root, 0, getHash(key), key);
     if (found === void 0) {
       return notFound;
     }
@@ -997,7 +1226,7 @@ var Dict = class _Dict {
     if (this.root === void 0) {
       return false;
     }
-    return find(this.root, 0, getHash(key), key) !== void 0;
+    return find2(this.root, 0, getHash(key), key) !== void 0;
   }
   /**
    * @returns {[K,V][]}
@@ -1057,6 +1286,34 @@ function identity(x) {
 function to_string(term) {
   return term.toString();
 }
+function float_to_string(float3) {
+  const string3 = float3.toString().replace("+", "");
+  if (string3.indexOf(".") >= 0) {
+    return string3;
+  } else {
+    const index3 = string3.indexOf("e");
+    if (index3 >= 0) {
+      return string3.slice(0, index3) + ".0" + string3.slice(index3);
+    } else {
+      return string3 + ".0";
+    }
+  }
+}
+function string_length(string3) {
+  if (string3 === "") {
+    return 0;
+  }
+  const iterator = graphemes_iterator(string3);
+  if (iterator) {
+    let i = 0;
+    for (const _ of iterator) {
+      i++;
+    }
+    return i;
+  } else {
+    return string3.match(/./gsu).length;
+  }
+}
 function graphemes(string3) {
   const iterator = graphemes_iterator(string3);
   if (iterator) {
@@ -1089,6 +1346,28 @@ function pop_grapheme(string3) {
 function split(xs, pattern) {
   return List.fromArray(xs.split(pattern));
 }
+function string_slice(string3, idx, len) {
+  if (len <= 0 || idx >= string3.length) {
+    return "";
+  }
+  const iterator = graphemes_iterator(string3);
+  if (iterator) {
+    while (idx-- > 0) {
+      iterator.next();
+    }
+    let result = "";
+    while (len-- > 0) {
+      const v = iterator.next().value;
+      if (v === void 0) {
+        break;
+      }
+      result += v.segment;
+    }
+    return result;
+  } else {
+    return string3.match(/./gsu).slice(idx, idx + len).join("");
+  }
+}
 var unicode_whitespaces = [
   " ",
   // Space
@@ -1111,6 +1390,15 @@ var unicode_whitespaces = [
 ].join("");
 var trim_start_regex = new RegExp(`^[${unicode_whitespaces}]*`);
 var trim_end_regex = new RegExp(`[${unicode_whitespaces}]*$`);
+function print_debug(string3) {
+  if (typeof process === "object" && process.stderr?.write) {
+    process.stderr.write(string3 + "\n");
+  } else if (typeof Deno === "object") {
+    Deno.stderr.writeSync(new TextEncoder().encode(string3 + "\n"));
+  } else {
+    console.log(string3);
+  }
+}
 function new_map() {
   return Dict.new();
 }
@@ -1119,6 +1407,119 @@ function map_to_list(map6) {
 }
 function map_insert(key, value, map6) {
   return map6.set(key, value);
+}
+function inspect(v) {
+  const t = typeof v;
+  if (v === true)
+    return "True";
+  if (v === false)
+    return "False";
+  if (v === null)
+    return "//js(null)";
+  if (v === void 0)
+    return "Nil";
+  if (t === "string")
+    return inspectString(v);
+  if (t === "bigint" || Number.isInteger(v))
+    return v.toString();
+  if (t === "number")
+    return float_to_string(v);
+  if (Array.isArray(v))
+    return `#(${v.map(inspect).join(", ")})`;
+  if (v instanceof List)
+    return inspectList(v);
+  if (v instanceof UtfCodepoint)
+    return inspectUtfCodepoint(v);
+  if (v instanceof BitArray)
+    return inspectBitArray(v);
+  if (v instanceof CustomType)
+    return inspectCustomType(v);
+  if (v instanceof Dict)
+    return inspectDict(v);
+  if (v instanceof Set)
+    return `//js(Set(${[...v].map(inspect).join(", ")}))`;
+  if (v instanceof RegExp)
+    return `//js(${v})`;
+  if (v instanceof Date)
+    return `//js(Date("${v.toISOString()}"))`;
+  if (v instanceof Function) {
+    const args = [];
+    for (const i of Array(v.length).keys())
+      args.push(String.fromCharCode(i + 97));
+    return `//fn(${args.join(", ")}) { ... }`;
+  }
+  return inspectObject(v);
+}
+function inspectString(str) {
+  let new_str = '"';
+  for (let i = 0; i < str.length; i++) {
+    let char = str[i];
+    switch (char) {
+      case "\n":
+        new_str += "\\n";
+        break;
+      case "\r":
+        new_str += "\\r";
+        break;
+      case "	":
+        new_str += "\\t";
+        break;
+      case "\f":
+        new_str += "\\f";
+        break;
+      case "\\":
+        new_str += "\\\\";
+        break;
+      case '"':
+        new_str += '\\"';
+        break;
+      default:
+        if (char < " " || char > "~" && char < "\xA0") {
+          new_str += "\\u{" + char.charCodeAt(0).toString(16).toUpperCase().padStart(4, "0") + "}";
+        } else {
+          new_str += char;
+        }
+    }
+  }
+  new_str += '"';
+  return new_str;
+}
+function inspectDict(map6) {
+  let body = "dict.from_list([";
+  let first3 = true;
+  map6.forEach((value, key) => {
+    if (!first3)
+      body = body + ", ";
+    body = body + "#(" + inspect(key) + ", " + inspect(value) + ")";
+    first3 = false;
+  });
+  return body + "])";
+}
+function inspectObject(v) {
+  const name = Object.getPrototypeOf(v)?.constructor?.name || "Object";
+  const props = [];
+  for (const k of Object.keys(v)) {
+    props.push(`${inspect(k)}: ${inspect(v[k])}`);
+  }
+  const body = props.length ? " " + props.join(", ") + " " : "";
+  const head = name === "Object" ? "" : name + " ";
+  return `//js(${head}{${body}})`;
+}
+function inspectCustomType(record) {
+  const props = Object.keys(record).map((label) => {
+    const value = inspect(record[label]);
+    return isNaN(parseInt(label)) ? `${label}: ${value}` : value;
+  }).join(", ");
+  return props ? `${record.constructor.name}(${props})` : record.constructor.name;
+}
+function inspectList(list2) {
+  return `[${list2.toArray().map(inspect).join(", ")}]`;
+}
+function inspectBitArray(bits) {
+  return `<<${Array.from(bits.buffer).join(", ")}>>`;
+}
+function inspectUtfCodepoint(codepoint2) {
+  return `//utfcodepoint(${String.fromCodePoint(codepoint2.value)})`;
 }
 
 // build/dev/javascript/birl/birl.mjs
@@ -1132,6 +1533,14 @@ var Day2 = class extends CustomType {
 };
 var Dec = class extends CustomType {
 };
+
+// build/dev/javascript/gleam_stdlib/gleam/io.mjs
+function debug(term) {
+  let _pipe = term;
+  let _pipe$1 = inspect2(_pipe);
+  print_debug(_pipe$1);
+  return term;
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
 var Uri = class extends CustomType {
@@ -1208,6 +1617,18 @@ function from(effect) {
 }
 function none() {
   return new Effect(toList([]));
+}
+function batch(effects) {
+  return new Effect(
+    fold(
+      effects,
+      toList([]),
+      (b, _use1) => {
+        let a2 = _use1.all;
+        return append(b, a2);
+      }
+    )
+  );
 }
 
 // build/dev/javascript/lustre/lustre/internals/vdom.mjs
@@ -2082,6 +2503,13 @@ var defaults = {
   handle_internal_links: true
 };
 var initial_location = window?.location?.href;
+var do_initial_uri = () => {
+  if (!initial_location) {
+    return new Error(void 0);
+  } else {
+    return new Ok(uri_from_url(new URL(initial_location)));
+  }
+};
 var do_init = (dispatch, options = defaults) => {
   document.addEventListener("click", (event2) => {
     const a2 = find_anchor(event2.target);
@@ -2176,6 +2604,22 @@ function init2(handler) {
   );
 }
 
+// build/dev/javascript/budget_fe/date_utils.mjs
+function to_date_string(value) {
+  let year = value.year;
+  let month = value.month;
+  let day = value.date;
+  return to_string(year) + "." + (() => {
+    let _pipe = month;
+    let _pipe$1 = to_string(_pipe);
+    return pad_left(_pipe$1, 2, "0");
+  })() + "." + (() => {
+    let _pipe = day;
+    let _pipe$1 = to_string(_pipe);
+    return pad_left(_pipe$1, 2, "0");
+  })();
+}
+
 // build/dev/javascript/budget_fe/budget_fe.mjs
 var Home = class extends CustomType {
 };
@@ -2188,10 +2632,11 @@ var OnRouteChange = class extends CustomType {
   }
 };
 var Initial = class extends CustomType {
-  constructor(user, cycle) {
+  constructor(user, cycle, initial_route) {
     super();
     this.user = user;
     this.cycle = cycle;
+    this.initial_route = initial_route;
   }
 };
 var Categories = class extends CustomType {
@@ -2257,15 +2702,43 @@ var Transaction = class extends CustomType {
     this.is_inflow = is_inflow;
   }
 };
-function on_route_change(uri) {
+function uri_to_route(uri) {
   let $ = path_segments(uri.path);
   if ($.hasLength(1) && $.head === "transactions") {
-    return new OnRouteChange(new TransactionsRoute());
+    return new TransactionsRoute();
   } else {
-    return new OnRouteChange(new Home());
+    return new Home();
   }
 }
+function on_route_change(uri) {
+  debug("on_route_change");
+  let route = uri_to_route(uri);
+  return new OnRouteChange(route);
+}
+function initial_eff() {
+  let path = (() => {
+    let $ = do_initial_uri();
+    if ($.isOk()) {
+      let uri = $[0];
+      return uri_to_route(uri);
+    } else {
+      return new Home();
+    }
+  })();
+  return from(
+    (dispatch) => {
+      return dispatch(
+        new Initial(
+          new User("id2", "Sergey"),
+          new Cycle(2024, new Dec()),
+          path
+        )
+      );
+    }
+  );
+}
 function init3(_) {
+  debug("init");
   return [
     new Model2(
       new User("id1", "Sergey"),
@@ -2274,7 +2747,7 @@ function init3(_) {
       toList([]),
       toList([])
     ),
-    init2(on_route_change)
+    batch(toList([init2(on_route_change), initial_eff()]))
   ];
 }
 function get_categories() {
@@ -2374,7 +2847,7 @@ function get_transactions() {
                 new Day2(2024, 12, 6),
                 "Duo",
                 "1",
-                new Money(50, 0),
+                new Money(50, 60),
                 false
               ),
               new Transaction(
@@ -2383,6 +2856,22 @@ function get_transactions() {
                 "O2",
                 "1",
                 new Money(50, 0),
+                false
+              ),
+              new Transaction(
+                "8",
+                new Day2(2024, 12, 10),
+                "Trade Republic",
+                "0",
+                new Money(1e3, 0),
+                true
+              ),
+              new Transaction(
+                "8",
+                new Day2(2024, 12, 7),
+                "O2",
+                "1",
+                new Money(100, 50),
                 false
               )
             ])
@@ -2393,13 +2882,18 @@ function get_transactions() {
   );
 }
 function update(model, msg) {
+  debug(msg);
   if (msg instanceof OnRouteChange) {
     let route = msg.route;
-    return [model.withFields({ route }), get_categories()];
+    return [model.withFields({ route }), none()];
   } else if (msg instanceof Initial) {
     let user = msg.user;
     let cycle = msg.cycle;
-    return [model.withFields({ user, cycle }), get_categories()];
+    let initial_path = msg.initial_route;
+    return [
+      model.withFields({ user, cycle, route: initial_path }),
+      get_categories()
+    ];
   } else if (msg instanceof Categories && msg.cats.isOk()) {
     let cats = msg.cats[0];
     return [model.withFields({ categories: cats }), get_transactions()];
@@ -2412,7 +2906,7 @@ function update(model, msg) {
     return [model, none()];
   }
 }
-function budget_transactions(transactions) {
+function budget_transactions(transactions, categories) {
   return table(
     toList([class$("table table-sm")]),
     toList([
@@ -2438,10 +2932,57 @@ function budget_transactions(transactions) {
             return tr(
               toList([]),
               toList([
-                td(toList([]), toList([text2("TB - Monthly")])),
-                td(toList([]), toList([text2("01/04/2012")])),
-                td(toList([]), toList([text2("TB - Monthly")])),
-                td(toList([]), toList([text2("Default")]))
+                td(
+                  toList([]),
+                  toList([text2(to_date_string(t.date))])
+                ),
+                td(toList([]), toList([text2(t.payee)])),
+                td(
+                  toList([]),
+                  toList([
+                    (() => {
+                      let category_name = (() => {
+                        let $ = find(
+                          categories,
+                          (c) => {
+                            return c.id === t.category_id;
+                          }
+                        );
+                        if ($.isOk()) {
+                          let c = $[0];
+                          return c.name;
+                        } else {
+                          return "not found";
+                        }
+                      })();
+                      return text2(category_name);
+                    })()
+                  ])
+                ),
+                td(
+                  toList([]),
+                  toList([
+                    (() => {
+                      let sign = (() => {
+                        let $ = t.is_inflow;
+                        if ($) {
+                          return "";
+                        } else {
+                          return "-";
+                        }
+                      })();
+                      return text2(
+                        sign + (() => {
+                          let _pipe = t.value.s;
+                          return to_string(_pipe);
+                        })() + "." + (() => {
+                          let _pipe = t.value.b;
+                          return to_string(_pipe);
+                        })()
+                      );
+                    })()
+                  ])
+                )
               ])
             );
           }
@@ -2450,7 +2991,46 @@ function budget_transactions(transactions) {
     ])
   );
 }
-function budget_categories(categories) {
+function money_to_string(m) {
+  return "\u20AC" + (() => {
+    let _pipe = m.s;
+    return to_string(_pipe);
+  })() + "." + (() => {
+    let _pipe = m.b;
+    return to_string(_pipe);
+  })();
+}
+function money_sum(a2, b) {
+  let base_sum = a2.b + b.b;
+  let $ = (() => {
+    let $1 = base_sum >= 100;
+    if ($1) {
+      return [1, remainderInt(base_sum, 100)];
+    } else {
+      return [0, base_sum];
+    }
+  })();
+  let euro = $[0];
+  let base = $[1];
+  return new Money(a2.s + b.s + euro, base);
+}
+function category_activity(cat, transactions) {
+  let trcs = (() => {
+    let _pipe2 = transactions;
+    return filter(_pipe2, (t) => {
+      return t.category_id === cat.id;
+    });
+  })();
+  let _pipe = fold(
+    trcs,
+    new Money(0, 0),
+    (m, t) => {
+      return money_sum(m, t.value);
+    }
+  );
+  return money_to_string(_pipe);
+}
+function budget_categories(categories, transactions) {
   return table(
     toList([class$("table table-sm")]),
     toList([
@@ -2472,13 +3052,26 @@ function budget_categories(categories) {
         toList([]),
         map(
           categories,
-          (t) => {
+          (c) => {
             return tr(
               toList([]),
               toList([
-                td(toList([]), toList([text2("TB - Monthly")])),
-                td(toList([]), toList([text2("01/04/2012")])),
-                td(toList([]), toList([text2("TB - Monthly")])),
+                td(toList([]), toList([text2(c.name)])),
+                td(
+                  toList([]),
+                  toList([
+                    text2(
+                      (() => {
+                        let _pipe = c.assigned;
+                        return money_to_string(_pipe);
+                      })()
+                    )
+                  ])
+                ),
+                td(
+                  toList([]),
+                  toList([text2(category_activity(c, transactions))])
+                ),
                 td(toList([]), toList([text2("Default")]))
               ])
             );
@@ -2499,32 +3092,37 @@ function view(model) {
             toList([class$("col-md-12")]),
             toList([
               div(
+                toList([class$("row")]),
                 toList([
-                  role("group"),
-                  class$("btn-group")
-                ]),
-                toList([
-                  button(
+                  div(
                     toList([
-                      type_("button"),
-                      class$("btn btn-secondary")
+                      role("group"),
+                      class$("btn-group")
                     ]),
                     toList([
-                      a(
-                        toList([href("/")]),
-                        toList([text("Budget")])
-                      )
-                    ])
-                  ),
-                  button(
-                    toList([
-                      type_("button"),
-                      class$("btn btn-secondary")
-                    ]),
-                    toList([
-                      a(
-                        toList([href("/transactions")]),
-                        toList([text("Transactions")])
+                      button(
+                        toList([
+                          type_("button"),
+                          class$("btn btn-secondary")
+                        ]),
+                        toList([
+                          a(
+                            toList([href("/")]),
+                            toList([text("Budget")])
+                          )
+                        ])
+                      ),
+                      button(
+                        toList([
+                          type_("button"),
+                          class$("btn btn-secondary")
+                        ]),
+                        toList([
+                          a(
+                            toList([href("/transactions")]),
+                            toList([text("Transactions")])
+                          )
+                        ])
                       )
                     ])
                   )
@@ -2535,9 +3133,9 @@ function view(model) {
           (() => {
             let $ = model.route;
             if ($ instanceof Home) {
-              return budget_categories(model.categories);
+              return budget_categories(model.categories, model.transactions);
             } else {
-              return budget_transactions(model.transactions);
+              return budget_transactions(model.transactions, model.categories);
             }
           })()
         ])
@@ -2552,7 +3150,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      18,
+      88,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

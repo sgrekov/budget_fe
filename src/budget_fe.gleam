@@ -1,6 +1,8 @@
 import birl
+import date_utils
 import gleam/dynamic
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option
 import gleam/uri.{type Uri}
@@ -11,14 +13,7 @@ import lustre/element
 import lustre/element/html
 import lustre/event
 import lustre_http
-import modem
-
-pub fn main() {
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
-
-  Nil
-}
+import modem.{initial_uri}
 
 type Route {
   Home
@@ -27,7 +22,7 @@ type Route {
 
 type Msg {
   OnRouteChange(route: Route)
-  Initial(user: User, cycle: Cycle)
+  Initial(user: User, cycle: Cycle, initial_route: Route)
   Categories(cats: Result(List(Category), lustre_http.HttpError))
   Transactions(trans: Result(List(Transaction), lustre_http.HttpError))
 }
@@ -88,11 +83,21 @@ pub type Transaction {
   )
 }
 
+pub fn main() {
+  let app = lustre.application(init, update, view)
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
+
+  Nil
+}
+
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
+  io.debug(msg)
   case msg {
-    OnRouteChange(route) -> #(Model(..model, route: route), get_categories())
-    Initial(user, cycle) -> #(
-      Model(..model, user: user, cycle: cycle),
+    OnRouteChange(route) -> {
+      #(Model(..model, route: route), effect.none())
+    }
+    Initial(user, cycle, initial_path) -> #(
+      Model(..model, user: user, cycle: cycle, route: initial_path),
       get_categories(),
     )
     Categories(Ok(cats)) -> #(
@@ -106,25 +111,39 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
 }
 
 fn init(_flags) -> #(Model, effect.Effect(Msg)) {
+  io.debug("init")
   #(
     Model(User(id: "id1", name: "Sergey"), Cycle(2024, birl.Dec), Home, [], []),
-    // initial_eff(),
-    modem.init(on_route_change),
+    effect.batch([modem.init(on_route_change), initial_eff()]),
   )
 }
 
 fn on_route_change(uri: Uri) -> Msg {
+  io.debug("on_route_change")
+  let route = uri_to_route(uri)
+  OnRouteChange(route)
+}
+
+fn uri_to_route(uri: Uri) -> Route {
   case uri.path_segments(uri.path) {
-    ["transactions"] -> OnRouteChange(TransactionsRoute)
-    _ -> OnRouteChange(Home)
+    ["transactions"] -> TransactionsRoute
+    _ -> Home
   }
 }
 
 //<!---- Effects ----!>
 
 fn initial_eff() -> effect.Effect(Msg) {
+  let path = case initial_uri() {
+    Ok(uri) -> uri_to_route(uri)
+    _ -> Home
+  }
   effect.from(fn(dispatch) {
-    dispatch(Initial(User(id: "id1", name: "Sergey"), Cycle(2024, birl.Dec)))
+    dispatch(Initial(
+      User(id: "id2", name: "Sergey"),
+      Cycle(2024, birl.Dec),
+      path,
+    ))
   })
 }
 
@@ -225,7 +244,7 @@ fn get_transactions() -> effect.Effect(Msg) {
             date: birl.Day(2024, 12, 6),
             payee: "Duo",
             category_id: "1",
-            value: Money(50, 0),
+            value: Money(50, 60),
             is_inflow: False,
           ),
           Transaction(
@@ -234,6 +253,22 @@ fn get_transactions() -> effect.Effect(Msg) {
             payee: "O2",
             category_id: "1",
             value: Money(50, 0),
+            is_inflow: False,
+          ),
+          Transaction(
+            id: "8",
+            date: birl.Day(2024, 12, 10),
+            payee: "Trade Republic",
+            category_id: "0",
+            value: Money(1000, 0),
+            is_inflow: True,
+          ),
+          Transaction(
+            id: "8",
+            date: birl.Day(2024, 12, 7),
+            payee: "O2",
+            category_id: "1",
+            value: Money(100, 50),
             is_inflow: False,
           ),
         ]),
@@ -246,30 +281,36 @@ fn view(model: Model) -> element.Element(Msg) {
   html.div([attribute.class("container-fluid")], [
     html.div([attribute.class("row")], [
       html.div([attribute.class("col-md-12")], [
-        html.div([attribute.role("group"), attribute.class("btn-group")], [
-          html.button(
-            [attribute.type_("button"), attribute.class("btn btn-secondary")],
-            [html.a([attribute.href("/")], [element.text("Budget")])],
-          ),
-          html.button(
-            [attribute.type_("button"), attribute.class("btn btn-secondary")],
-            [
-              html.a([attribute.href("/transactions")], [
-                element.text("Transactions"),
-              ]),
-            ],
-          ),
+        html.div([attribute.class("row")], [
+          html.div([attribute.role("group"), attribute.class("btn-group")], [
+            html.button(
+              [attribute.type_("button"), attribute.class("btn btn-secondary")],
+              [html.a([attribute.href("/")], [element.text("Budget")])],
+            ),
+            html.button(
+              [attribute.type_("button"), attribute.class("btn btn-secondary")],
+              [
+                html.a([attribute.href("/transactions")], [
+                  element.text("Transactions"),
+                ]),
+              ],
+            ),
+          ]),
         ]),
       ]),
       case model.route {
-        Home -> budget_categories(model.categories)
-        TransactionsRoute -> budget_transactions(model.transactions)
+        Home -> budget_categories(model.categories, model.transactions)
+        TransactionsRoute ->
+          budget_transactions(model.transactions, model.categories)
       },
     ]),
   ])
 }
 
-fn budget_transactions(transactions: List(Transaction)) -> element.Element(Msg) {
+fn budget_transactions(
+  transactions: List(Transaction),
+  categories: List(Category),
+) -> element.Element(Msg) {
   html.table([attribute.class("table table-sm")], [
     html.thead([], [
       html.tr([], [
@@ -283,17 +324,43 @@ fn budget_transactions(transactions: List(Transaction)) -> element.Element(Msg) 
       [],
       list.map(transactions, fn(t) {
         html.tr([], [
-          html.td([], [html.text("TB - Monthly")]),
-          html.td([], [html.text("01/04/2012")]),
-          html.td([], [html.text("TB - Monthly")]),
-          html.td([], [html.text("Default")]),
+          html.td([], [html.text(date_utils.to_date_string(t.date))]),
+          html.td([], [html.text(t.payee)]),
+          html.td([], [
+            {
+              let category_name = case
+                list.find(categories, fn(c) { c.id == t.category_id })
+              {
+                Ok(c) -> c.name
+                _ -> "not found"
+              }
+              html.text(category_name)
+            },
+          ]),
+          html.td([], [
+            {
+              let sign = case t.is_inflow {
+                True -> ""
+                _ -> "-"
+              }
+              html.text(
+                sign
+                <> t.value.s |> int.to_string
+                <> "."
+                <> t.value.b |> int.to_string,
+              )
+            },
+          ]),
         ])
       }),
     ),
   ])
 }
 
-fn budget_categories(categories: List(Category)) -> element.Element(Msg) {
+fn budget_categories(
+  categories: List(Category),
+  transactions: List(Transaction),
+) -> element.Element(Msg) {
   html.table([attribute.class("table table-sm")], [
     html.thead([], [
       html.tr([], [
@@ -305,14 +372,33 @@ fn budget_categories(categories: List(Category)) -> element.Element(Msg) {
     ]),
     html.tbody(
       [],
-      list.map(categories, fn(t) {
+      list.map(categories, fn(c) {
         html.tr([], [
-          html.td([], [html.text("TB - Monthly")]),
-          html.td([], [html.text("01/04/2012")]),
-          html.td([], [html.text("TB - Monthly")]),
+          html.td([], [html.text(c.name)]),
+          html.td([], [html.text(c.assigned |> money_to_string())]),
+          html.td([], [html.text(category_activity(c, transactions))]),
           html.td([], [html.text("Default")]),
         ])
       }),
     ),
   ])
+}
+
+fn category_activity(cat: Category, transactions: List(Transaction)) -> String {
+  let trcs = transactions |> list.filter(fn(t) { t.category_id == cat.id })
+  list.fold(trcs, Money(0, 0), fn(m, t) { money_sum(m, t.value) })
+  |> money_to_string
+}
+
+fn money_to_string(m: Money) -> String {
+  "€" <> m.s |> int.to_string <> "." <> m.b |> int.to_string
+}
+
+fn money_sum(a: Money, b: Money) -> Money {
+  let base_sum = a.b + b.b
+  let #(euro, base) = case base_sum >= 100 {
+    True -> #(1, base_sum % 100)
+    False -> #(0, base_sum)
+  }
+  Money(a.s + b.s + euro, base)
 }
