@@ -2472,6 +2472,9 @@ function text2(content) {
 function div(attrs, children2) {
   return element("div", attrs, children2);
 }
+function p(attrs, children2) {
+  return element("p", attrs, children2);
+}
 function a(attrs, children2) {
   return element("a", attrs, children2);
 }
@@ -2651,14 +2654,21 @@ var Transactions = class extends CustomType {
     this.trans = trans;
   }
 };
+var Allocations = class extends CustomType {
+  constructor(a2) {
+    super();
+    this.a = a2;
+  }
+};
 var Model2 = class extends CustomType {
-  constructor(user, cycle, route, categories, transactions) {
+  constructor(user, cycle, route, categories, transactions, allocations) {
     super();
     this.user = user;
     this.cycle = cycle;
     this.route = route;
     this.categories = categories;
     this.transactions = transactions;
+    this.allocations = allocations;
   }
 };
 var Cycle = class extends CustomType {
@@ -2676,11 +2686,10 @@ var User = class extends CustomType {
   }
 };
 var Category = class extends CustomType {
-  constructor(id, name, assigned, target) {
+  constructor(id, name, target) {
     super();
     this.id = id;
     this.name = name;
-    this.assigned = assigned;
     this.target = target;
   }
 };
@@ -2689,6 +2698,21 @@ var Money = class extends CustomType {
     super();
     this.s = s;
     this.b = b;
+  }
+};
+var Monthly = class extends CustomType {
+  constructor(target) {
+    super();
+    this.target = target;
+  }
+};
+var Allocation = class extends CustomType {
+  constructor(id, amount, category_id, date) {
+    super();
+    this.id = id;
+    this.amount = amount;
+    this.category_id = category_id;
+    this.date = date;
   }
 };
 var Transaction = class extends CustomType {
@@ -2745,10 +2769,61 @@ function init3(_) {
       new Cycle(2024, new Dec()),
       new Home(),
       toList([]),
+      toList([]),
       toList([])
     ),
     batch(toList([init2(on_route_change), initial_eff()]))
   ];
+}
+function get_allocations() {
+  return from(
+    (dispatch) => {
+      return dispatch(
+        new Allocations(
+          new Ok(
+            toList([
+              new Allocation(
+                "1",
+                new Money(80, 0),
+                "1",
+                new Day2(2024, 12, 2)
+              ),
+              new Allocation(
+                "2",
+                new Money(120, 0),
+                "2",
+                new Day2(2024, 12, 2)
+              ),
+              new Allocation(
+                "3",
+                new Money(150, 0),
+                "3",
+                new Day2(2024, 12, 2)
+              ),
+              new Allocation(
+                "4",
+                new Money(100, 2),
+                "4",
+                new Day2(2024, 12, 2)
+              ),
+              new Allocation(
+                "5",
+                new Money(200, 2),
+                "5",
+                new Day2(2024, 12, 2)
+              ),
+              new Allocation(
+                "6",
+                new Money(500, 2),
+                "6",
+                new Day2(2024, 12, 2)
+              )
+            ])
+          )
+        )
+      );
+    }
+  );
 }
 function get_categories() {
   return from(
@@ -2760,33 +2835,32 @@ function get_categories() {
               new Category(
                 "1",
                 "Subscriptions",
-                new Money(100, 0),
-                new None()
+                new Some(new Monthly(new Money(60, 0)))
               ),
               new Category(
                 "2",
                 "Shopping",
-                new Money(1e3, 0),
-                new None()
+                new Some(new Monthly(new Money(40, 0)))
               ),
-              new Category("3", "Goals", new Money(500, 0), new None()),
+              new Category(
+                "3",
+                "Goals",
+                new Some(new Monthly(new Money(150, 0)))
+              ),
               new Category(
                 "4",
                 "Vacation",
-                new Money(200, 0),
-                new None()
+                new Some(new Monthly(new Money(100, 0)))
               ),
               new Category(
                 "5",
                 "Entertainment",
-                new Money(300, 0),
-                new None()
+                new Some(new Monthly(new Money(200, 0)))
               ),
               new Category(
                 "6",
                 "Groceries",
-                new Money(300, 0),
-                new None()
+                new Some(new Monthly(new Money(500, 0)))
               )
             ])
           )
@@ -2892,7 +2966,9 @@ function update(model, msg) {
     let initial_path = msg.initial_route;
     return [
       model.withFields({ user, cycle, route: initial_path }),
-      get_categories()
+      batch(
+        toList([get_categories(), get_transactions(), get_allocations()])
+      )
     ];
   } else if (msg instanceof Categories && msg.cats.isOk()) {
     let cats = msg.cats[0];
@@ -2902,6 +2978,11 @@ function update(model, msg) {
   } else if (msg instanceof Transactions && msg.trans.isOk()) {
     let t = msg.trans[0];
     return [model.withFields({ transactions: t }), none()];
+  } else if (msg instanceof Transactions && !msg.trans.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof Allocations && msg.a.isOk()) {
+    let a2 = msg.a[0];
+    return [model.withFields({ allocations: a2 }), none()];
   } else {
     return [model, none()];
   }
@@ -2991,14 +3072,34 @@ function budget_transactions(transactions, categories) {
     ])
   );
 }
-function money_to_string(m) {
-  return "\u20AC" + (() => {
+function prepend3(body, prefix) {
+  return prefix + body;
+}
+function money_to_string_no_sign(m) {
+  return (() => {
     let _pipe = m.s;
     return to_string(_pipe);
   })() + "." + (() => {
     let _pipe = m.b;
     return to_string(_pipe);
   })();
+}
+function money_to_string(m) {
+  return "\u20AC" + money_to_string_no_sign(m);
+}
+function category_target(cat) {
+  let $ = cat.target;
+  if ($ instanceof Some) {
+    let v = $[0];
+    if (v instanceof Monthly) {
+      let value = v.target;
+      return money_to_string(value);
+    } else {
+      return "";
+    }
+  } else {
+    return "";
+  }
 }
 function money_sum(a2, b) {
   let base_sum = a2.b + b.b;
@@ -3014,23 +3115,50 @@ function money_sum(a2, b) {
   let base = $[1];
   return new Money(a2.s + b.s + euro, base);
 }
-function category_activity(cat, transactions) {
-  let trcs = (() => {
-    let _pipe2 = transactions;
-    return filter(_pipe2, (t) => {
-      return t.category_id === cat.id;
-    });
-  })();
-  let _pipe = fold(
-    trcs,
+function ready_to_assign(transactions) {
+  let _pipe = transactions;
+  let _pipe$1 = filter(_pipe, (t) => {
+    return t.category_id === "0";
+  });
+  let _pipe$2 = fold(
+    _pipe$1,
     new Money(0, 0),
     (m, t) => {
       return money_sum(m, t.value);
     }
   );
-  return money_to_string(_pipe);
+  return money_to_string(_pipe$2);
 }
-function budget_categories(categories, transactions) {
+function category_assigned(c, allocations) {
+  let _pipe = allocations;
+  let _pipe$1 = filter(_pipe, (a2) => {
+    return a2.category_id === c.id;
+  });
+  let _pipe$2 = fold(
+    _pipe$1,
+    new Money(0, 0),
+    (m, t) => {
+      return money_sum(m, t.amount);
+    }
+  );
+  return money_to_string(_pipe$2);
+}
+function category_activity(cat, transactions) {
+  let _pipe = transactions;
+  let _pipe$1 = filter(_pipe, (t) => {
+    return t.category_id === cat.id;
+  });
+  let _pipe$2 = fold(
+    _pipe$1,
+    new Money(0, 0),
+    (m, t) => {
+      return money_sum(m, t.value);
+    }
+  );
+  let _pipe$3 = money_to_string(_pipe$2);
+  return prepend3(_pipe$3, "-");
+}
+function budget_categories(categories, transactions, allocations) {
   return table(
     toList([class$("table table-sm")]),
     toList([
@@ -3043,7 +3171,7 @@ function budget_categories(categories, transactions) {
               th(toList([]), toList([text2("Category")])),
               th(toList([]), toList([text2("Assigned")])),
               th(toList([]), toList([text2("Activity")])),
-              th(toList([]), toList([text2("Available")]))
+              th(toList([]), toList([text2("Target")]))
             ])
           )
         ])
@@ -3056,23 +3184,19 @@ function budget_categories(categories, transactions) {
             return tr(
               toList([]),
               toList([
-                td(toList([]), toList([text2(c.name)])),
                 td(
                   toList([]),
-                  toList([
-                    text2(
-                      (() => {
-                        let _pipe = c.assigned;
-                        return money_to_string(_pipe);
-                      })()
-                    )
-                  ])
+                  toList([text2(c.id + ": " + c.name)])
+                ),
+                td(
+                  toList([]),
+                  toList([text2(category_assigned(c, allocations))])
                 ),
                 td(
                   toList([]),
                   toList([text2(category_activity(c, transactions))])
                 ),
-                td(toList([]), toList([text2("Default")]))
+                td(toList([]), toList([text2(category_target(c))]))
               ])
             );
           }
@@ -3125,6 +3249,23 @@ function view(model) {
                         ])
                       )
                     ])
+                  ),
+                  div(
+                    toList([
+                      class$("col bg-success rounded-lg px-md-3")
+                    ]),
+                    toList([
+                      p(
+                        toList([class$("text-start fs-4")]),
+                        toList([
+                          text(ready_to_assign(model.transactions))
+                        ])
+                      ),
+                      p(
+                        toList([class$("text-start")]),
+                        toList([text("Ready to Assign")])
+                      )
+                    ])
                   )
                 ])
               )
@@ -3133,7 +3274,11 @@ function view(model) {
           (() => {
             let $ = model.route;
             if ($ instanceof Home) {
-              return budget_categories(model.categories, model.transactions);
+              return budget_categories(
+                model.categories,
+                model.transactions,
+                model.allocations
+              );
             } else {
               return budget_transactions(model.transactions, model.categories);
             }
@@ -3150,7 +3295,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      88,
+      87,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

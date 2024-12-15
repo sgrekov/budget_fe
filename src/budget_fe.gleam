@@ -1,10 +1,12 @@
 import birl
 import date_utils
+import gleam/bool
 import gleam/dynamic
 import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option
+import gleam/string
 import gleam/uri.{type Uri}
 import lustre
 import lustre/attribute
@@ -25,6 +27,7 @@ type Msg {
   Initial(user: User, cycle: Cycle, initial_route: Route)
   Categories(cats: Result(List(Category), lustre_http.HttpError))
   Transactions(trans: Result(List(Transaction), lustre_http.HttpError))
+  Allocations(a: Result(List(Allocation), lustre_http.HttpError))
 }
 
 type Model {
@@ -34,6 +37,7 @@ type Model {
     route: Route,
     categories: List(Category),
     transactions: List(Transaction),
+    allocations: List(Allocation),
   )
 }
 
@@ -46,12 +50,7 @@ pub type User {
 }
 
 pub type Category {
-  Category(
-    id: String,
-    name: String,
-    assigned: Money,
-    target: option.Option(Target),
-  )
+  Category(id: String, name: String, target: option.Option(Target))
 }
 
 pub type Money {
@@ -69,7 +68,7 @@ pub type MonthInYear {
 }
 
 pub type Allocation {
-  Allocation(amount: Money, catogory_id: String, target: Target)
+  Allocation(id: String, amount: Money, category_id: String, date: birl.Day)
 }
 
 pub type Transaction {
@@ -98,7 +97,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     }
     Initial(user, cycle, initial_path) -> #(
       Model(..model, user: user, cycle: cycle, route: initial_path),
-      get_categories(),
+      effect.batch([get_categories(), get_transactions(), get_allocations()]),
     )
     Categories(Ok(cats)) -> #(
       Model(..model, categories: cats),
@@ -107,13 +106,22 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     Categories(Error(_)) -> #(model, effect.none())
     Transactions(Ok(t)) -> #(Model(..model, transactions: t), effect.none())
     Transactions(Error(_)) -> #(model, effect.none())
+    Allocations(Ok(a)) -> #(Model(..model, allocations: a), effect.none())
+    Allocations(Error(_)) -> #(model, effect.none())
   }
 }
 
 fn init(_flags) -> #(Model, effect.Effect(Msg)) {
   io.debug("init")
   #(
-    Model(User(id: "id1", name: "Sergey"), Cycle(2024, birl.Dec), Home, [], []),
+    Model(
+      User(id: "id1", name: "Sergey"),
+      Cycle(2024, birl.Dec),
+      Home,
+      [],
+      [],
+      [],
+    ),
     effect.batch([modem.init(on_route_change), initial_eff()]),
   )
 }
@@ -147,6 +155,53 @@ fn initial_eff() -> effect.Effect(Msg) {
   })
 }
 
+fn get_allocations() -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    dispatch(
+      Allocations(
+        a: Ok([
+          Allocation(
+            id: "1",
+            amount: Money(80, 0),
+            category_id: "1",
+            date: birl.Day(2024, 12, 2),
+          ),
+          Allocation(
+            id: "2",
+            amount: Money(120, 0),
+            category_id: "2",
+            date: birl.Day(2024, 12, 2),
+          ),
+          Allocation(
+            id: "3",
+            amount: Money(150, 0),
+            category_id: "3",
+            date: birl.Day(2024, 12, 2),
+          ),
+          Allocation(
+            id: "4",
+            amount: Money(100, 2),
+            category_id: "4",
+            date: birl.Day(2024, 12, 2),
+          ),
+          Allocation(
+            id: "5",
+            amount: Money(200, 2),
+            category_id: "5",
+            date: birl.Day(2024, 12, 2),
+          ),
+          Allocation(
+            id: "6",
+            amount: Money(500, 2),
+            category_id: "6",
+            date: birl.Day(2024, 12, 2),
+          ),
+        ]),
+      ),
+    )
+  })
+}
+
 fn get_categories() -> effect.Effect(Msg) {
   effect.from(fn(dispatch) {
     dispatch(
@@ -155,38 +210,32 @@ fn get_categories() -> effect.Effect(Msg) {
           Category(
             id: "1",
             name: "Subscriptions",
-            assigned: Money(s: 100, b: 0),
-            target: option.None,
+            target: option.Some(Monthly(Money(60, 0))),
           ),
           Category(
             id: "2",
             name: "Shopping",
-            assigned: Money(s: 1000, b: 0),
-            target: option.None,
+            target: option.Some(Monthly(Money(40, 0))),
           ),
           Category(
             id: "3",
             name: "Goals",
-            assigned: Money(s: 500, b: 0),
-            target: option.None,
+            target: option.Some(Monthly(Money(150, 0))),
           ),
           Category(
             id: "4",
             name: "Vacation",
-            assigned: Money(s: 200, b: 0),
-            target: option.None,
+            target: option.Some(Monthly(Money(100, 0))),
           ),
           Category(
             id: "5",
             name: "Entertainment",
-            assigned: Money(s: 300, b: 0),
-            target: option.None,
+            target: option.Some(Monthly(Money(200, 0))),
           ),
           Category(
             id: "6",
             name: "Groceries",
-            assigned: Money(s: 300, b: 0),
-            target: option.None,
+            target: option.Some(Monthly(Money(500, 0))),
           ),
         ]),
       ),
@@ -296,15 +345,35 @@ fn view(model: Model) -> element.Element(Msg) {
               ],
             ),
           ]),
+          html.div([attribute.class("col bg-success rounded-lg px-md-3")], [
+            html.p([attribute.class("text-start fs-4")], [
+              element.text(ready_to_assign(model.transactions)),
+            ]),
+            html.p([attribute.class("text-start")], [
+              element.text("Ready to Assign"),
+            ]),
+          ]),
         ]),
       ]),
       case model.route {
-        Home -> budget_categories(model.categories, model.transactions)
+        Home ->
+          budget_categories(
+            model.categories,
+            model.transactions,
+            model.allocations,
+          )
         TransactionsRoute ->
           budget_transactions(model.transactions, model.categories)
       },
     ]),
   ])
+}
+
+fn ready_to_assign(transactions: List(Transaction)) -> String {
+  transactions
+  |> list.filter(fn(t) { t.category_id == "0" })
+  |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.value) })
+  |> money_to_string
 }
 
 fn budget_transactions(
@@ -360,6 +429,7 @@ fn budget_transactions(
 fn budget_categories(
   categories: List(Category),
   transactions: List(Transaction),
+  allocations: List(Allocation),
 ) -> element.Element(Msg) {
   html.table([attribute.class("table table-sm")], [
     html.thead([], [
@@ -367,31 +437,59 @@ fn budget_categories(
         html.th([], [html.text("Category")]),
         html.th([], [html.text("Assigned")]),
         html.th([], [html.text("Activity")]),
-        html.th([], [html.text("Available")]),
+        html.th([], [html.text("Target")]),
       ]),
     ]),
     html.tbody(
       [],
       list.map(categories, fn(c) {
         html.tr([], [
-          html.td([], [html.text(c.name)]),
-          html.td([], [html.text(c.assigned |> money_to_string())]),
+          html.td([], [html.text(c.id <> ": " <> c.name)]),
+          html.td([], [html.text(category_assigned(c, allocations))]),
           html.td([], [html.text(category_activity(c, transactions))]),
-          html.td([], [html.text("Default")]),
+          html.td([], [html.text(category_target(c))]),
         ])
       }),
     ),
   ])
 }
 
-fn category_activity(cat: Category, transactions: List(Transaction)) -> String {
-  let trcs = transactions |> list.filter(fn(t) { t.category_id == cat.id })
-  list.fold(trcs, Money(0, 0), fn(m, t) { money_sum(m, t.value) })
+fn category_assigned(c: Category, allocations: List(Allocation)) -> String {
+  allocations
+  |> list.filter(fn(a) { a.category_id == c.id })
+  |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.amount) })
   |> money_to_string
 }
 
+fn category_target(cat: Category) -> String {
+  case cat.target {
+    option.Some(v) ->
+      case v {
+        Monthly(value) -> money_to_string(value)
+        Custom(_, _) -> ""
+      }
+    option.None -> ""
+  }
+}
+
+fn category_activity(cat: Category, transactions: List(Transaction)) -> String {
+  transactions
+  |> list.filter(fn(t) { t.category_id == cat.id })
+  |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.value) })
+  |> money_to_string
+  |> prepend("-")
+}
+
+fn prepend(body: String, prefix: String) -> String {
+  prefix <> body
+}
+
 fn money_to_string(m: Money) -> String {
-  "€" <> m.s |> int.to_string <> "." <> m.b |> int.to_string
+  "€" <> money_to_string_no_sign(m)
+}
+
+fn money_to_string_no_sign(m: Money) -> String {
+  m.s |> int.to_string <> "." <> m.b |> int.to_string
 }
 
 fn money_sum(a: Money, b: Money) -> Money {
