@@ -1,12 +1,9 @@
 import birl
 import date_utils
-import gleam/bool
-import gleam/dynamic
 import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option
-import gleam/string
 import gleam/uri.{type Uri}
 import lustre
 import lustre/attribute
@@ -28,6 +25,7 @@ type Msg {
   Categories(cats: Result(List(Category), lustre_http.HttpError))
   Transactions(trans: Result(List(Transaction), lustre_http.HttpError))
   Allocations(a: Result(List(Allocation), lustre_http.HttpError))
+  SelectCategory(c: Category)
 }
 
 type Model {
@@ -38,6 +36,7 @@ type Model {
     categories: List(Category),
     transactions: List(Transaction),
     allocations: List(Allocation),
+    selected_category: option.Option(Category),
   )
 }
 
@@ -108,6 +107,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     Transactions(Error(_)) -> #(model, effect.none())
     Allocations(Ok(a)) -> #(Model(..model, allocations: a), effect.none())
     Allocations(Error(_)) -> #(model, effect.none())
+    SelectCategory(c) -> #(
+      Model(..model, selected_category: option.Some(c)),
+      effect.none(),
+    )
   }
 }
 
@@ -121,6 +124,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       [],
       [],
       [],
+      option.None,
     ),
     effect.batch([modem.init(on_route_change), initial_eff()]),
   )
@@ -345,14 +349,20 @@ fn view(model: Model) -> element.Element(Msg) {
               ],
             ),
           ]),
-          html.div([attribute.class("col bg-success rounded-lg px-md-3")], [
-            html.p([attribute.class("text-start fs-4")], [
-              element.text(ready_to_assign(model.transactions)),
-            ]),
-            html.p([attribute.class("text-start")], [
-              element.text("Ready to Assign"),
-            ]),
-          ]),
+          html.div(
+            [
+              attribute.class("col bg-success rounded-lg"),
+              attribute.style([#("width", "100w")]),
+            ],
+            [
+              html.p([attribute.class("text-start fs-4")], [
+                element.text(ready_to_assign(model.transactions)),
+              ]),
+              html.p([attribute.class("text-start")], [
+                element.text("Ready to Assign"),
+              ]),
+            ],
+          ),
         ]),
       ]),
       case model.route {
@@ -361,10 +371,15 @@ fn view(model: Model) -> element.Element(Msg) {
             model.categories,
             model.transactions,
             model.allocations,
+            model.selected_category,
           )
         TransactionsRoute ->
           budget_transactions(model.transactions, model.categories)
       },
+      html.div(
+        [attribute.class("row"), attribute.style([#("width", "100vw")])],
+        [html.text("TEST")],
+      ),
     ]),
   ])
 }
@@ -430,8 +445,9 @@ fn budget_categories(
   categories: List(Category),
   transactions: List(Transaction),
   allocations: List(Allocation),
+  active_category: option.Option(Category),
 ) -> element.Element(Msg) {
-  html.table([attribute.class("table table-sm")], [
+  html.table([attribute.class("table table-sm table-hover")], [
     html.thead([], [
       html.tr([], [
         html.th([], [html.text("Category")]),
@@ -443,12 +459,23 @@ fn budget_categories(
     html.tbody(
       [],
       list.map(categories, fn(c) {
-        html.tr([], [
-          html.td([], [html.text(c.id <> ": " <> c.name)]),
-          html.td([], [html.text(category_assigned(c, allocations))]),
-          html.td([], [html.text(category_activity(c, transactions))]),
-          html.td([], [html.text(category_target(c))]),
-        ])
+        let active_class = case active_category {
+          option.None -> ""
+          option.Some(selected_c) ->
+            case selected_c.id == c.id {
+              True -> "table-active"
+              False -> ""
+            }
+        }
+        html.tr(
+          [event.on_click(SelectCategory(c)), attribute.class(active_class)],
+          [
+            html.td([], [html.text(c.id <> ": " <> c.name)]),
+            html.td([], [html.text(category_assigned(c, allocations))]),
+            html.td([], [html.text(category_activity(c, transactions))]),
+            html.td([], [html.text(category_target(c))]),
+          ],
+        )
       }),
     ),
   ])

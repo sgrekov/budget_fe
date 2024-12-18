@@ -535,9 +535,6 @@ function pad_start(string3, desired_length, pad_string) {
     return padding(to_pad_length, pad_string) + string3;
   }
 }
-function pad_left(string3, desired_length, pad_string) {
-  return pad_start(string3, desired_length, pad_string);
-}
 function drop_start(loop$string, loop$num_graphemes) {
   while (true) {
     let string3 = loop$string;
@@ -1664,6 +1661,13 @@ var Attribute = class extends CustomType {
     this.as_property = as_property;
   }
 };
+var Event = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
 function attribute_to_event_handler(attribute2) {
   if (attribute2 instanceof Attribute) {
     return new Error(void 0);
@@ -1724,6 +1728,23 @@ function handlers(element2) {
 // build/dev/javascript/lustre/lustre/attribute.mjs
 function attribute(name, value) {
   return new Attribute(name, identity(value), false);
+}
+function on(name, handler) {
+  return new Event("on" + name, handler);
+}
+function style(properties) {
+  return attribute(
+    "style",
+    fold(
+      properties,
+      "",
+      (styles, _use1) => {
+        let name$1 = _use1[0];
+        let value$1 = _use1[1];
+        return styles + name$1 + ":" + value$1 + ";";
+      }
+    )
+  );
 }
 function class$(name) {
   return attribute("class", name);
@@ -2500,6 +2521,16 @@ function button(attrs, children2) {
   return element("button", attrs, children2);
 }
 
+// build/dev/javascript/lustre/lustre/event.mjs
+function on2(name, handler) {
+  return on(name, handler);
+}
+function on_click(msg) {
+  return on2("click", (_) => {
+    return new Ok(msg);
+  });
+}
+
 // build/dev/javascript/modem/modem.ffi.mjs
 var defaults = {
   handle_external_links: false,
@@ -2615,11 +2646,11 @@ function to_date_string(value) {
   return to_string(year) + "." + (() => {
     let _pipe = month;
     let _pipe$1 = to_string(_pipe);
-    return pad_left(_pipe$1, 2, "0");
+    return pad_start(_pipe$1, 2, "0");
   })() + "." + (() => {
     let _pipe = day;
     let _pipe$1 = to_string(_pipe);
-    return pad_left(_pipe$1, 2, "0");
+    return pad_start(_pipe$1, 2, "0");
   })();
 }
 
@@ -2660,8 +2691,14 @@ var Allocations = class extends CustomType {
     this.a = a2;
   }
 };
+var SelectCategory = class extends CustomType {
+  constructor(c) {
+    super();
+    this.c = c;
+  }
+};
 var Model2 = class extends CustomType {
-  constructor(user, cycle, route, categories, transactions, allocations) {
+  constructor(user, cycle, route, categories, transactions, allocations, selected_category) {
     super();
     this.user = user;
     this.cycle = cycle;
@@ -2669,6 +2706,7 @@ var Model2 = class extends CustomType {
     this.categories = categories;
     this.transactions = transactions;
     this.allocations = allocations;
+    this.selected_category = selected_category;
   }
 };
 var Cycle = class extends CustomType {
@@ -2770,7 +2808,8 @@ function init3(_) {
       new Home(),
       toList([]),
       toList([]),
-      toList([])
+      toList([]),
+      new None()
     ),
     batch(toList([init2(on_route_change), initial_eff()]))
   ];
@@ -2983,8 +3022,14 @@ function update(model, msg) {
   } else if (msg instanceof Allocations && msg.a.isOk()) {
     let a2 = msg.a[0];
     return [model.withFields({ allocations: a2 }), none()];
-  } else {
+  } else if (msg instanceof Allocations && !msg.a.isOk()) {
     return [model, none()];
+  } else {
+    let c = msg.c;
+    return [
+      model.withFields({ selected_category: new Some(c) }),
+      none()
+    ];
   }
 }
 function budget_transactions(transactions, categories) {
@@ -3158,9 +3203,9 @@ function category_activity(cat, transactions) {
   let _pipe$3 = money_to_string(_pipe$2);
   return prepend3(_pipe$3, "-");
 }
-function budget_categories(categories, transactions, allocations) {
+function budget_categories(categories, transactions, allocations, active_category) {
   return table(
-    toList([class$("table table-sm")]),
+    toList([class$("table table-sm table-hover")]),
     toList([
       thead(
         toList([]),
@@ -3181,8 +3226,24 @@ function budget_categories(categories, transactions, allocations) {
         map(
           categories,
           (c) => {
+            let active_class = (() => {
+              if (active_category instanceof None) {
+                return "";
+              } else {
+                let selected_c = active_category[0];
+                let $ = selected_c.id === c.id;
+                if ($) {
+                  return "table-active";
+                } else {
+                  return "";
+                }
+              }
+            })();
             return tr(
-              toList([]),
+              toList([
+                on_click(new SelectCategory(c)),
+                class$(active_class)
+              ]),
               toList([
                 td(
                   toList([]),
@@ -3252,7 +3313,8 @@ function view(model) {
                   ),
                   div(
                     toList([
-                      class$("col bg-success rounded-lg px-md-3")
+                      class$("col bg-success rounded-lg"),
+                      style(toList([["width", "100w"]]))
                     ]),
                     toList([
                       p(
@@ -3277,12 +3339,20 @@ function view(model) {
               return budget_categories(
                 model.categories,
                 model.transactions,
-                model.allocations
+                model.allocations,
+                model.selected_category
               );
             } else {
               return budget_transactions(model.transactions, model.categories);
             }
-          })()
+          })(),
+          div(
+            toList([
+              class$("row"),
+              style(toList([["width", "100vw"]]))
+            ]),
+            toList([text2("TEST")])
+          )
         ])
       )
     ])
@@ -3295,7 +3365,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      87,
+      86,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

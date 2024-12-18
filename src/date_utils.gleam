@@ -10,12 +10,12 @@ pub fn to_date_string(value: birl.Day) -> String {
   <> {
     month
     |> int.to_string
-    |> string.pad_left(2, "0")
+    |> string.pad_start(2, "0")
   }
   <> "."
   <> {
     day
     |> int.to_string
-    |> string.pad_left(2, "0")
+    |> string.pad_start(2, "0")
   }
 }
