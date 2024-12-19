@@ -4,6 +4,7 @@ import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option
+import gleam/string
 import gleam/uri.{type Uri}
 import lustre
 import lustre/attribute
@@ -124,7 +125,11 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       [],
       [],
       [],
-      option.None,
+      option.Some(Category(
+        id: "4",
+        name: "Vacation",
+        target: option.Some(Monthly(Money(100, 0))),
+      )),
     ),
     effect.batch([modem.init(on_route_change), initial_eff()]),
   )
@@ -331,57 +336,101 @@ fn get_transactions() -> effect.Effect(Msg) {
 }
 
 fn view(model: Model) -> element.Element(Msg) {
+  // html.div([attribute.class("container-fluid ")], [
+  //   html.div([attribute.class("row p-3 h-100")], [
+  //     html.div(
+  //       [attribute.style([]), attribute.class("w-25 h-100 bg-warning border")],
+  //       [html.text("TEST1")],
+  //     ),
+  //     html.div([attribute.class("bg-info")], [html.text("TEST2")]),
+  //     html.div([attribute.class("bg-danger")], [html.text("TEST3")]),
+  //   ]),
+  // ])
   html.div([attribute.class("container-fluid")], [
-    html.div([attribute.class("row")], [
-      html.div([attribute.class("col-md-12")], [
-        html.div([attribute.class("row")], [
-          html.div([attribute.role("group"), attribute.class("btn-group")], [
-            html.button(
-              [attribute.type_("button"), attribute.class("btn btn-secondary")],
-              [html.a([attribute.href("/")], [element.text("Budget")])],
-            ),
-            html.button(
-              [attribute.type_("button"), attribute.class("btn btn-secondary")],
-              [
-                html.a([attribute.href("/transactions")], [
-                  element.text("Transactions"),
-                ]),
-              ],
-            ),
-          ]),
-          html.div(
+    html.div([attribute.class("col p-3")], [
+      html.div([attribute.class("row")], [
+        html.div([attribute.role("group"), attribute.class("btn-group")], [
+          html.button(
+            [attribute.type_("button"), attribute.class("btn btn-secondary")],
+            [html.a([attribute.href("/")], [element.text("Budget")])],
+          ),
+          html.button(
+            [attribute.type_("button"), attribute.class("btn btn-secondary")],
             [
-              attribute.class("col bg-success rounded-lg"),
-              attribute.style([#("width", "100w")]),
-            ],
-            [
-              html.p([attribute.class("text-start fs-4")], [
-                element.text(ready_to_assign(model.transactions)),
-              ]),
-              html.p([attribute.class("text-start")], [
-                element.text("Ready to Assign"),
+              html.a([attribute.href("/transactions")], [
+                element.text("Transactions"),
               ]),
             ],
           ),
         ]),
+        html.div(
+          [
+            attribute.class("col bg-success rounded-lg"),
+            attribute.style([#("width", "100w")]),
+          ],
+          [
+            html.p([attribute.class("text-start fs-4")], [
+              element.text(ready_to_assign(model.transactions)),
+            ]),
+            html.p([attribute.class("text-start")], [
+              element.text("Ready to Assign"),
+            ]),
+          ],
+        ),
       ]),
-      case model.route {
-        Home ->
-          budget_categories(
-            model.categories,
-            model.transactions,
-            model.allocations,
-            model.selected_category,
-          )
-        TransactionsRoute ->
-          budget_transactions(model.transactions, model.categories)
-      },
-      html.div(
-        [attribute.class("row"), attribute.style([#("width", "100vw")])],
-        [html.text("TEST")],
-      ),
+      html.div([attribute.class("row")], [
+        case model.route {
+          Home -> {
+            budget_categories(
+              model.categories,
+              model.transactions,
+              model.allocations,
+              model.selected_category,
+            )
+          }
+          TransactionsRoute ->
+            budget_transactions(model.transactions, model.categories)
+        },
+        html.div([], [
+          case model.selected_category, model.route {
+            option.Some(c), Home ->
+              category_details(c, model.allocations, model.transactions)
+            _, _ -> html.text("")
+          },
+        ]),
+      ]),
     ]),
   ])
+}
+
+fn category_details(
+  category: Category,
+  allocations: List(Allocation),
+  transactions: List(Transaction),
+) -> element.Element(Msg) {
+  html.div([attribute.class("row")], [
+    html.div([attribute.class("col")], [
+      html.div([], [html.text("Target")]),
+      html.div([], [html.text(target_string(category))]),
+    ]),
+    html.div([attribute.class("col")], [
+      html.div([], [html.text("Assigned")]),
+      html.div([], [html.text(category_assigned(category, allocations))]),
+    ]),
+    html.div([attribute.class("col")], [
+      html.div([], [html.text("Activity")]),
+      html.div([], [html.text(category_activity(category, transactions))]),
+    ]),
+  ])
+}
+
+fn target_string(category: Category) -> String {
+  case category.target {
+    option.None -> ""
+    option.Some(Custom(_, date_till)) ->
+      "To date:" <> month_to_string(date_till)
+    option.Some(Monthly(amount)) -> "Monthly: " <> money_to_string(amount)
+  }
 }
 
 fn ready_to_assign(transactions: List(Transaction)) -> String {
@@ -447,13 +496,15 @@ fn budget_categories(
   allocations: List(Allocation),
   active_category: option.Option(Category),
 ) -> element.Element(Msg) {
-  html.table([attribute.class("table table-sm table-hover")], [
+  let size = case active_category {
+    option.None -> ""
+    option.Some(_) -> "w-75"
+  }
+  html.table([attribute.class(size <> " table table-sm table-hover")], [
     html.thead([], [
       html.tr([], [
         html.th([], [html.text("Category")]),
-        html.th([], [html.text("Assigned")]),
-        html.th([], [html.text("Activity")]),
-        html.th([], [html.text("Target")]),
+        html.th([], [html.text("Balance")]),
       ]),
     ]),
     html.tbody(
@@ -471,8 +522,6 @@ fn budget_categories(
           [event.on_click(SelectCategory(c)), attribute.class(active_class)],
           [
             html.td([], [html.text(c.id <> ": " <> c.name)]),
-            html.td([], [html.text(category_assigned(c, allocations))]),
-            html.td([], [html.text(category_activity(c, transactions))]),
             html.td([], [html.text(category_target(c))]),
           ],
         )
@@ -526,4 +575,16 @@ fn money_sum(a: Money, b: Money) -> Money {
     False -> #(0, base_sum)
   }
   Money(a.s + b.s + euro, base)
+}
+
+pub fn month_to_string(value: MonthInYear) -> String {
+  value.month
+  |> int.to_string
+  |> string.pad_start(2, "0")
+  <> "."
+  <> {
+    value.year
+    |> int.to_string
+    |> string.pad_start(2, "0")
+  }
 }

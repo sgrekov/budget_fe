@@ -2744,6 +2744,13 @@ var Monthly = class extends CustomType {
     this.target = target;
   }
 };
+var Custom = class extends CustomType {
+  constructor(target, date) {
+    super();
+    this.target = target;
+    this.date = date;
+  }
+};
 var Allocation = class extends CustomType {
   constructor(id, amount, category_id, date) {
     super();
@@ -2809,7 +2816,13 @@ function init3(_) {
       toList([]),
       toList([]),
       toList([]),
-      new None()
+      new Some(
+        new Category(
+          "4",
+          "Vacation",
+          new Some(new Monthly(new Money(100, 0)))
+        )
+      )
     ),
     batch(toList([init2(on_route_change), initial_eff()]))
   ];
@@ -3146,6 +3159,66 @@ function category_target(cat) {
     return "";
   }
 }
+function budget_categories(categories, transactions, allocations, active_category) {
+  let size = (() => {
+    if (active_category instanceof None) {
+      return "";
+    } else {
+      return "w-75";
+    }
+  })();
+  return table(
+    toList([class$(size + " table table-sm table-hover")]),
+    toList([
+      thead(
+        toList([]),
+        toList([
+          tr(
+            toList([]),
+            toList([
+              th(toList([]), toList([text2("Category")])),
+              th(toList([]), toList([text2("Balance")]))
+            ])
+          )
+        ])
+      ),
+      tbody(
+        toList([]),
+        map(
+          categories,
+          (c) => {
+            let active_class = (() => {
+              if (active_category instanceof None) {
+                return "";
+              } else {
+                let selected_c = active_category[0];
+                let $ = selected_c.id === c.id;
+                if ($) {
+                  return "table-active";
+                } else {
+                  return "";
+                }
+              }
+            })();
+            return tr(
+              toList([
+                on_click(new SelectCategory(c)),
+                class$(active_class)
+              ]),
+              toList([
+                td(
+                  toList([]),
+                  toList([text2(c.id + ": " + c.name)])
+                ),
+                td(toList([]), toList([text2(category_target(c))]))
+              ])
+            );
+          }
+        )
+      )
+    ])
+  );
+}
 function money_sum(a2, b) {
   let base_sum = a2.b + b.b;
   let $ = (() => {
@@ -3203,65 +3276,59 @@ function category_activity(cat, transactions) {
   let _pipe$3 = money_to_string(_pipe$2);
   return prepend3(_pipe$3, "-");
 }
-function budget_categories(categories, transactions, allocations, active_category) {
-  return table(
-    toList([class$("table table-sm table-hover")]),
+function month_to_string(value) {
+  return (() => {
+    let _pipe = value.month;
+    let _pipe$1 = to_string(_pipe);
+    return pad_start(_pipe$1, 2, "0");
+  })() + "." + (() => {
+    let _pipe = value.year;
+    let _pipe$1 = to_string(_pipe);
+    return pad_start(_pipe$1, 2, "0");
+  })();
+}
+function target_string(category) {
+  let $ = category.target;
+  if ($ instanceof None) {
+    return "";
+  } else if ($ instanceof Some && $[0] instanceof Custom) {
+    let date_till = $[0].date;
+    return "To date:" + month_to_string(date_till);
+  } else {
+    let amount = $[0].target;
+    return "Monthly: " + money_to_string(amount);
+  }
+}
+function category_details(category, allocations, transactions) {
+  return div(
+    toList([class$("row")]),
     toList([
-      thead(
-        toList([]),
+      div(
+        toList([class$("col")]),
         toList([
-          tr(
+          div(toList([]), toList([text2("Target")])),
+          div(toList([]), toList([text2(target_string(category))]))
+        ])
+      ),
+      div(
+        toList([class$("col")]),
+        toList([
+          div(toList([]), toList([text2("Assigned")])),
+          div(
             toList([]),
-            toList([
-              th(toList([]), toList([text2("Category")])),
-              th(toList([]), toList([text2("Assigned")])),
-              th(toList([]), toList([text2("Activity")])),
-              th(toList([]), toList([text2("Target")]))
-            ])
+            toList([text2(category_assigned(category, allocations))])
           )
         ])
       ),
-      tbody(
-        toList([]),
-        map(
-          categories,
-          (c) => {
-            let active_class = (() => {
-              if (active_category instanceof None) {
-                return "";
-              } else {
-                let selected_c = active_category[0];
-                let $ = selected_c.id === c.id;
-                if ($) {
-                  return "table-active";
-                } else {
-                  return "";
-                }
-              }
-            })();
-            return tr(
-              toList([
-                on_click(new SelectCategory(c)),
-                class$(active_class)
-              ]),
-              toList([
-                td(
-                  toList([]),
-                  toList([text2(c.id + ": " + c.name)])
-                ),
-                td(
-                  toList([]),
-                  toList([text2(category_assigned(c, allocations))])
-                ),
-                td(
-                  toList([]),
-                  toList([text2(category_activity(c, transactions))])
-                ),
-                td(toList([]), toList([text2(category_target(c))]))
-              ])
-            );
-          }
-        )
+      div(
+        toList([class$("col")]),
+        toList([
+          div(toList([]), toList([text2("Activity")])),
+          div(
+            toList([]),
+            toList([text2(category_activity(category, transactions))])
+          )
+        ])
       )
     ])
   );
@@ -3271,87 +3338,100 @@ function view(model) {
     toList([class$("container-fluid")]),
     toList([
       div(
-        toList([class$("row")]),
+        toList([class$("col p-3")]),
         toList([
           div(
-            toList([class$("col-md-12")]),
+            toList([class$("row")]),
             toList([
               div(
-                toList([class$("row")]),
                 toList([
-                  div(
+                  role("group"),
+                  class$("btn-group")
+                ]),
+                toList([
+                  button(
                     toList([
-                      role("group"),
-                      class$("btn-group")
+                      type_("button"),
+                      class$("btn btn-secondary")
                     ]),
                     toList([
-                      button(
-                        toList([
-                          type_("button"),
-                          class$("btn btn-secondary")
-                        ]),
-                        toList([
-                          a(
-                            toList([href("/")]),
-                            toList([text("Budget")])
-                          )
-                        ])
-                      ),
-                      button(
-                        toList([
-                          type_("button"),
-                          class$("btn btn-secondary")
-                        ]),
-                        toList([
-                          a(
-                            toList([href("/transactions")]),
-                            toList([text("Transactions")])
-                          )
-                        ])
+                      a(
+                        toList([href("/")]),
+                        toList([text("Budget")])
                       )
                     ])
                   ),
-                  div(
+                  button(
                     toList([
-                      class$("col bg-success rounded-lg"),
-                      style(toList([["width", "100w"]]))
+                      type_("button"),
+                      class$("btn btn-secondary")
                     ]),
                     toList([
-                      p(
-                        toList([class$("text-start fs-4")]),
-                        toList([
-                          text(ready_to_assign(model.transactions))
-                        ])
-                      ),
-                      p(
-                        toList([class$("text-start")]),
-                        toList([text("Ready to Assign")])
+                      a(
+                        toList([href("/transactions")]),
+                        toList([text("Transactions")])
                       )
                     ])
+                  )
+                ])
+              ),
+              div(
+                toList([
+                  class$("col bg-success rounded-lg"),
+                  style(toList([["width", "100w"]]))
+                ]),
+                toList([
+                  p(
+                    toList([class$("text-start fs-4")]),
+                    toList([text(ready_to_assign(model.transactions))])
+                  ),
+                  p(
+                    toList([class$("text-start")]),
+                    toList([text("Ready to Assign")])
                   )
                 ])
               )
             ])
           ),
-          (() => {
-            let $ = model.route;
-            if ($ instanceof Home) {
-              return budget_categories(
-                model.categories,
-                model.transactions,
-                model.allocations,
-                model.selected_category
-              );
-            } else {
-              return budget_transactions(model.transactions, model.categories);
-            }
-          })(),
           div(
+            toList([class$("row")]),
             toList([
-              class$("row"),
-              style(toList([["width", "100vw"]]))
-            ]),
-            toList([text2("TEST")])
+              (() => {
+                let $ = model.route;
+                if ($ instanceof Home) {
+                  return budget_categories(
+                    model.categories,
+                    model.transactions,
+                    model.allocations,
+                    model.selected_category
+                  );
+                } else {
+                  return budget_transactions(
+                    model.transactions,
+                    model.categories
+                  );
+                }
+              })(),
+              div(
+                toList([]),
+                toList([
+                  (() => {
+                    let $ = model.selected_category;
+                    let $1 = model.route;
+                    if ($ instanceof Some && $1 instanceof Home) {
+                      let c = $[0];
+                      return category_details(
+                        c,
+                        model.allocations,
+                        model.transactions
+                      );
+                    } else {
+                      return text2("");
+                    }
+                  })()
+                ])
+              )
+            ])
           )
         ])
       )
@@ -3365,7 +3445,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      86,
+      87,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
