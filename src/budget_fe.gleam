@@ -18,6 +18,7 @@ import modem.{initial_uri}
 type Route {
   Home
   TransactionsRoute
+  UserRoute
 }
 
 type Msg {
@@ -27,6 +28,7 @@ type Msg {
   Transactions(trans: Result(List(Transaction), lustre_http.HttpError))
   Allocations(a: Result(List(Allocation), lustre_http.HttpError))
   SelectCategory(c: Category)
+  SelectUser(u: User)
 }
 
 type Model {
@@ -112,6 +114,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, selected_category: option.Some(c)),
       effect.none(),
     )
+    SelectUser(user) -> #(Model(..model, user: user), effect.none())
   }
 }
 
@@ -144,6 +147,7 @@ fn on_route_change(uri: Uri) -> Msg {
 fn uri_to_route(uri: Uri) -> Route {
   case uri.path_segments(uri.path) {
     ["transactions"] -> TransactionsRoute
+    ["user"] -> UserRoute
     _ -> Home
   }
 }
@@ -336,37 +340,56 @@ fn get_transactions() -> effect.Effect(Msg) {
 }
 
 fn view(model: Model) -> element.Element(Msg) {
-  // html.div([attribute.class("container-fluid ")], [
-  //   html.div([attribute.class("row p-3 h-100")], [
-  //     html.div(
-  //       [attribute.style([]), attribute.class("w-25 h-100 bg-warning border")],
-  //       [html.text("TEST1")],
-  //     ),
-  //     html.div([attribute.class("bg-info")], [html.text("TEST2")]),
-  //     html.div([attribute.class("bg-danger")], [html.text("TEST3")]),
+  // html.div([attribute.class("container-fluid bg-dark")], [
+  //   html.div([attribute.class("col")], [
+  //     html.div([attribute.class("d-flex flex-row")], [
+  //       html.div(
+  //         [
+  //           attribute.class("bg-warning border border-5"),
+  //           attribute.style([#("width", "120px")]),
+  //         ],
+  //         [html.text("TEST1")],
+  //       ),
+  //       html.div(
+  //         [
+  //           attribute.class("w-25"),
+  //           attribute.style([
+  //             #("width", "200px"),
+  //             #("background-color", "rgba(64,185,78,1)"),
+  //           ]),
+  //         ],
+  //         [html.text("TEST2")],
+  //       ),
+  //       html.div([attribute.class("ms-auto w-25 rounded-3 bg-danger")], [
+  //         html.text("TEST3"),
+  //       ]),
+  //     ]),
   //   ]),
   // ])
   html.div([attribute.class("container-fluid")], [
-    html.div([attribute.class("col p-3")], [
-      html.div([attribute.class("row")], [
-        html.div([attribute.role("group"), attribute.class("btn-group")], [
-          html.button(
-            [attribute.type_("button"), attribute.class("btn btn-secondary")],
-            [html.a([attribute.href("/")], [element.text("Budget")])],
-          ),
-          html.button(
-            [attribute.type_("button"), attribute.class("btn btn-secondary")],
+    html.div([attribute.class("col")], [
+      html.div([attribute.class("d-flex flex-row")], [
+        html.div([attribute.class("btn-group")], [
+          html.a(
             [
-              html.a([attribute.href("/transactions")], [
-                element.text("Transactions"),
-              ]),
+              attribute.attribute("aria-current", "page"),
+              attribute.class("btn btn-primary active"),
+              attribute.href("/"),
             ],
+            [html.text("Budget")],
+          ),
+          html.a(
+            [
+              attribute.class("btn btn-primary"),
+              attribute.href("/transactions"),
+            ],
+            [html.text("Transactions")],
           ),
         ]),
         html.div(
           [
-            attribute.class("col bg-success rounded-lg"),
-            attribute.style([#("width", "100w")]),
+            attribute.class("bg-success text-white"),
+            attribute.style([#("width", "120px")]),
           ],
           [
             html.p([attribute.class("text-start fs-4")], [
@@ -377,8 +400,19 @@ fn view(model: Model) -> element.Element(Msg) {
             ]),
           ],
         ),
+        html.div(
+          [
+            attribute.class("bg-info ms-auto text-white"),
+            attribute.style([#("width", "120px")]),
+          ],
+          [
+            html.a([attribute.class(""), attribute.href("/user")], [
+              html.text(model.user.name),
+            ]),
+          ],
+        ),
       ]),
-      html.div([attribute.class("row")], [
+      html.div([attribute.class("d-flex flex-row")], [
         case model.route {
           Home -> {
             budget_categories(
@@ -390,6 +424,7 @@ fn view(model: Model) -> element.Element(Msg) {
           }
           TransactionsRoute ->
             budget_transactions(model.transactions, model.categories)
+          UserRoute -> user_selection(model)
         },
         html.div([], [
           case model.selected_category, model.route {
@@ -399,6 +434,34 @@ fn view(model: Model) -> element.Element(Msg) {
           },
         ]),
       ]),
+    ]),
+  ])
+}
+
+fn user_selection(m: Model) -> element.Element(Msg) {
+  let #(serg_active_class, kate_active_class) = case m.user {
+    User("id1", _) -> #("active", "")
+    User(_, _) -> #("", "active")
+  }
+
+  html.div([attribute.class("d-flex flex-row")], [
+    html.div([attribute.class("btn-group")], [
+      html.a(
+        [
+          attribute.class("btn btn-primary" <> serg_active_class),
+          attribute.href("#"),
+          event.on_click(SelectUser(User(id: "id1", name: "Sergey"))),
+        ],
+        [html.text("Sergey")],
+      ),
+      html.a(
+        [
+          attribute.class("btn btn-primary" <> kate_active_class),
+          attribute.href("#"),
+          event.on_click(SelectUser(User(id: "id2", name: "Kate"))),
+        ],
+        [html.text("Ekaterina")],
+      ),
     ]),
   ])
 }

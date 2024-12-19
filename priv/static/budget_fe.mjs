@@ -1749,12 +1749,6 @@ function style(properties) {
 function class$(name) {
   return attribute("class", name);
 }
-function role(name) {
-  return attribute("role", name);
-}
-function type_(name) {
-  return attribute("type", name);
-}
 function href(uri) {
   return attribute("href", uri);
 }
@@ -2517,9 +2511,6 @@ function thead(attrs, children2) {
 function tr(attrs, children2) {
   return element("tr", attrs, children2);
 }
-function button(attrs, children2) {
-  return element("button", attrs, children2);
-}
 
 // build/dev/javascript/lustre/lustre/event.mjs
 function on2(name, handler) {
@@ -2659,6 +2650,8 @@ var Home = class extends CustomType {
 };
 var TransactionsRoute = class extends CustomType {
 };
+var UserRoute = class extends CustomType {
+};
 var OnRouteChange = class extends CustomType {
   constructor(route) {
     super();
@@ -2695,6 +2688,12 @@ var SelectCategory = class extends CustomType {
   constructor(c) {
     super();
     this.c = c;
+  }
+};
+var SelectUser = class extends CustomType {
+  constructor(u) {
+    super();
+    this.u = u;
   }
 };
 var Model2 = class extends CustomType {
@@ -2775,6 +2774,8 @@ function uri_to_route(uri) {
   let $ = path_segments(uri.path);
   if ($.hasLength(1) && $.head === "transactions") {
     return new TransactionsRoute();
+  } else if ($.hasLength(1) && $.head === "user") {
+    return new UserRoute();
   } else {
     return new Home();
   }
@@ -3037,13 +3038,54 @@ function update(model, msg) {
     return [model.withFields({ allocations: a2 }), none()];
   } else if (msg instanceof Allocations && !msg.a.isOk()) {
     return [model, none()];
-  } else {
+  } else if (msg instanceof SelectCategory) {
     let c = msg.c;
     return [
       model.withFields({ selected_category: new Some(c) }),
       none()
     ];
+  } else {
+    let user = msg.u;
+    return [model.withFields({ user }), none()];
   }
+}
+function user_selection(m) {
+  let $ = (() => {
+    let $1 = m.user;
+    if ($1 instanceof User && $1.id === "id1") {
+      return ["active", ""];
+    } else {
+      return ["", "active"];
+    }
+  })();
+  let serg_active_class = $[0];
+  let kate_active_class = $[1];
+  return div(
+    toList([class$("d-flex flex-row")]),
+    toList([
+      div(
+        toList([class$("btn-group")]),
+        toList([
+          a(
+            toList([
+              class$("btn btn-primary" + serg_active_class),
+              href("#"),
+              on_click(new SelectUser(new User("id1", "Sergey")))
+            ]),
+            toList([text2("Sergey")])
+          ),
+          a(
+            toList([
+              class$("btn btn-primary" + kate_active_class),
+              href("#"),
+              on_click(new SelectUser(new User("id2", "Kate")))
+            ]),
+            toList([text2("Ekaterina")])
+          )
+        ])
+      )
+    ])
+  );
 }
 function budget_transactions(transactions, categories) {
   return table(
@@ -3338,47 +3380,35 @@ function view(model) {
     toList([class$("container-fluid")]),
     toList([
       div(
-        toList([class$("col p-3")]),
+        toList([class$("col")]),
         toList([
           div(
-            toList([class$("row")]),
+            toList([class$("d-flex flex-row")]),
             toList([
               div(
+                toList([class$("btn-group")]),
                 toList([
-                  role("group"),
-                  class$("btn-group")
-                ]),
-                toList([
-                  button(
+                  a(
                     toList([
-                      type_("button"),
-                      class$("btn btn-secondary")
+                      attribute("aria-current", "page"),
+                      class$("btn btn-primary active"),
+                      href("/")
                     ]),
-                    toList([
-                      a(
-                        toList([href("/")]),
-                        toList([text("Budget")])
-                      )
-                    ])
+                    toList([text2("Budget")])
                   ),
-                  button(
+                  a(
                     toList([
-                      type_("button"),
-                      class$("btn btn-secondary")
+                      class$("btn btn-primary"),
+                      href("/transactions")
                     ]),
-                    toList([
-                      a(
-                        toList([href("/transactions")]),
-                        toList([text("Transactions")])
-                      )
-                    ])
+                    toList([text2("Transactions")])
                   )
                 ])
               ),
               div(
                 toList([
-                  class$("col bg-success rounded-lg"),
-                  style(toList([["width", "100w"]]))
+                  class$("bg-success text-white"),
+                  style(toList([["width", "120px"]]))
                 ]),
                 toList([
                   p(
@@ -3390,11 +3420,23 @@ function view(model) {
                     toList([text("Ready to Assign")])
                   )
                 ])
+              ),
+              div(
+                toList([
+                  class$("bg-info ms-auto text-white"),
+                  style(toList([["width", "120px"]]))
+                ]),
+                toList([
+                  a(
+                    toList([class$(""), href("/user")]),
+                    toList([text2(model.user.name)])
+                  )
+                ])
               )
             ])
           ),
           div(
-            toList([class$("row")]),
+            toList([class$("d-flex flex-row")]),
             toList([
               (() => {
                 let $ = model.route;
@@ -3405,11 +3447,13 @@ function view(model) {
                     model.allocations,
                     model.selected_category
                   );
-                } else {
+                } else if ($ instanceof TransactionsRoute) {
                   return budget_transactions(
                     model.transactions,
                     model.categories
                   );
+                } else {
+                  return user_selection(model);
                 }
               })(),
               div(
@@ -3445,7 +3489,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      87,
+      89,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
