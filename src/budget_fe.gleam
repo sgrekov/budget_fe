@@ -4,8 +4,10 @@ import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option
+import gleam/result
 import gleam/string
 import gleam/uri.{type Uri}
+import gluid
 import lustre
 import lustre/attribute
 import lustre/effect
@@ -29,6 +31,16 @@ type Msg {
   Allocations(a: Result(List(Allocation), lustre_http.HttpError))
   SelectCategory(c: Category)
   SelectUser(u: User)
+  ShowAddCategoryUI
+  UserUpdatedCategoryName(cat_name: String)
+  AddCategory
+  AddCategoryResult(c: Result(Category, lustre_http.HttpError))
+  AddTransaction
+  UserUpdatedTransactionDate(date: String)
+  UserUpdatedTransactionPayee(payee: String)
+  UserUpdatedTransactionCategory(cat: String)
+  UserUpdatedTransactionAmount(amount: String)
+  AddTransactionResult(c: Result(Transaction, lustre_http.HttpError))
 }
 
 type Model {
@@ -40,6 +52,18 @@ type Model {
     transactions: List(Transaction),
     allocations: List(Allocation),
     selected_category: option.Option(Category),
+    show_add_category_ui: Bool,
+    user_category_name_input: String,
+    user_transaction_input: TransactionForm,
+  )
+}
+
+type TransactionForm {
+  TransactionForm(
+    date: String,
+    payee: String,
+    category: option.Option(Category),
+    amount: option.Option(Money),
   )
 }
 
@@ -115,6 +139,86 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
     SelectUser(user) -> #(Model(..model, user: user), effect.none())
+    ShowAddCategoryUI -> #(
+      Model(..model, show_add_category_ui: !model.show_add_category_ui),
+      effect.none(),
+    )
+    AddCategory -> #(
+      Model(..model, user_category_name_input: ""),
+      add_category(model.user_category_name_input),
+    )
+    UserUpdatedCategoryName(name) -> #(
+      Model(..model, user_category_name_input: name),
+      effect.none(),
+    )
+    AddCategoryResult(Ok(c)) -> #(
+      Model(..model, categories: list.flatten([model.categories, [c]])),
+      effect.none(),
+    )
+    AddCategoryResult(Error(_)) -> todo
+    AddTransaction -> #(
+      Model(
+        ..model,
+        user_transaction_input: TransactionForm(
+          date: "",
+          payee: "",
+          category: option.None,
+          amount: option.None,
+        ),
+      ),
+      add_transaction_eff(model.user_transaction_input),
+    )
+    AddTransactionResult(Ok(t)) -> #(
+      Model(..model, transactions: list.flatten([model.transactions, [t]])),
+      effect.none(),
+    )
+    AddTransactionResult(Error(_)) -> todo
+    UserUpdatedTransactionCategory(category_name) -> {
+      #(
+        Model(
+          ..model,
+          user_transaction_input: TransactionForm(
+            ..model.user_transaction_input,
+            category: model.categories
+              |> list.find(fn(c) { c.name == category_name })
+              |> option.from_result,
+          ),
+        ),
+        effect.none(),
+      )
+    }
+    UserUpdatedTransactionDate(date) -> #(
+      Model(
+        ..model,
+        user_transaction_input: TransactionForm(
+          ..model.user_transaction_input,
+          date: date,
+        ),
+      ),
+      effect.none(),
+    )
+    UserUpdatedTransactionPayee(payee) -> #(
+      Model(
+        ..model,
+        user_transaction_input: TransactionForm(
+          ..model.user_transaction_input,
+          payee: payee,
+        ),
+      ),
+      effect.none(),
+    )
+    UserUpdatedTransactionAmount(amount) -> #(
+      Model(
+        ..model,
+        user_transaction_input: TransactionForm(
+          ..model.user_transaction_input,
+          amount: int.parse(amount)
+            |> result.map(fn(amount) { Money(amount, 0) })
+            |> option.from_result,
+        ),
+      ),
+      effect.none(),
+    )
   }
 }
 
@@ -122,17 +226,20 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
   io.debug("init")
   #(
     Model(
-      User(id: "id1", name: "Sergey"),
-      Cycle(2024, birl.Dec),
-      Home,
-      [],
-      [],
-      [],
-      option.Some(Category(
+      user: User(id: "id1", name: "Sergey"),
+      cycle: Cycle(2024, birl.Dec),
+      route: Home,
+      categories: [],
+      transactions: [],
+      allocations: [],
+      selected_category: option.Some(Category(
         id: "4",
         name: "Vacation",
         target: option.Some(Monthly(Money(100, 0))),
       )),
+      show_add_category_ui: False,
+      user_category_name_input: "",
+      user_transaction_input: TransactionForm("", "", option.None, option.None),
     ),
     effect.batch([modem.init(on_route_change), initial_eff()]),
   )
@@ -165,6 +272,39 @@ fn initial_eff() -> effect.Effect(Msg) {
       Cycle(2024, birl.Dec),
       path,
     ))
+  })
+}
+
+fn add_transaction_eff(transaction_form: TransactionForm) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    dispatch(case transaction_form.category, transaction_form.amount {
+      option.Some(cat), option.Some(amount) ->
+        AddTransactionResult(
+          Ok(Transaction(
+            id: gluid.guidv4(),
+            // date: transaction_form.date,
+            date: birl.Day(2024, 12, 20),
+            payee: transaction_form.payee,
+            category_id: cat.id,
+            value: amount,
+            is_inflow: False,
+          )),
+        )
+      _, _ ->
+        AddTransactionResult(
+          Error(lustre_http.InternalServerError("parse error")),
+        )
+    })
+  })
+}
+
+fn add_category(name: String) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    dispatch(
+      AddCategoryResult(
+        Ok(Category(id: gluid.guidv4(), name: name, target: option.None)),
+      ),
+    )
   })
 }
 
@@ -415,12 +555,7 @@ fn view(model: Model) -> element.Element(Msg) {
       html.div([attribute.class("d-flex flex-row")], [
         case model.route {
           Home -> {
-            budget_categories(
-              model.categories,
-              model.transactions,
-              model.allocations,
-              model.selected_category,
-            )
+            budget_categories(model)
           }
           TransactionsRoute ->
             budget_transactions(model.transactions, model.categories)
@@ -518,78 +653,151 @@ fn budget_transactions(
     ]),
     html.tbody(
       [],
-      list.map(transactions, fn(t) {
-        html.tr([], [
-          html.td([], [html.text(date_utils.to_date_string(t.date))]),
-          html.td([], [html.text(t.payee)]),
-          html.td([], [
-            {
-              let category_name = case
-                list.find(categories, fn(c) { c.id == t.category_id })
+      list.flatten([
+        [add_transaction_ui()],
+        list.map(transactions, fn(t) {
+          html.tr([], [
+            html.td([], [html.text(date_utils.to_date_string(t.date))]),
+            html.td([], [html.text(t.payee)]),
+            html.td([], [
               {
-                Ok(c) -> c.name
-                _ -> "not found"
-              }
-              html.text(category_name)
-            },
-          ]),
-          html.td([], [
-            {
-              let sign = case t.is_inflow {
-                True -> ""
-                _ -> "-"
-              }
-              html.text(
-                sign
-                <> t.value.s |> int.to_string
-                <> "."
-                <> t.value.b |> int.to_string,
-              )
-            },
-          ]),
-        ])
-      }),
+                let category_name = case
+                  list.find(categories, fn(c) { c.id == t.category_id })
+                {
+                  Ok(c) -> c.name
+                  _ -> "not found"
+                }
+                html.text(category_name)
+              },
+            ]),
+            html.td([], [
+              {
+                let sign = case t.is_inflow {
+                  True -> ""
+                  _ -> "-"
+                }
+                html.text(
+                  sign
+                  <> t.value.s |> int.to_string
+                  <> "."
+                  <> t.value.b |> int.to_string,
+                )
+              },
+            ]),
+          ])
+        }),
+      ]),
     ),
   ])
 }
 
-fn budget_categories(
-  categories: List(Category),
-  transactions: List(Transaction),
-  allocations: List(Allocation),
-  active_category: option.Option(Category),
-) -> element.Element(Msg) {
-  let size = case active_category {
+fn add_transaction_ui() -> element.Element(Msg) {
+  html.tr([], [
+    html.td([], [
+      html.input([
+        event.on_input(UserUpdatedTransactionDate),
+        attribute.placeholder("date"),
+        attribute.id("addTransactionDateId"),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+      ]),
+    ]),
+    html.td([], [
+      html.input([
+        event.on_input(UserUpdatedTransactionPayee),
+        attribute.placeholder("payee"),
+        attribute.id("addTransactionPayeeId"),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+      ]),
+    ]),
+    html.td([], [
+      html.input([
+        event.on_input(UserUpdatedTransactionCategory),
+        attribute.placeholder("category"),
+        attribute.id("addTransactionCategoryId"),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+      ]),
+    ]),
+    html.td([attribute.class("d-flex flex-row")], [
+      html.input([
+        event.on_input(UserUpdatedTransactionAmount),
+        attribute.placeholder("amount"),
+        attribute.id("addTransactionAmountId"),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+        attribute.style([#("width", "120px")]),
+      ]),
+      html.button([event.on_click(AddTransaction)], [element.text("Add")]),
+    ]),
+  ])
+}
+
+fn budget_categories(model: Model) -> element.Element(Msg) {
+  let size = case model.selected_category {
     option.None -> ""
     option.Some(_) -> "w-75"
   }
   html.table([attribute.class(size <> " table table-sm table-hover")], [
     html.thead([], [
       html.tr([], [
-        html.th([], [html.text("Category")]),
+        html.th([], [
+          html.text("Category"),
+          {
+            let btn_label = case model.show_add_category_ui {
+              True -> "-"
+              False -> "+"
+            }
+            html.button([event.on_click(ShowAddCategoryUI)], [
+              element.text(btn_label),
+            ])
+          },
+        ]),
         html.th([], [html.text("Balance")]),
       ]),
     ]),
-    html.tbody(
-      [],
-      list.map(categories, fn(c) {
-        let active_class = case active_category {
-          option.None -> ""
-          option.Some(selected_c) ->
-            case selected_c.id == c.id {
-              True -> "table-active"
-              False -> ""
-            }
-        }
-        html.tr(
-          [event.on_click(SelectCategory(c)), attribute.class(active_class)],
-          [
-            html.td([], [html.text(c.id <> ": " <> c.name)]),
-            html.td([], [html.text(category_target(c))]),
-          ],
-        )
-      }),
-    ),
+    html.tbody([], {
+      let cats_ui =
+        list.map(model.categories, fn(c) {
+          let active_class = case model.selected_category {
+            option.None -> ""
+            option.Some(selected_c) ->
+              case selected_c.id == c.id {
+                True -> "table-active"
+                False -> ""
+              }
+          }
+          html.tr(
+            [event.on_click(SelectCategory(c)), attribute.class(active_class)],
+            [
+              html.td([], [html.text(c.name)]),
+              html.td([], [html.text(category_target(c))]),
+            ],
+          )
+        })
+      let add_cat_ui = case model.show_add_category_ui {
+        False -> []
+        True -> [
+          html.tr([], [
+            html.td([], [
+              html.input([
+                event.on_input(UserUpdatedCategoryName),
+                attribute.placeholder("category name"),
+                attribute.id("exampleFormControlInput1"),
+                attribute.class("form-control"),
+                attribute.type_("text"),
+              ]),
+            ]),
+            html.td([], [
+              html.button([event.on_click(AddCategory)], [element.text("Add")]),
+            ]),
+          ]),
+        ]
+      }
+
+      list.flatten([add_cat_ui, cats_ui])
+    }),
   ])
 }
 

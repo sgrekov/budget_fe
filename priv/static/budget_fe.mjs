@@ -110,48 +110,48 @@ var BitArray = class _BitArray {
   }
 };
 var UtfCodepoint = class {
-  constructor(value) {
-    this.value = value;
+  constructor(value2) {
+    this.value = value2;
   }
 };
 function byteArrayToInt(byteArray, start3, end, isBigEndian, isSigned) {
   const byteSize = end - start3;
   if (byteSize <= 6) {
-    let value = 0;
+    let value2 = 0;
     if (isBigEndian) {
       for (let i = start3; i < end; i++) {
-        value = value * 256 + byteArray[i];
+        value2 = value2 * 256 + byteArray[i];
       }
     } else {
       for (let i = end - 1; i >= start3; i--) {
-        value = value * 256 + byteArray[i];
+        value2 = value2 * 256 + byteArray[i];
       }
     }
     if (isSigned) {
       const highBit = 2 ** (byteSize * 8 - 1);
-      if (value >= highBit) {
-        value -= highBit * 2;
+      if (value2 >= highBit) {
+        value2 -= highBit * 2;
       }
     }
-    return value;
+    return value2;
   } else {
-    let value = 0n;
+    let value2 = 0n;
     if (isBigEndian) {
       for (let i = start3; i < end; i++) {
-        value = (value << 8n) + BigInt(byteArray[i]);
+        value2 = (value2 << 8n) + BigInt(byteArray[i]);
       }
     } else {
       for (let i = end - 1; i >= start3; i--) {
-        value = (value << 8n) + BigInt(byteArray[i]);
+        value2 = (value2 << 8n) + BigInt(byteArray[i]);
       }
     }
     if (isSigned) {
       const highBit = 1n << BigInt(byteSize * 8 - 1);
-      if (value >= highBit) {
-        value -= highBit * 2n;
+      if (value2 >= highBit) {
+        value2 -= highBit * 2n;
       }
     }
-    return Number(value);
+    return Number(value2);
   }
 }
 function byteArrayToFloat(byteArray, start3, end, isBigEndian) {
@@ -173,9 +173,9 @@ var Result = class _Result extends CustomType {
   }
 };
 var Ok = class extends Result {
-  constructor(value) {
+  constructor(value2) {
     super();
-    this[0] = value;
+    this[0] = value2;
   }
   // @internal
   isOk() {
@@ -305,10 +305,26 @@ var Some = class extends CustomType {
 };
 var None = class extends CustomType {
 };
+function to_result(option, e) {
+  if (option instanceof Some) {
+    let a2 = option[0];
+    return new Ok(a2);
+  } else {
+    return new Error(e);
+  }
+}
+function from_result(result) {
+  if (result.isOk()) {
+    let a2 = result[0];
+    return new Some(a2);
+  } else {
+    return new None();
+  }
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/dict.mjs
-function insert(dict, key, value) {
-  return map_insert(key, value, dict);
+function insert(dict, key, value2) {
+  return map_insert(key, value2, dict);
 }
 function reverse_and_concat(loop$remaining, loop$accumulator) {
   while (true) {
@@ -424,6 +440,37 @@ function append_loop(loop$first, loop$second) {
 function append(first3, second) {
   return append_loop(reverse(first3), second);
 }
+function reverse_and_prepend(loop$prefix, loop$suffix) {
+  while (true) {
+    let prefix = loop$prefix;
+    let suffix = loop$suffix;
+    if (prefix.hasLength(0)) {
+      return suffix;
+    } else {
+      let first$1 = prefix.head;
+      let rest$1 = prefix.tail;
+      loop$prefix = rest$1;
+      loop$suffix = prepend(first$1, suffix);
+    }
+  }
+}
+function concat_loop(loop$lists, loop$acc) {
+  while (true) {
+    let lists = loop$lists;
+    let acc = loop$acc;
+    if (lists.hasLength(0)) {
+      return reverse(acc);
+    } else {
+      let list2 = lists.head;
+      let further_lists = lists.tail;
+      loop$lists = further_lists;
+      loop$acc = reverse_and_prepend(list2, acc);
+    }
+  }
+}
+function flatten(lists) {
+  return concat_loop(lists, toList([]));
+}
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
     let list2 = loop$list;
@@ -535,6 +582,9 @@ function pad_start(string3, desired_length, pad_string) {
     return padding(to_pad_length, pad_string) + string3;
   }
 }
+function pad_left(string3, desired_length, pad_string) {
+  return pad_start(string3, desired_length, pad_string);
+}
 function drop_start(loop$string, loop$num_graphemes) {
   while (true) {
     let string3 = loop$string;
@@ -567,6 +617,117 @@ function split2(x, substring) {
 function inspect2(term) {
   let _pipe = inspect(term);
   return identity(_pipe);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/result.mjs
+function map2(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok(fun(x));
+  } else {
+    let e = result[0];
+    return new Error(e);
+  }
+}
+function map_error(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok(x);
+  } else {
+    let error = result[0];
+    return new Error(fun(error));
+  }
+}
+function try$(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return fun(x);
+  } else {
+    let e = result[0];
+    return new Error(e);
+  }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
+var DecodeError = class extends CustomType {
+  constructor(expected, found, path) {
+    super();
+    this.expected = expected;
+    this.found = found;
+    this.path = path;
+  }
+};
+function int(data) {
+  return decode_int(data);
+}
+function any(decoders) {
+  return (data) => {
+    if (decoders.hasLength(0)) {
+      return new Error(
+        toList([new DecodeError("another type", classify_dynamic(data), toList([]))])
+      );
+    } else {
+      let decoder = decoders.head;
+      let decoders$1 = decoders.tail;
+      let $ = decoder(data);
+      if ($.isOk()) {
+        let decoded = $[0];
+        return new Ok(decoded);
+      } else {
+        return any(decoders$1)(data);
+      }
+    }
+  };
+}
+function push_path(error, name) {
+  let name$1 = identity(name);
+  let decoder = any(
+    toList([string, (x) => {
+      return map2(int(x), to_string);
+    }])
+  );
+  let name$2 = (() => {
+    let $ = decoder(name$1);
+    if ($.isOk()) {
+      let name$22 = $[0];
+      return name$22;
+    } else {
+      let _pipe = toList(["<", classify_dynamic(name$1), ">"]);
+      let _pipe$1 = concat(_pipe);
+      return identity(_pipe$1);
+    }
+  })();
+  return error.withFields({ path: prepend(name$2, error.path) });
+}
+function map_errors(result, f) {
+  return map_error(
+    result,
+    (_capture) => {
+      return map(_capture, f);
+    }
+  );
+}
+function string(data) {
+  return decode_string(data);
+}
+function field(name, inner_type) {
+  return (value2) => {
+    let missing_field_error = new DecodeError("field", "nothing", toList([]));
+    return try$(
+      decode_field(value2, name),
+      (maybe_inner) => {
+        let _pipe = maybe_inner;
+        let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
+        let _pipe$2 = try$(_pipe$1, inner_type);
+        return map_errors(
+          _pipe$2,
+          (_capture) => {
+            return push_path(_capture, name);
+          }
+        );
+      }
+    );
+  };
 }
 
 // build/dev/javascript/gleam_stdlib/dict.mjs
@@ -1277,8 +1438,16 @@ var unequalDictSymbol = Symbol();
 
 // build/dev/javascript/gleam_stdlib/gleam_stdlib.mjs
 var Nil = void 0;
+var NOT_FOUND = {};
 function identity(x) {
   return x;
+}
+function parse_int(value2) {
+  if (/^[-+]?(\d+)$/.test(value2)) {
+    return new Ok(parseInt(value2));
+  } else {
+    return new Error(Nil);
+  }
 }
 function to_string(term) {
   return term.toString();
@@ -1295,6 +1464,9 @@ function float_to_string(float3) {
       return string3 + ".0";
     }
   }
+}
+function int_to_base_string(int3, base) {
+  return int3.toString(base).toUpperCase();
 }
 function string_length(string3) {
   if (string3 === "") {
@@ -1342,6 +1514,13 @@ function pop_grapheme(string3) {
 }
 function split(xs, pattern) {
   return List.fromArray(xs.split(pattern));
+}
+function concat(xs) {
+  let result = "";
+  for (const x of xs) {
+    result = result + x;
+  }
+  return result;
 }
 function string_slice(string3, idx, len) {
   if (len <= 0 || idx >= string3.length) {
@@ -1396,14 +1575,108 @@ function print_debug(string3) {
     console.log(string3);
   }
 }
+function floor(float3) {
+  return Math.floor(float3);
+}
+function round(float3) {
+  return Math.round(float3);
+}
+function random_uniform() {
+  const random_uniform_result = Math.random();
+  if (random_uniform_result === 1) {
+    return random_uniform();
+  }
+  return random_uniform_result;
+}
 function new_map() {
   return Dict.new();
 }
 function map_to_list(map6) {
   return List.fromArray(map6.entries());
 }
-function map_insert(key, value, map6) {
-  return map6.set(key, value);
+function map_get(map6, key) {
+  const value2 = map6.get(key, NOT_FOUND);
+  if (value2 === NOT_FOUND) {
+    return new Error(Nil);
+  }
+  return new Ok(value2);
+}
+function map_insert(key, value2, map6) {
+  return map6.set(key, value2);
+}
+function classify_dynamic(data) {
+  if (typeof data === "string") {
+    return "String";
+  } else if (typeof data === "boolean") {
+    return "Bool";
+  } else if (data instanceof Result) {
+    return "Result";
+  } else if (data instanceof List) {
+    return "List";
+  } else if (data instanceof BitArray) {
+    return "BitArray";
+  } else if (data instanceof Dict) {
+    return "Dict";
+  } else if (Number.isInteger(data)) {
+    return "Int";
+  } else if (Array.isArray(data)) {
+    return `Tuple of ${data.length} elements`;
+  } else if (typeof data === "number") {
+    return "Float";
+  } else if (data === null) {
+    return "Null";
+  } else if (data === void 0) {
+    return "Nil";
+  } else {
+    const type = typeof data;
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+}
+function decoder_error(expected, got) {
+  return decoder_error_no_classify(expected, classify_dynamic(got));
+}
+function decoder_error_no_classify(expected, got) {
+  return new Error(
+    List.fromArray([new DecodeError(expected, got, List.fromArray([]))])
+  );
+}
+function decode_string(data) {
+  return typeof data === "string" ? new Ok(data) : decoder_error("String", data);
+}
+function decode_int(data) {
+  return Number.isInteger(data) ? new Ok(data) : decoder_error("Int", data);
+}
+function decode_field(value2, name) {
+  const not_a_map_error = () => decoder_error("Dict", value2);
+  if (value2 instanceof Dict || value2 instanceof WeakMap || value2 instanceof Map) {
+    const entry = map_get(value2, name);
+    return new Ok(entry.isOk() ? new Some(entry[0]) : new None());
+  } else if (value2 === null) {
+    return not_a_map_error();
+  } else if (Object.getPrototypeOf(value2) == Object.prototype) {
+    return try_get_field(value2, name, () => new Ok(new None()));
+  } else {
+    return try_get_field(value2, name, not_a_map_error);
+  }
+}
+function try_get_field(value2, field2, or_else) {
+  try {
+    return field2 in value2 ? new Ok(new Some(value2[field2])) : or_else();
+  } catch {
+    return or_else();
+  }
+}
+function bitwise_and(x, y) {
+  return Number(BigInt(x) & BigInt(y));
+}
+function bitwise_not(x) {
+  return Number(~BigInt(x));
+}
+function bitwise_or(x, y) {
+  return Number(BigInt(x) | BigInt(y));
+}
+function bitwise_shift_left(x, y) {
+  return Number(BigInt(x) << BigInt(y));
 }
 function inspect(v) {
   const t = typeof v;
@@ -1484,10 +1757,10 @@ function inspectString(str) {
 function inspectDict(map6) {
   let body = "dict.from_list([";
   let first3 = true;
-  map6.forEach((value, key) => {
+  map6.forEach((value2, key) => {
     if (!first3)
       body = body + ", ";
-    body = body + "#(" + inspect(key) + ", " + inspect(value) + ")";
+    body = body + "#(" + inspect(key) + ", " + inspect(value2) + ")";
     first3 = false;
   });
   return body + "])";
@@ -1504,8 +1777,8 @@ function inspectObject(v) {
 }
 function inspectCustomType(record) {
   const props = Object.keys(record).map((label) => {
-    const value = inspect(record[label]);
-    return isNaN(parseInt(label)) ? `${label}: ${value}` : value;
+    const value2 = inspect(record[label]);
+    return isNaN(parseInt(label)) ? `${label}: ${value2}` : value2;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
@@ -1517,6 +1790,29 @@ function inspectBitArray(bits) {
 }
 function inspectUtfCodepoint(codepoint2) {
   return `//utfcodepoint(${String.fromCodePoint(codepoint2.value)})`;
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/float.mjs
+function negate(x) {
+  return -1 * x;
+}
+function round2(x) {
+  let $ = x >= 0;
+  if ($) {
+    return round(x);
+  } else {
+    return 0 - round(negate(x));
+  }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/int.mjs
+function to_base16(x) {
+  return int_to_base_string(x, 16);
+}
+function random(max) {
+  let _pipe = random_uniform() * identity(max);
+  let _pipe$1 = floor(_pipe);
+  return round2(_pipe$1);
 }
 
 // build/dev/javascript/birl/birl.mjs
@@ -1554,13 +1850,13 @@ var Uri = class extends CustomType {
 };
 function remove_dot_segments_loop(loop$input, loop$accumulator) {
   while (true) {
-    let input = loop$input;
+    let input2 = loop$input;
     let accumulator = loop$accumulator;
-    if (input.hasLength(0)) {
+    if (input2.hasLength(0)) {
       return reverse(accumulator);
     } else {
-      let segment = input.head;
-      let rest = input.tail;
+      let segment = input2.head;
+      let rest = input2.tail;
       let accumulator$1 = (() => {
         if (segment === "") {
           let accumulator$12 = accumulator;
@@ -1584,11 +1880,53 @@ function remove_dot_segments_loop(loop$input, loop$accumulator) {
     }
   }
 }
-function remove_dot_segments(input) {
-  return remove_dot_segments_loop(input, toList([]));
+function remove_dot_segments(input2) {
+  return remove_dot_segments_loop(input2, toList([]));
 }
 function path_segments(path) {
   return remove_dot_segments(split2(path, "/"));
+}
+
+// build/dev/javascript/gluid/gluid.mjs
+function format_uuid(src) {
+  return slice(src, 0, 8) + "-" + slice(src, 8, 4) + "-" + slice(
+    src,
+    12,
+    4
+  ) + "-" + slice(src, 16, 4) + "-" + slice(src, 20, 12);
+}
+function guidv4() {
+  let randoma = random(4294967295);
+  let a2 = (() => {
+    let _pipe = to_base16(randoma);
+    return pad_left(_pipe, 8, "0");
+  })();
+  let randomb = random(4294967295);
+  let clear_mask = bitwise_not(bitwise_shift_left(15, 12));
+  let randomb$1 = bitwise_and(randomb, clear_mask);
+  let value_mask = bitwise_shift_left(4, 12);
+  let randomb$2 = bitwise_or(randomb$1, value_mask);
+  let b = (() => {
+    let _pipe = to_base16(randomb$2);
+    return pad_left(_pipe, 8, "0");
+  })();
+  let randomc = random(4294967295);
+  let clear_mask$1 = bitwise_not(bitwise_shift_left(3, 30));
+  let randomc$1 = bitwise_and(randomc, clear_mask$1);
+  let value_mask$1 = bitwise_shift_left(2, 30);
+  let randomc$2 = bitwise_or(randomc$1, value_mask$1);
+  let c = (() => {
+    let _pipe = to_base16(randomc$2);
+    return pad_left(_pipe, 8, "0");
+  })();
+  let randomd = random(4294967295);
+  let d = (() => {
+    let _pipe = randomd;
+    let _pipe$1 = to_base16(_pipe);
+    return pad_left(_pipe$1, 8, "0");
+  })();
+  let concatened = a2 + b + c + d;
+  return format_uuid(concatened);
 }
 
 // build/dev/javascript/lustre/lustre/effect.mjs
@@ -1726,8 +2064,8 @@ function handlers(element2) {
 }
 
 // build/dev/javascript/lustre/lustre/attribute.mjs
-function attribute(name, value) {
-  return new Attribute(name, identity(value), false);
+function attribute(name, value2) {
+  return new Attribute(name, identity(value2), false);
 }
 function on(name, handler) {
   return new Event("on" + name, handler);
@@ -1748,6 +2086,15 @@ function style(properties) {
 }
 function class$(name) {
   return attribute("class", name);
+}
+function id(name) {
+  return attribute("id", name);
+}
+function type_(name) {
+  return attribute("type", name);
+}
+function placeholder(text3) {
+  return attribute("placeholder", text3);
 }
 function href(uri) {
   return attribute("href", uri);
@@ -1966,15 +2313,15 @@ function createElementNode({ prev, next, dispatch, stack }) {
   const delegated = [];
   for (const attr of next.attrs) {
     const name = attr[0];
-    const value = attr[1];
+    const value2 = attr[1];
     if (attr.as_property) {
-      if (el[name] !== value)
-        el[name] = value;
+      if (el[name] !== value2)
+        el[name] = value2;
       if (canMorph)
         prevAttributes.delete(name);
     } else if (name.startsWith("on")) {
       const eventName = name.slice(2);
-      const callback = dispatch(value, eventName === "input");
+      const callback = dispatch(value2, eventName === "input");
       if (!handlersForEl.has(eventName)) {
         el.addEventListener(eventName, lustreGenericEventHandler);
       }
@@ -1988,25 +2335,25 @@ function createElementNode({ prev, next, dispatch, stack }) {
         el.addEventListener(eventName, lustreGenericEventHandler);
       }
       handlersForEl.set(eventName, callback);
-      el.setAttribute(name, value);
+      el.setAttribute(name, value2);
       if (canMorph) {
         prevHandlers.delete(eventName);
         prevAttributes.delete(name);
       }
     } else if (name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) {
-      el.setAttribute(name, value);
-      delegated.push([name.slice(10), value]);
+      el.setAttribute(name, value2);
+      delegated.push([name.slice(10), value2]);
     } else if (name === "class") {
-      className = className === null ? value : className + " " + value;
+      className = className === null ? value2 : className + " " + value2;
     } else if (name === "style") {
-      style2 = style2 === null ? value : style2 + value;
+      style2 = style2 === null ? value2 : style2 + value2;
     } else if (name === "dangerous-unescaped-html") {
-      innerHTML = value;
+      innerHTML = value2;
     } else {
-      if (el.getAttribute(name) !== value)
-        el.setAttribute(name, value);
+      if (el.getAttribute(name) !== value2)
+        el.setAttribute(name, value2);
       if (name === "value" || name === "selected")
-        el[name] = value;
+        el[name] = value2;
       if (canMorph)
         prevAttributes.delete(name);
     }
@@ -2033,9 +2380,9 @@ function createElementNode({ prev, next, dispatch, stack }) {
   if (next.tag === "slot") {
     window.queueMicrotask(() => {
       for (const child of el.assignedElements()) {
-        for (const [name, value] of delegated) {
+        for (const [name, value2] of delegated) {
           if (!child.hasAttribute(name)) {
-            child.setAttribute(name, value);
+            child.setAttribute(name, value2);
           }
         }
       }
@@ -2161,9 +2508,9 @@ function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keye
     return prevChild;
   }
   if (!keyedChild && prevChild !== null) {
-    const placeholder = document.createTextNode("");
-    el.insertBefore(placeholder, prevChild);
-    stack.unshift({ prev: placeholder, next: child, parent: el });
+    const placeholder2 = document.createTextNode("");
+    el.insertBefore(placeholder2, prevChild);
+    stack.unshift({ prev: placeholder2, next: child, parent: el });
     return prevChild;
   }
   if (!keyedChild || keyedChild === prevChild) {
@@ -2511,6 +2858,12 @@ function thead(attrs, children2) {
 function tr(attrs, children2) {
   return element("tr", attrs, children2);
 }
+function button(attrs, children2) {
+  return element("button", attrs, children2);
+}
+function input(attrs) {
+  return element("input", attrs, toList([]));
+}
 
 // build/dev/javascript/lustre/lustre/event.mjs
 function on2(name, handler) {
@@ -2521,6 +2874,29 @@ function on_click(msg) {
     return new Ok(msg);
   });
 }
+function value(event2) {
+  let _pipe = event2;
+  return field("target", field("value", string))(
+    _pipe
+  );
+}
+function on_input(msg) {
+  return on2(
+    "input",
+    (event2) => {
+      let _pipe = value(event2);
+      return map2(_pipe, msg);
+    }
+  );
+}
+
+// build/dev/javascript/lustre_http/lustre_http.mjs
+var InternalServerError = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
 
 // build/dev/javascript/modem/modem.ffi.mjs
 var defaults = {
@@ -2630,10 +3006,10 @@ function init2(handler) {
 }
 
 // build/dev/javascript/budget_fe/date_utils.mjs
-function to_date_string(value) {
-  let year = value.year;
-  let month = value.month;
-  let day = value.date;
+function to_date_string(value2) {
+  let year = value2.year;
+  let month = value2.month;
+  let day = value2.date;
   return to_string(year) + "." + (() => {
     let _pipe = month;
     let _pipe$1 = to_string(_pipe);
@@ -2696,8 +3072,56 @@ var SelectUser = class extends CustomType {
     this.u = u;
   }
 };
+var ShowAddCategoryUI = class extends CustomType {
+};
+var UserUpdatedCategoryName = class extends CustomType {
+  constructor(cat_name) {
+    super();
+    this.cat_name = cat_name;
+  }
+};
+var AddCategory = class extends CustomType {
+};
+var AddCategoryResult = class extends CustomType {
+  constructor(c) {
+    super();
+    this.c = c;
+  }
+};
+var AddTransaction = class extends CustomType {
+};
+var UserUpdatedTransactionDate = class extends CustomType {
+  constructor(date) {
+    super();
+    this.date = date;
+  }
+};
+var UserUpdatedTransactionPayee = class extends CustomType {
+  constructor(payee) {
+    super();
+    this.payee = payee;
+  }
+};
+var UserUpdatedTransactionCategory = class extends CustomType {
+  constructor(cat) {
+    super();
+    this.cat = cat;
+  }
+};
+var UserUpdatedTransactionAmount = class extends CustomType {
+  constructor(amount) {
+    super();
+    this.amount = amount;
+  }
+};
+var AddTransactionResult = class extends CustomType {
+  constructor(c) {
+    super();
+    this.c = c;
+  }
+};
 var Model2 = class extends CustomType {
-  constructor(user, cycle, route, categories, transactions, allocations, selected_category) {
+  constructor(user, cycle, route, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, user_transaction_input) {
     super();
     this.user = user;
     this.cycle = cycle;
@@ -2706,6 +3130,18 @@ var Model2 = class extends CustomType {
     this.transactions = transactions;
     this.allocations = allocations;
     this.selected_category = selected_category;
+    this.show_add_category_ui = show_add_category_ui;
+    this.user_category_name_input = user_category_name_input;
+    this.user_transaction_input = user_transaction_input;
+  }
+};
+var TransactionForm = class extends CustomType {
+  constructor(date, payee, category, amount) {
+    super();
+    this.date = date;
+    this.payee = payee;
+    this.category = category;
+    this.amount = amount;
   }
 };
 var Cycle = class extends CustomType {
@@ -2716,16 +3152,16 @@ var Cycle = class extends CustomType {
   }
 };
 var User = class extends CustomType {
-  constructor(id, name) {
+  constructor(id2, name) {
     super();
-    this.id = id;
+    this.id = id2;
     this.name = name;
   }
 };
 var Category = class extends CustomType {
-  constructor(id, name, target) {
+  constructor(id2, name, target) {
     super();
-    this.id = id;
+    this.id = id2;
     this.name = name;
     this.target = target;
   }
@@ -2751,22 +3187,22 @@ var Custom = class extends CustomType {
   }
 };
 var Allocation = class extends CustomType {
-  constructor(id, amount, category_id, date) {
+  constructor(id2, amount, category_id, date) {
     super();
-    this.id = id;
+    this.id = id2;
     this.amount = amount;
     this.category_id = category_id;
     this.date = date;
   }
 };
 var Transaction = class extends CustomType {
-  constructor(id, date, payee, category_id, value, is_inflow) {
+  constructor(id2, date, payee, category_id, value2, is_inflow) {
     super();
-    this.id = id;
+    this.id = id2;
     this.date = date;
     this.payee = payee;
     this.category_id = category_id;
-    this.value = value;
+    this.value = value2;
     this.is_inflow = is_inflow;
   }
 };
@@ -2823,10 +3259,56 @@ function init3(_) {
           "Vacation",
           new Some(new Monthly(new Money(100, 0)))
         )
-      )
+      ),
+      false,
+      "",
+      new TransactionForm("", "", new None(), new None())
     ),
     batch(toList([init2(on_route_change), initial_eff()]))
   ];
+}
+function add_transaction_eff(transaction_form) {
+  return from(
+    (dispatch) => {
+      return dispatch(
+        (() => {
+          let $ = transaction_form.category;
+          let $1 = transaction_form.amount;
+          if ($ instanceof Some && $1 instanceof Some) {
+            let cat = $[0];
+            let amount = $1[0];
+            return new AddTransactionResult(
+              new Ok(
+                new Transaction(
+                  guidv4(),
+                  new Day2(2024, 12, 20),
+                  transaction_form.payee,
+                  cat.id,
+                  amount,
+                  false
+                )
+              )
+            );
+          } else {
+            return new AddTransactionResult(
+              new Error(new InternalServerError("parse error"))
+            );
+          }
+        })()
+      );
+    }
+  );
+}
+function add_category(name) {
+  return from(
+    (dispatch) => {
+      return dispatch(
+        new AddCategoryResult(
+          new Ok(new Category(guidv4(), name, new None()))
+        )
+      );
+    }
+  );
 }
 function get_allocations() {
   return from(
@@ -3044,9 +3526,129 @@ function update(model, msg) {
       model.withFields({ selected_category: new Some(c) }),
       none()
     ];
-  } else {
+  } else if (msg instanceof SelectUser) {
     let user = msg.u;
     return [model.withFields({ user }), none()];
+  } else if (msg instanceof ShowAddCategoryUI) {
+    return [
+      model.withFields({ show_add_category_ui: !model.show_add_category_ui }),
+      none()
+    ];
+  } else if (msg instanceof AddCategory) {
+    return [
+      model.withFields({ user_category_name_input: "" }),
+      add_category(model.user_category_name_input)
+    ];
+  } else if (msg instanceof UserUpdatedCategoryName) {
+    let name = msg.cat_name;
+    return [
+      model.withFields({ user_category_name_input: name }),
+      none()
+    ];
+  } else if (msg instanceof AddCategoryResult && msg.c.isOk()) {
+    let c = msg.c[0];
+    return [
+      model.withFields({
+        categories: flatten(toList([model.categories, toList([c])]))
+      }),
+      none()
+    ];
+  } else if (msg instanceof AddCategoryResult && !msg.c.isOk()) {
+    throw makeError(
+      "todo",
+      "budget_fe",
+      158,
+      "update",
+      "`todo` expression evaluated. This code has not yet been implemented.",
+      {}
+    );
+  } else if (msg instanceof AddTransaction) {
+    return [
+      model.withFields({
+        user_transaction_input: new TransactionForm(
+          "",
+          "",
+          new None(),
+          new None()
+        )
+      }),
+      add_transaction_eff(model.user_transaction_input)
+    ];
+  } else if (msg instanceof AddTransactionResult && msg.c.isOk()) {
+    let t = msg.c[0];
+    return [
+      model.withFields({
+        transactions: flatten(toList([model.transactions, toList([t])]))
+      }),
+      none()
+    ];
+  } else if (msg instanceof AddTransactionResult && !msg.c.isOk()) {
+    throw makeError(
+      "todo",
+      "budget_fe",
+      175,
+      "update",
+      "`todo` expression evaluated. This code has not yet been implemented.",
+      {}
+    );
+  } else if (msg instanceof UserUpdatedTransactionCategory) {
+    let category_name = msg.cat;
+    return [
+      model.withFields({
+        user_transaction_input: model.user_transaction_input.withFields({
+          category: (() => {
+            let _pipe = model.categories;
+            let _pipe$1 = find(
+              _pipe,
+              (c) => {
+                return c.name === category_name;
+              }
+            );
+            return from_result(_pipe$1);
+          })()
+        })
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserUpdatedTransactionDate) {
+    let date = msg.date;
+    return [
+      model.withFields({
+        user_transaction_input: model.user_transaction_input.withFields({
+          date
+        })
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserUpdatedTransactionPayee) {
+    let payee = msg.payee;
+    return [
+      model.withFields({
+        user_transaction_input: model.user_transaction_input.withFields({
+          payee
+        })
+      }),
+      none()
+    ];
+  } else {
+    let amount = msg.amount;
+    return [
+      model.withFields({
+        user_transaction_input: model.user_transaction_input.withFields({
+          amount: (() => {
+            let _pipe = parse_int(amount);
+            let _pipe$1 = map2(
+              _pipe,
+              (amount2) => {
+                return new Money(amount2, 0);
+              }
+            );
+            return from_result(_pipe$1);
+          })()
+        })
+      }),
+      none()
+    ];
   }
 }
 function user_selection(m) {
@@ -3087,6 +3689,90 @@ function user_selection(m) {
     ])
   );
 }
+function add_transaction_ui() {
+  return tr(
+    toList([]),
+    toList([
+      td(
+        toList([]),
+        toList([
+          input(
+            toList([
+              on_input(
+                (var0) => {
+                  return new UserUpdatedTransactionDate(var0);
+                }
+              ),
+              placeholder("date"),
+              id("addTransactionDateId"),
+              class$("form-control"),
+              type_("text")
+            ])
+          )
+        ])
+      ),
+      td(
+        toList([]),
+        toList([
+          input(
+            toList([
+              on_input(
+                (var0) => {
+                  return new UserUpdatedTransactionPayee(var0);
+                }
+              ),
+              placeholder("payee"),
+              id("addTransactionPayeeId"),
+              class$("form-control"),
+              type_("text")
+            ])
+          )
+        ])
+      ),
+      td(
+        toList([]),
+        toList([
+          input(
+            toList([
+              on_input(
+                (var0) => {
+                  return new UserUpdatedTransactionCategory(var0);
+                }
+              ),
+              placeholder("category"),
+              id("addTransactionCategoryId"),
+              class$("form-control"),
+              type_("text")
+            ])
+          )
+        ])
+      ),
+      td(
+        toList([class$("d-flex flex-row")]),
+        toList([
+          input(
+            toList([
+              on_input(
+                (var0) => {
+                  return new UserUpdatedTransactionAmount(var0);
+                }
+              ),
+              placeholder("amount"),
+              id("addTransactionAmountId"),
+              class$("form-control"),
+              type_("text"),
+              style(toList([["width", "120px"]]))
+            ])
+          ),
+          button(
+            toList([on_click(new AddTransaction())]),
+            toList([text("Add")])
+          )
+        ])
+      )
+    ])
+  );
+}
 function budget_transactions(transactions, categories) {
   return table(
     toList([class$("table table-sm")]),
@@ -3107,66 +3793,71 @@ function budget_transactions(transactions, categories) {
       ),
       tbody(
         toList([]),
-        map(
-          transactions,
-          (t) => {
-            return tr(
-              toList([]),
-              toList([
-                td(
-                  toList([]),
-                  toList([text2(to_date_string(t.date))])
-                ),
-                td(toList([]), toList([text2(t.payee)])),
-                td(
+        flatten(
+          toList([
+            toList([add_transaction_ui()]),
+            map(
+              transactions,
+              (t) => {
+                return tr(
                   toList([]),
                   toList([
-                    (() => {
-                      let category_name = (() => {
-                        let $ = find(
-                          categories,
-                          (c) => {
-                            return c.id === t.category_id;
-                          }
-                        );
-                        if ($.isOk()) {
-                          let c = $[0];
-                          return c.name;
-                        } else {
-                          return "not found";
-                        }
-                      })();
-                      return text2(category_name);
-                    })()
-                  ])
-                ),
-                td(
-                  toList([]),
-                  toList([
-                    (() => {
-                      let sign = (() => {
-                        let $ = t.is_inflow;
-                        if ($) {
-                          return "";
-                        } else {
-                          return "-";
-                        }
-                      })();
-                      return text2(
-                        sign + (() => {
-                          let _pipe = t.value.s;
-                          return to_string(_pipe);
-                        })() + "." + (() => {
-                          let _pipe = t.value.b;
-                          return to_string(_pipe);
+                    td(
+                      toList([]),
+                      toList([text2(to_date_string(t.date))])
+                    ),
+                    td(toList([]), toList([text2(t.payee)])),
+                    td(
+                      toList([]),
+                      toList([
+                        (() => {
+                          let category_name = (() => {
+                            let $ = find(
+                              categories,
+                              (c) => {
+                                return c.id === t.category_id;
+                              }
+                            );
+                            if ($.isOk()) {
+                              let c = $[0];
+                              return c.name;
+                            } else {
+                              return "not found";
+                            }
+                          })();
+                          return text2(category_name);
                         })()
-                      );
-                    })()
+                      ])
+                    ),
+                    td(
+                      toList([]),
+                      toList([
+                        (() => {
+                          let sign = (() => {
+                            let $ = t.is_inflow;
+                            if ($) {
+                              return "";
+                            } else {
+                              return "-";
+                            }
+                          })();
+                          return text2(
+                            sign + (() => {
+                              let _pipe = t.value.s;
+                              return to_string(_pipe);
+                            })() + "." + (() => {
+                              let _pipe = t.value.b;
+                              return to_string(_pipe);
+                            })()
+                          );
+                        })()
+                      ])
+                    )
                   ])
-                )
-              ])
-            );
-          }
+                );
+              }
+            )
+          ])
         )
       )
     ])
@@ -3192,8 +3883,8 @@ function category_target(cat) {
   if ($ instanceof Some) {
     let v = $[0];
     if (v instanceof Monthly) {
-      let value = v.target;
-      return money_to_string(value);
+      let value2 = v.target;
+      return money_to_string(value2);
     } else {
       return "";
     }
@@ -3201,9 +3892,10 @@ function category_target(cat) {
     return "";
   }
 }
-function budget_categories(categories, transactions, allocations, active_category) {
+function budget_categories(model) {
   let size = (() => {
-    if (active_category instanceof None) {
+    let $ = model.selected_category;
+    if ($ instanceof None) {
       return "";
     } else {
       return "w-75";
@@ -3218,7 +3910,26 @@ function budget_categories(categories, transactions, allocations, active_categor
           tr(
             toList([]),
             toList([
-              th(toList([]), toList([text2("Category")])),
+              th(
+                toList([]),
+                toList([
+                  text2("Category"),
+                  (() => {
+                    let btn_label = (() => {
+                      let $ = model.show_add_category_ui;
+                      if ($) {
+                        return "-";
+                      } else {
+                        return "+";
+                      }
+                    })();
+                    return button(
+                      toList([on_click(new ShowAddCategoryUI())]),
+                      toList([text(btn_label)])
+                    );
+                  })()
+                ])
+              ),
               th(toList([]), toList([text2("Balance")]))
             ])
           )
@@ -3226,37 +3937,79 @@ function budget_categories(categories, transactions, allocations, active_categor
       ),
       tbody(
         toList([]),
-        map(
-          categories,
-          (c) => {
-            let active_class = (() => {
-              if (active_category instanceof None) {
-                return "";
-              } else {
-                let selected_c = active_category[0];
-                let $ = selected_c.id === c.id;
-                if ($) {
-                  return "table-active";
-                } else {
+        (() => {
+          let cats_ui = map(
+            model.categories,
+            (c) => {
+              let active_class = (() => {
+                let $ = model.selected_category;
+                if ($ instanceof None) {
                   return "";
+                } else {
+                  let selected_c = $[0];
+                  let $1 = selected_c.id === c.id;
+                  if ($1) {
+                    return "table-active";
+                  } else {
+                    return "";
+                  }
                 }
-              }
-            })();
-            return tr(
-              toList([
-                on_click(new SelectCategory(c)),
-                class$(active_class)
-              ]),
-              toList([
-                td(
+              })();
+              return tr(
+                toList([
+                  on_click(new SelectCategory(c)),
+                  class$(active_class)
+                ]),
+                toList([
+                  td(toList([]), toList([text2(c.name)])),
+                  td(toList([]), toList([text2(category_target(c))]))
+                ])
+              );
+            }
+          );
+          let add_cat_ui = (() => {
+            let $ = model.show_add_category_ui;
+            if (!$) {
+              return toList([]);
+            } else {
+              return toList([
+                tr(
                   toList([]),
-                  toList([text2(c.id + ": " + c.name)])
-                ),
-                td(toList([]), toList([text2(category_target(c))]))
-              ])
-            );
-          }
-        )
+                  toList([
+                    td(
+                      toList([]),
+                      toList([
+                        input(
+                          toList([
+                            on_input(
+                              (var0) => {
+                                return new UserUpdatedCategoryName(var0);
+                              }
+                            ),
+                            placeholder("category name"),
+                            id("exampleFormControlInput1"),
+                            class$("form-control"),
+                            type_("text")
+                          ])
+                        )
+                      ])
+                    ),
+                    td(
+                      toList([]),
+                      toList([
+                        button(
+                          toList([on_click(new AddCategory())]),
+                          toList([text("Add")])
+                        )
+                      ])
+                    )
+                  ])
+                )
+              ]);
+            }
+          })();
+          return flatten(toList([add_cat_ui, cats_ui]));
+        })()
       )
     ])
   );
@@ -3318,13 +4071,13 @@ function category_activity(cat, transactions) {
   let _pipe$3 = money_to_string(_pipe$2);
   return prepend3(_pipe$3, "-");
 }
-function month_to_string(value) {
+function month_to_string(value2) {
   return (() => {
-    let _pipe = value.month;
+    let _pipe = value2.month;
     let _pipe$1 = to_string(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })() + "." + (() => {
-    let _pipe = value.year;
+    let _pipe = value2.year;
     let _pipe$1 = to_string(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })();
@@ -3441,12 +4194,7 @@ function view(model) {
               (() => {
                 let $ = model.route;
                 if ($ instanceof Home) {
-                  return budget_categories(
-                    model.categories,
-                    model.transactions,
-                    model.allocations,
-                    model.selected_category
-                  );
+                  return budget_categories(model);
                 } else if ($ instanceof TransactionsRoute) {
                   return budget_transactions(
                     model.transactions,
@@ -3489,7 +4237,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      89,
+      113,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
