@@ -41,6 +41,13 @@ type Msg {
   UserUpdatedTransactionCategory(cat: String)
   UserUpdatedTransactionAmount(amount: String)
   AddTransactionResult(c: Result(Transaction, lustre_http.HttpError))
+  EditTarget(c: Category)
+  SaveTarget(c: Category)
+  DeleteTarget(c: Category)
+  UserTargetUpdateAmount(amount: String)
+  EditTargetCadence(is_monthly: Bool)
+  UserTargetUpdateCustomDate(date: String)
+  CategorySaveTarget(a: Result(Category, lustre_http.HttpError))
 }
 
 type Model {
@@ -55,6 +62,7 @@ type Model {
     show_add_category_ui: Bool,
     user_category_name_input: String,
     user_transaction_input: TransactionForm,
+    target_edit: TargetEdit,
   )
 }
 
@@ -65,6 +73,10 @@ type TransactionForm {
     category: option.Option(Category),
     amount: option.Option(Money),
   )
+}
+
+type TargetEdit {
+  TargetEdit(cat_id: String, enabled: Bool, target: Target)
 }
 
 pub type Cycle {
@@ -219,7 +231,109 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
+    EditTarget(c) -> #(
+      Model(
+        ..model,
+        target_edit: TargetEdit(..model.target_edit, enabled: True),
+      ),
+      effect.none(),
+    )
+    SaveTarget(c) -> {
+      #(
+        Model(
+          ..model,
+          target_edit: TargetEdit(..model.target_edit, enabled: False),
+        ),
+        save_target_eff(c, model.target_edit.target),
+      )
+    }
+    DeleteTarget(c) -> #(
+      Model(
+        ..model,
+        target_edit: TargetEdit(..model.target_edit, enabled: False),
+      ),
+      delete_target_eff(c),
+    )
+    UserTargetUpdateAmount(amount) -> {
+      let amount = amount |> int.parse |> result.unwrap(0)
+      let target = case model.target_edit.target {
+        Custom(_, date) -> Custom(Money(amount, 0), date)
+        Monthly(_) -> Monthly(Money(amount, 0))
+      }
+      #(
+        Model(
+          ..model,
+          target_edit: TargetEdit(..model.target_edit, target: target),
+        ),
+        effect.none(),
+      )
+    }
+    EditTargetCadence(is_monthly) -> {
+      let now = birl.now() |> date_utils.time_to_day()
+      let target = case model.target_edit.target, is_monthly {
+        Custom(money, _), True -> Monthly(money)
+        Monthly(money), False -> Custom(money, MonthInYear(now.month, now.year))
+        target, _ -> target
+      }
+      #(
+        Model(
+          ..model,
+          target_edit: TargetEdit(..model.target_edit, target: target),
+        ),
+        effect.none(),
+      )
+    }
+    UserTargetUpdateCustomDate(date) -> {
+      let parsed_date =
+        date_utils.from_date_string(date)
+        |> result.lazy_unwrap(fn() { birl.now() |> date_utils.time_to_day() })
+      let target = case model.target_edit.target {
+        Custom(money, _) ->
+          Custom(money, MonthInYear(parsed_date.month, parsed_date.year))
+        Monthly(money) -> Monthly(money)
+      }
+      #(
+        Model(
+          ..model,
+          target_edit: TargetEdit(..model.target_edit, target: target),
+        ),
+        effect.none(),
+      )
+    }
+    CategorySaveTarget(Ok(cat)) -> #(
+      Model(
+        ..model,
+        categories: model.categories
+          |> list.map(fn(c) {
+            case c.id == cat.id {
+              False -> c
+              True -> cat
+            }
+          }),
+      ),
+      effect.none(),
+    )
+    CategorySaveTarget(Error(_)) -> #(model, effect.none())
   }
+}
+
+fn save_target_eff(
+  category: Category,
+  target_edit: Target,
+) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    dispatch(
+      CategorySaveTarget(Ok(
+        Category(..category, target: option.Some(target_edit)),
+      )),
+    )
+  })
+}
+
+fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    dispatch(CategorySaveTarget(Ok(Category(..category, target: option.None))))
+  })
 }
 
 fn init(_flags) -> #(Model, effect.Effect(Msg)) {
@@ -240,6 +354,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       show_add_category_ui: False,
       user_category_name_input: "",
       user_transaction_input: TransactionForm("", "", option.None, option.None),
+      target_edit: TargetEdit("", False, Monthly(Money(0, 0))),
     ),
     effect.batch([modem.init(on_route_change), initial_eff()]),
   )
@@ -563,8 +678,7 @@ fn view(model: Model) -> element.Element(Msg) {
         },
         html.div([], [
           case model.selected_category, model.route {
-            option.Some(c), Home ->
-              category_details(c, model.allocations, model.transactions)
+            option.Some(c), Home -> category_details(c, model)
             _, _ -> html.text("")
           },
         ]),
@@ -601,25 +715,111 @@ fn user_selection(m: Model) -> element.Element(Msg) {
   ])
 }
 
-fn category_details(
-  category: Category,
-  allocations: List(Allocation),
-  transactions: List(Transaction),
-) -> element.Element(Msg) {
-  html.div([attribute.class("row")], [
-    html.div([attribute.class("col")], [
-      html.div([], [html.text("Target")]),
-      html.div([], [html.text(target_string(category))]),
+fn category_details(category: Category, model: Model) -> element.Element(Msg) {
+  html.div([attribute.class("col")], [
+    html.div([attribute.class("row")], [
+      html.div([attribute.class("col")], [
+        html.div([], [html.text("Assigned")]),
+        html.div([], [html.text(category_assigned(category, model.allocations))]),
+      ]),
+      html.div([attribute.class("col")], [
+        html.div([], [html.text("Activity")]),
+        html.div([], [
+          html.text(category_activity(category, model.transactions)),
+        ]),
+      ]),
     ]),
-    html.div([attribute.class("col")], [
-      html.div([], [html.text("Assigned")]),
-      html.div([], [html.text(category_assigned(category, allocations))]),
-    ]),
-    html.div([attribute.class("col")], [
-      html.div([], [html.text("Activity")]),
-      html.div([], [html.text(category_activity(category, transactions))]),
-    ]),
+    category_target_ui(category, model.target_edit),
   ])
+}
+
+fn category_target_ui(c: Category, et: TargetEdit) -> element.Element(Msg) {
+  let cat_id = c.id
+  case et.cat_id, et.enabled {
+    cat_id, True ->
+      html.div([attribute.class("col")], [
+        html.div([], [
+          html.text("Target"),
+          html.button([event.on_click(SaveTarget(c))], [element.text("Save")]),
+          html.button([event.on_click(DeleteTarget(c))], [
+            element.text("Delete"),
+          ]),
+        ]),
+        target_switcher_ui(et),
+        case et.target {
+          Custom(money, date) ->
+            html.div([], [
+              html.text("Amount needed for date: "),
+              html.input([
+                event.on_input(UserTargetUpdateAmount),
+                attribute.placeholder("amount"),
+                attribute.class("form-control"),
+                attribute.type_("text"),
+                attribute.style([#("width", "120px")]),
+              ]),
+              html.input([
+                event.on_input(UserTargetUpdateCustomDate),
+                attribute.placeholder("date"),
+                attribute.class("form-control"),
+                attribute.type_("date"),
+              ]),
+            ])
+          Monthly(money) ->
+            html.div([], [
+              html.text("Amount monthly: "),
+              html.input([
+                event.on_input(UserTargetUpdateAmount),
+                attribute.placeholder("amount"),
+                attribute.class("form-control"),
+                attribute.type_("text"),
+                attribute.style([#("width", "120px")]),
+                // attribute.value(money.b |> int.to_string),
+              ]),
+            ])
+        },
+      ])
+
+    _, _ ->
+      html.div([attribute.class("col")], [
+        html.div([], [
+          html.text("Target"),
+          html.button([event.on_click(EditTarget(c))], [element.text("Edit")]),
+        ]),
+        html.div([], [html.text(target_string(c))]),
+      ])
+  }
+}
+
+fn target_switcher_ui(et: TargetEdit) -> element.Element(Msg) {
+  let #(monthly, custom) = case et.target {
+    Custom(_, _) -> #("", "active")
+    Monthly(_) -> #("active", "")
+  }
+  html.div(
+    [
+      attribute.attribute("aria-label", "Basic example"),
+      attribute.role("group"),
+      attribute.class("btn-group"),
+    ],
+    [
+      html.button(
+        [
+          event.on_click(EditTargetCadence(True)),
+          attribute.class("btn btn-primary" <> monthly),
+          attribute.type_("button"),
+        ],
+        [html.text("Monthly")],
+      ),
+      html.button(
+        [
+          event.on_click(EditTargetCadence(False)),
+          attribute.class("btn btn-primary" <> custom),
+          attribute.type_("button"),
+        ],
+        [html.text("Custom")],
+      ),
+    ],
+  )
 }
 
 fn target_string(category: Category) -> String {

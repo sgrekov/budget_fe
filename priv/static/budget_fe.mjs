@@ -321,6 +321,22 @@ function from_result(result) {
     return new None();
   }
 }
+function map(option2, fun) {
+  if (option2 instanceof Some) {
+    let x = option2[0];
+    return new Some(fun(x));
+  } else {
+    return new None();
+  }
+}
+function flatten(option2) {
+  if (option2 instanceof Some) {
+    let x = option2[0];
+    return x;
+  } else {
+    return new None();
+  }
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/dict.mjs
 function insert(dict, key, value3) {
@@ -420,25 +436,25 @@ function map_loop(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function map(list2, fun) {
+function map2(list2, fun) {
   return map_loop(list2, fun, toList([]));
 }
 function append_loop(loop$first, loop$second) {
   while (true) {
     let first3 = loop$first;
-    let second = loop$second;
+    let second2 = loop$second;
     if (first3.hasLength(0)) {
-      return second;
+      return second2;
     } else {
       let item = first3.head;
       let rest$1 = first3.tail;
       loop$first = rest$1;
-      loop$second = prepend(item, second);
+      loop$second = prepend(item, second2);
     }
   }
 }
-function append(first3, second) {
-  return append_loop(reverse(first3), second);
+function append(first3, second2) {
+  return append_loop(reverse(first3), second2);
 }
 function reverse_and_prepend(loop$prefix, loop$suffix) {
   while (true) {
@@ -468,7 +484,7 @@ function concat_loop(loop$lists, loop$acc) {
     }
   }
 }
-function flatten(lists) {
+function flatten2(lists) {
   return concat_loop(lists, toList([]));
 }
 function fold(loop$list, loop$initial, loop$fun) {
@@ -527,6 +543,25 @@ function find(loop$list, loop$is_desired) {
     }
   }
 }
+function any(loop$list, loop$predicate) {
+  while (true) {
+    let list2 = loop$list;
+    let predicate = loop$predicate;
+    if (list2.hasLength(0)) {
+      return false;
+    } else {
+      let first$1 = list2.head;
+      let rest$1 = list2.tail;
+      let $ = predicate(first$1);
+      if ($) {
+        return true;
+      } else {
+        loop$list = rest$1;
+        loop$predicate = predicate;
+      }
+    }
+  }
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/string.mjs
 function slice(string3, idx, len) {
@@ -547,6 +582,11 @@ function slice(string3, idx, len) {
       return string_slice(string3, idx, len);
     }
   }
+}
+function concat2(strings) {
+  let _pipe = strings;
+  let _pipe$1 = concat(_pipe);
+  return identity(_pipe$1);
 }
 function repeat_loop(loop$string, loop$times, loop$acc) {
   while (true) {
@@ -611,7 +651,7 @@ function split2(x, substring) {
     let _pipe = x;
     let _pipe$1 = identity(_pipe);
     let _pipe$2 = split(_pipe$1, substring);
-    return map(_pipe$2, identity);
+    return map2(_pipe$2, identity);
   }
 }
 function inspect2(term) {
@@ -620,7 +660,7 @@ function inspect2(term) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/result.mjs
-function map2(result, fun) {
+function map3(result, fun) {
   if (result.isOk()) {
     let x = result[0];
     return new Ok(fun(x));
@@ -647,6 +687,22 @@ function try$(result, fun) {
     return new Error(e);
   }
 }
+function unwrap(result, default$) {
+  if (result.isOk()) {
+    let v = result[0];
+    return v;
+  } else {
+    return default$;
+  }
+}
+function lazy_unwrap(result, default$) {
+  if (result.isOk()) {
+    let v = result[0];
+    return v;
+  } else {
+    return default$();
+  }
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
 var DecodeError = class extends CustomType {
@@ -660,7 +716,7 @@ var DecodeError = class extends CustomType {
 function int(data) {
   return decode_int(data);
 }
-function any(decoders) {
+function any2(decoders) {
   return (data) => {
     if (decoders.hasLength(0)) {
       return new Error(
@@ -674,16 +730,16 @@ function any(decoders) {
         let decoded = $[0];
         return new Ok(decoded);
       } else {
-        return any(decoders$1)(data);
+        return any2(decoders$1)(data);
       }
     }
   };
 }
 function push_path(error, name) {
   let name$1 = identity(name);
-  let decoder = any(
+  let decoder = any2(
     toList([string, (x) => {
-      return map2(int(x), to_string);
+      return map3(int(x), to_string);
     }])
   );
   let name$2 = (() => {
@@ -703,7 +759,7 @@ function map_errors(result, f) {
   return map_error(
     result,
     (_capture) => {
-      return map(_capture, f);
+      return map2(_capture, f);
     }
   );
 }
@@ -1515,6 +1571,16 @@ function pop_grapheme(string3) {
 function split(xs, pattern) {
   return List.fromArray(xs.split(pattern));
 }
+function join(xs, separator) {
+  const iterator = xs[Symbol.iterator]();
+  let result = iterator.next().value || "";
+  let current = iterator.next();
+  while (!current.done) {
+    result = result + separator + current.value;
+    current = iterator.next();
+  }
+  return result;
+}
 function concat(xs) {
   let result = "";
   for (const x of xs) {
@@ -1806,6 +1872,14 @@ function round2(x) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/int.mjs
+function absolute_value(x) {
+  let $ = x >= 0;
+  if ($) {
+    return x;
+  } else {
+    return x * -1;
+  }
+}
 function to_base16(x) {
   return int_to_base_string(x, 16);
 }
@@ -1815,17 +1889,691 @@ function random(max) {
   return round2(_pipe$1);
 }
 
-// build/dev/javascript/birl/birl.mjs
-var Day2 = class extends CustomType {
-  constructor(year, month, date) {
+// build/dev/javascript/birl/birl/duration.mjs
+var Duration = class extends CustomType {
+  constructor(x0) {
     super();
-    this.year = year;
-    this.month = month;
+    this[0] = x0;
+  }
+};
+var MicroSecond = class extends CustomType {
+};
+var MilliSecond = class extends CustomType {
+};
+var Second = class extends CustomType {
+};
+var Minute = class extends CustomType {
+};
+var Hour = class extends CustomType {
+};
+var Day = class extends CustomType {
+};
+var Week = class extends CustomType {
+};
+var Month = class extends CustomType {
+};
+var Year = class extends CustomType {
+};
+function extract(duration, unit_value) {
+  return [divideInt(duration, unit_value), remainderInt(duration, unit_value)];
+}
+var milli_second = 1e3;
+var second = 1e6;
+var minute = 6e7;
+var hour = 36e8;
+var day = 864e8;
+var week = 6048e8;
+var month = 2592e9;
+var year = 31536e9;
+function new$(values) {
+  let _pipe = values;
+  let _pipe$1 = fold(
+    _pipe,
+    0,
+    (total, current) => {
+      if (current[1] instanceof MicroSecond) {
+        let amount = current[0];
+        return total + amount;
+      } else if (current[1] instanceof MilliSecond) {
+        let amount = current[0];
+        return total + amount * milli_second;
+      } else if (current[1] instanceof Second) {
+        let amount = current[0];
+        return total + amount * second;
+      } else if (current[1] instanceof Minute) {
+        let amount = current[0];
+        return total + amount * minute;
+      } else if (current[1] instanceof Hour) {
+        let amount = current[0];
+        return total + amount * hour;
+      } else if (current[1] instanceof Day) {
+        let amount = current[0];
+        return total + amount * day;
+      } else if (current[1] instanceof Week) {
+        let amount = current[0];
+        return total + amount * week;
+      } else if (current[1] instanceof Month) {
+        let amount = current[0];
+        return total + amount * month;
+      } else {
+        let amount = current[0];
+        return total + amount * year;
+      }
+    }
+  );
+  return new Duration(_pipe$1);
+}
+function decompose(duration) {
+  let value3 = duration[0];
+  let absolute_value2 = absolute_value(value3);
+  let $ = extract(absolute_value2, year);
+  let years$1 = $[0];
+  let remaining = $[1];
+  let $1 = extract(remaining, month);
+  let months$1 = $1[0];
+  let remaining$1 = $1[1];
+  let $2 = extract(remaining$1, week);
+  let weeks$1 = $2[0];
+  let remaining$2 = $2[1];
+  let $3 = extract(remaining$2, day);
+  let days$1 = $3[0];
+  let remaining$3 = $3[1];
+  let $4 = extract(remaining$3, hour);
+  let hours$1 = $4[0];
+  let remaining$4 = $4[1];
+  let $5 = extract(remaining$4, minute);
+  let minutes$1 = $5[0];
+  let remaining$5 = $5[1];
+  let $6 = extract(remaining$5, second);
+  let seconds$1 = $6[0];
+  let remaining$6 = $6[1];
+  let $7 = extract(remaining$6, milli_second);
+  let milli_seconds$1 = $7[0];
+  let remaining$7 = $7[1];
+  let _pipe = toList([
+    [years$1, new Year()],
+    [months$1, new Month()],
+    [weeks$1, new Week()],
+    [days$1, new Day()],
+    [hours$1, new Hour()],
+    [minutes$1, new Minute()],
+    [seconds$1, new Second()],
+    [milli_seconds$1, new MilliSecond()],
+    [remaining$7, new MicroSecond()]
+  ]);
+  let _pipe$1 = filter(_pipe, (item) => {
+    return item[0] > 0;
+  });
+  return map2(
+    _pipe$1,
+    (item) => {
+      let $8 = value3 < 0;
+      if ($8) {
+        return [-1 * item[0], item[1]];
+      } else {
+        return item;
+      }
+    }
+  );
+}
+
+// build/dev/javascript/birl/birl/zones.mjs
+var list = /* @__PURE__ */ toList([
+  ["Africa/Abidjan", 0],
+  ["Africa/Algiers", 3600],
+  ["Africa/Bissau", 0],
+  ["Africa/Cairo", 7200],
+  ["Africa/Casablanca", 3600],
+  ["Africa/Ceuta", 3600],
+  ["Africa/El_Aaiun", 3600],
+  ["Africa/Johannesburg", 7200],
+  ["Africa/Juba", 7200],
+  ["Africa/Khartoum", 7200],
+  ["Africa/Lagos", 3600],
+  ["Africa/Maputo", 7200],
+  ["Africa/Monrovia", 0],
+  ["Africa/Nairobi", 10800],
+  ["Africa/Ndjamena", 3600],
+  ["Africa/Sao_Tome", 0],
+  ["Africa/Tripoli", 7200],
+  ["Africa/Tunis", 3600],
+  ["Africa/Windhoek", 7200],
+  ["America/Adak", -36e3],
+  ["America/Anchorage", -32400],
+  ["America/Araguaina", -10800],
+  ["America/Argentina/Buenos_Aires", -10800],
+  ["America/Argentina/Catamarca", -10800],
+  ["America/Argentina/Cordoba", -10800],
+  ["America/Argentina/Jujuy", -10800],
+  ["America/Argentina/La_Rioja", -10800],
+  ["America/Argentina/Mendoza", -10800],
+  ["America/Argentina/Rio_Gallegos", -10800],
+  ["America/Argentina/Salta", -10800],
+  ["America/Argentina/San_Juan", -10800],
+  ["America/Argentina/San_Luis", -10800],
+  ["America/Argentina/Tucuman", -10800],
+  ["America/Argentina/Ushuaia", -10800],
+  ["America/Asuncion", -14400],
+  ["America/Bahia", -10800],
+  ["America/Bahia_Banderas", -21600],
+  ["America/Barbados", -14400],
+  ["America/Belem", -10800],
+  ["America/Belize", -21600],
+  ["America/Boa_Vista", -14400],
+  ["America/Bogota", -18e3],
+  ["America/Boise", -25200],
+  ["America/Cambridge_Bay", -25200],
+  ["America/Campo_Grande", -14400],
+  ["America/Cancun", -18e3],
+  ["America/Caracas", -14400],
+  ["America/Cayenne", -10800],
+  ["America/Chicago", -21600],
+  ["America/Chihuahua", -21600],
+  ["America/Ciudad_Juarez", -25200],
+  ["America/Costa_Rica", -21600],
+  ["America/Cuiaba", -14400],
+  ["America/Danmarkshavn", 0],
+  ["America/Dawson", -25200],
+  ["America/Dawson_Creek", -25200],
+  ["America/Denver", -25200],
+  ["America/Detroit", -18e3],
+  ["America/Edmonton", -25200],
+  ["America/Eirunepe", -18e3],
+  ["America/El_Salvador", -21600],
+  ["America/Fort_Nelson", -25200],
+  ["America/Fortaleza", -10800],
+  ["America/Glace_Bay", -14400],
+  ["America/Goose_Bay", -14400],
+  ["America/Grand_Turk", -18e3],
+  ["America/Guatemala", -21600],
+  ["America/Guayaquil", -18e3],
+  ["America/Guyana", -14400],
+  ["America/Halifax", -14400],
+  ["America/Havana", -18e3],
+  ["America/Hermosillo", -25200],
+  ["America/Indiana/Indianapolis", -18e3],
+  ["America/Indiana/Knox", -21600],
+  ["America/Indiana/Marengo", -18e3],
+  ["America/Indiana/Petersburg", -18e3],
+  ["America/Indiana/Tell_City", -21600],
+  ["America/Indiana/Vevay", -18e3],
+  ["America/Indiana/Vincennes", -18e3],
+  ["America/Indiana/Winamac", -18e3],
+  ["America/Inuvik", -25200],
+  ["America/Iqaluit", -18e3],
+  ["America/Jamaica", -18e3],
+  ["America/Juneau", -32400],
+  ["America/Kentucky/Louisville", -18e3],
+  ["America/Kentucky/Monticello", -18e3],
+  ["America/La_Paz", -14400],
+  ["America/Lima", -18e3],
+  ["America/Los_Angeles", -28800],
+  ["America/Maceio", -10800],
+  ["America/Managua", -21600],
+  ["America/Manaus", -14400],
+  ["America/Martinique", -14400],
+  ["America/Matamoros", -21600],
+  ["America/Mazatlan", -25200],
+  ["America/Menominee", -21600],
+  ["America/Merida", -21600],
+  ["America/Metlakatla", -32400],
+  ["America/Mexico_City", -21600],
+  ["America/Miquelon", -10800],
+  ["America/Moncton", -14400],
+  ["America/Monterrey", -21600],
+  ["America/Montevideo", -10800],
+  ["America/New_York", -18e3],
+  ["America/Nome", -32400],
+  ["America/Noronha", -7200],
+  ["America/North_Dakota/Beulah", -21600],
+  ["America/North_Dakota/Center", -21600],
+  ["America/North_Dakota/New_Salem", -21600],
+  ["America/Nuuk", -7200],
+  ["America/Ojinaga", -21600],
+  ["America/Panama", -18e3],
+  ["America/Paramaribo", -10800],
+  ["America/Phoenix", -25200],
+  ["America/Port-au-Prince", -18e3],
+  ["America/Porto_Velho", -14400],
+  ["America/Puerto_Rico", -14400],
+  ["America/Punta_Arenas", -10800],
+  ["America/Rankin_Inlet", -21600],
+  ["America/Recife", -10800],
+  ["America/Regina", -21600],
+  ["America/Resolute", -21600],
+  ["America/Rio_Branco", -18e3],
+  ["America/Santarem", -10800],
+  ["America/Santiago", -14400],
+  ["America/Santo_Domingo", -14400],
+  ["America/Sao_Paulo", -10800],
+  ["America/Scoresbysund", -7200],
+  ["America/Sitka", -32400],
+  ["America/St_Johns", -12600],
+  ["America/Swift_Current", -21600],
+  ["America/Tegucigalpa", -21600],
+  ["America/Thule", -14400],
+  ["America/Tijuana", -28800],
+  ["America/Toronto", -18e3],
+  ["America/Vancouver", -28800],
+  ["America/Whitehorse", -25200],
+  ["America/Winnipeg", -21600],
+  ["America/Yakutat", -32400],
+  ["Antarctica/Casey", 28800],
+  ["Antarctica/Davis", 25200],
+  ["Antarctica/Macquarie", 36e3],
+  ["Antarctica/Mawson", 18e3],
+  ["Antarctica/Palmer", -10800],
+  ["Antarctica/Rothera", -10800],
+  ["Antarctica/Troll", 0],
+  ["Antarctica/Vostok", 18e3],
+  ["Asia/Almaty", 18e3],
+  ["Asia/Amman", 10800],
+  ["Asia/Anadyr", 43200],
+  ["Asia/Aqtau", 18e3],
+  ["Asia/Aqtobe", 18e3],
+  ["Asia/Ashgabat", 18e3],
+  ["Asia/Atyrau", 18e3],
+  ["Asia/Baghdad", 10800],
+  ["Asia/Baku", 14400],
+  ["Asia/Bangkok", 25200],
+  ["Asia/Barnaul", 25200],
+  ["Asia/Beirut", 7200],
+  ["Asia/Bishkek", 21600],
+  ["Asia/Chita", 32400],
+  ["Asia/Choibalsan", 28800],
+  ["Asia/Colombo", 19800],
+  ["Asia/Damascus", 10800],
+  ["Asia/Dhaka", 21600],
+  ["Asia/Dili", 32400],
+  ["Asia/Dubai", 14400],
+  ["Asia/Dushanbe", 18e3],
+  ["Asia/Famagusta", 7200],
+  ["Asia/Gaza", 7200],
+  ["Asia/Hebron", 7200],
+  ["Asia/Ho_Chi_Minh", 25200],
+  ["Asia/Hong_Kong", 28800],
+  ["Asia/Hovd", 25200],
+  ["Asia/Irkutsk", 28800],
+  ["Asia/Jakarta", 25200],
+  ["Asia/Jayapura", 32400],
+  ["Asia/Jerusalem", 7200],
+  ["Asia/Kabul", 16200],
+  ["Asia/Kamchatka", 43200],
+  ["Asia/Karachi", 18e3],
+  ["Asia/Kathmandu", 20700],
+  ["Asia/Khandyga", 32400],
+  ["Asia/Kolkata", 19800],
+  ["Asia/Krasnoyarsk", 25200],
+  ["Asia/Kuching", 28800],
+  ["Asia/Macau", 28800],
+  ["Asia/Magadan", 39600],
+  ["Asia/Makassar", 28800],
+  ["Asia/Manila", 28800],
+  ["Asia/Nicosia", 7200],
+  ["Asia/Novokuznetsk", 25200],
+  ["Asia/Novosibirsk", 25200],
+  ["Asia/Omsk", 21600],
+  ["Asia/Oral", 18e3],
+  ["Asia/Pontianak", 25200],
+  ["Asia/Pyongyang", 32400],
+  ["Asia/Qatar", 10800],
+  ["Asia/Qostanay", 18e3],
+  ["Asia/Qyzylorda", 18e3],
+  ["Asia/Riyadh", 10800],
+  ["Asia/Sakhalin", 39600],
+  ["Asia/Samarkand", 18e3],
+  ["Asia/Seoul", 32400],
+  ["Asia/Shanghai", 28800],
+  ["Asia/Singapore", 28800],
+  ["Asia/Srednekolymsk", 39600],
+  ["Asia/Taipei", 28800],
+  ["Asia/Tashkent", 18e3],
+  ["Asia/Tbilisi", 14400],
+  ["Asia/Tehran", 12600],
+  ["Asia/Thimphu", 21600],
+  ["Asia/Tokyo", 32400],
+  ["Asia/Tomsk", 25200],
+  ["Asia/Ulaanbaatar", 28800],
+  ["Asia/Urumqi", 21600],
+  ["Asia/Ust-Nera", 36e3],
+  ["Asia/Vladivostok", 36e3],
+  ["Asia/Yakutsk", 32400],
+  ["Asia/Yangon", 23400],
+  ["Asia/Yekaterinburg", 18e3],
+  ["Asia/Yerevan", 14400],
+  ["Atlantic/Azores", -3600],
+  ["Atlantic/Bermuda", -14400],
+  ["Atlantic/Canary", 0],
+  ["Atlantic/Cape_Verde", -3600],
+  ["Atlantic/Faroe", 0],
+  ["Atlantic/Madeira", 0],
+  ["Atlantic/South_Georgia", -7200],
+  ["Atlantic/Stanley", -10800],
+  ["Australia/Adelaide", 34200],
+  ["Australia/Brisbane", 36e3],
+  ["Australia/Broken_Hill", 34200],
+  ["Australia/Darwin", 34200],
+  ["Australia/Eucla", 31500],
+  ["Australia/Hobart", 36e3],
+  ["Australia/Lindeman", 36e3],
+  ["Australia/Lord_Howe", 37800],
+  ["Australia/Melbourne", 36e3],
+  ["Australia/Perth", 28800],
+  ["Australia/Sydney", 36e3],
+  ["CET", 3600],
+  ["CST6CDT", -21600],
+  ["EET", 7200],
+  ["EST", -18e3],
+  ["EST5EDT", -18e3],
+  ["Etc/GMT", 0],
+  ["Etc/GMT+1", -3600],
+  ["Etc/GMT+10", -36e3],
+  ["Etc/GMT+11", -39600],
+  ["Etc/GMT+12", -43200],
+  ["Etc/GMT+2", -7200],
+  ["Etc/GMT+3", -10800],
+  ["Etc/GMT+4", -14400],
+  ["Etc/GMT+5", -18e3],
+  ["Etc/GMT+6", -21600],
+  ["Etc/GMT+7", -25200],
+  ["Etc/GMT+8", -28800],
+  ["Etc/GMT+9", -32400],
+  ["Etc/GMT-1", 3600],
+  ["Etc/GMT-10", 36e3],
+  ["Etc/GMT-11", 39600],
+  ["Etc/GMT-12", 43200],
+  ["Etc/GMT-13", 46800],
+  ["Etc/GMT-14", 50400],
+  ["Etc/GMT-2", 7200],
+  ["Etc/GMT-3", 10800],
+  ["Etc/GMT-4", 14400],
+  ["Etc/GMT-5", 18e3],
+  ["Etc/GMT-6", 21600],
+  ["Etc/GMT-7", 25200],
+  ["Etc/GMT-8", 28800],
+  ["Etc/GMT-9", 32400],
+  ["Etc/UTC", 0],
+  ["Europe/Andorra", 3600],
+  ["Europe/Astrakhan", 14400],
+  ["Europe/Athens", 7200],
+  ["Europe/Belgrade", 3600],
+  ["Europe/Berlin", 3600],
+  ["Europe/Brussels", 3600],
+  ["Europe/Bucharest", 7200],
+  ["Europe/Budapest", 3600],
+  ["Europe/Chisinau", 7200],
+  ["Europe/Dublin", 3600],
+  ["Europe/Gibraltar", 3600],
+  ["Europe/Helsinki", 7200],
+  ["Europe/Istanbul", 10800],
+  ["Europe/Kaliningrad", 7200],
+  ["Europe/Kirov", 10800],
+  ["Europe/Kyiv", 7200],
+  ["Europe/Lisbon", 0],
+  ["Europe/London", 0],
+  ["Europe/Madrid", 3600],
+  ["Europe/Malta", 3600],
+  ["Europe/Minsk", 10800],
+  ["Europe/Moscow", 10800],
+  ["Europe/Paris", 3600],
+  ["Europe/Prague", 3600],
+  ["Europe/Riga", 7200],
+  ["Europe/Rome", 3600],
+  ["Europe/Samara", 14400],
+  ["Europe/Saratov", 14400],
+  ["Europe/Simferopol", 10800],
+  ["Europe/Sofia", 7200],
+  ["Europe/Tallinn", 7200],
+  ["Europe/Tirane", 3600],
+  ["Europe/Ulyanovsk", 14400],
+  ["Europe/Vienna", 3600],
+  ["Europe/Vilnius", 7200],
+  ["Europe/Volgograd", 10800],
+  ["Europe/Warsaw", 3600],
+  ["Europe/Zurich", 3600],
+  ["HST", -36e3],
+  ["Indian/Chagos", 21600],
+  ["Indian/Maldives", 18e3],
+  ["Indian/Mauritius", 14400],
+  ["MET", 3600],
+  ["MST", -25200],
+  ["MST7MDT", -25200],
+  ["PST8PDT", -28800],
+  ["Pacific/Apia", 46800],
+  ["Pacific/Auckland", 43200],
+  ["Pacific/Bougainville", 39600],
+  ["Pacific/Chatham", 45900],
+  ["Pacific/Easter", -21600],
+  ["Pacific/Efate", 39600],
+  ["Pacific/Fakaofo", 46800],
+  ["Pacific/Fiji", 43200],
+  ["Pacific/Galapagos", -21600],
+  ["Pacific/Gambier", -32400],
+  ["Pacific/Guadalcanal", 39600],
+  ["Pacific/Guam", 36e3],
+  ["Pacific/Honolulu", -36e3],
+  ["Pacific/Kanton", 46800],
+  ["Pacific/Kiritimati", 50400],
+  ["Pacific/Kosrae", 39600],
+  ["Pacific/Kwajalein", 43200],
+  ["Pacific/Marquesas", -34200],
+  ["Pacific/Nauru", 43200],
+  ["Pacific/Niue", -39600],
+  ["Pacific/Norfolk", 39600],
+  ["Pacific/Noumea", 39600],
+  ["Pacific/Pago_Pago", -39600],
+  ["Pacific/Palau", 32400],
+  ["Pacific/Pitcairn", -28800],
+  ["Pacific/Port_Moresby", 36e3],
+  ["Pacific/Rarotonga", -36e3],
+  ["Pacific/Tahiti", -36e3],
+  ["Pacific/Tarawa", 43200],
+  ["Pacific/Tongatapu", 46800],
+  ["WET", 0]
+]);
+
+// build/dev/javascript/birl/birl_ffi.mjs
+function now() {
+  return Date.now() * 1e3;
+}
+function local_offset() {
+  const date = /* @__PURE__ */ new Date();
+  return -date.getTimezoneOffset();
+}
+function local_timezone() {
+  return new Some(Intl.DateTimeFormat().resolvedOptions().timeZone);
+}
+function monotonic_now() {
+  return Math.floor(globalThis.performance.now() * 1e3);
+}
+function to_parts(timestamp, offset) {
+  const date = new Date((timestamp + offset) / 1e3);
+  return [
+    [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()],
+    [
+      date.getUTCHours(),
+      date.getUTCMinutes(),
+      date.getUTCSeconds(),
+      date.getUTCMilliseconds()
+    ]
+  ];
+}
+
+// build/dev/javascript/birl/birl.mjs
+var Time = class extends CustomType {
+  constructor(wall_time, offset, timezone, monotonic_time) {
+    super();
+    this.wall_time = wall_time;
+    this.offset = offset;
+    this.timezone = timezone;
+    this.monotonic_time = monotonic_time;
+  }
+};
+var Day2 = class extends CustomType {
+  constructor(year2, month2, date) {
+    super();
+    this.year = year2;
+    this.month = month2;
     this.date = date;
   }
 };
 var Dec = class extends CustomType {
 };
+function generate_offset(offset) {
+  return guard(
+    offset === 0,
+    new Ok("Z"),
+    () => {
+      let $ = (() => {
+        let _pipe = toList([[offset, new MicroSecond()]]);
+        let _pipe$1 = new$(_pipe);
+        return decompose(_pipe$1);
+      })();
+      if ($.hasLength(2) && $.head[1] instanceof Hour && $.tail.head[1] instanceof Minute) {
+        let hour2 = $.head[0];
+        let minute2 = $.tail.head[0];
+        let _pipe = toList([
+          (() => {
+            let $1 = hour2 > 0;
+            if ($1) {
+              return concat2(
+                toList([
+                  "+",
+                  (() => {
+                    let _pipe2 = hour2;
+                    let _pipe$12 = to_string(_pipe2);
+                    return pad_left(_pipe$12, 2, "0");
+                  })()
+                ])
+              );
+            } else {
+              return concat2(
+                toList([
+                  "-",
+                  (() => {
+                    let _pipe2 = hour2;
+                    let _pipe$12 = absolute_value(_pipe2);
+                    let _pipe$2 = to_string(_pipe$12);
+                    return pad_left(_pipe$2, 2, "0");
+                  })()
+                ])
+              );
+            }
+          })(),
+          (() => {
+            let _pipe2 = minute2;
+            let _pipe$12 = absolute_value(_pipe2);
+            let _pipe$2 = to_string(_pipe$12);
+            return pad_left(_pipe$2, 2, "0");
+          })()
+        ]);
+        let _pipe$1 = join(_pipe, ":");
+        return new Ok(_pipe$1);
+      } else if ($.hasLength(1) && $.head[1] instanceof Hour) {
+        let hour2 = $.head[0];
+        let _pipe = toList([
+          (() => {
+            let $1 = hour2 > 0;
+            if ($1) {
+              return concat2(
+                toList([
+                  "+",
+                  (() => {
+                    let _pipe2 = hour2;
+                    let _pipe$12 = to_string(_pipe2);
+                    return pad_left(_pipe$12, 2, "0");
+                  })()
+                ])
+              );
+            } else {
+              return concat2(
+                toList([
+                  "-",
+                  (() => {
+                    let _pipe2 = hour2;
+                    let _pipe$12 = absolute_value(_pipe2);
+                    let _pipe$2 = to_string(_pipe$12);
+                    return pad_left(_pipe$2, 2, "0");
+                  })()
+                ])
+              );
+            }
+          })(),
+          "00"
+        ]);
+        let _pipe$1 = join(_pipe, ":");
+        return new Ok(_pipe$1);
+      } else {
+        return new Error(void 0);
+      }
+    }
+  );
+}
+function to_parts2(value3) {
+  {
+    let t = value3.wall_time;
+    let o = value3.offset;
+    let $ = to_parts(t, o);
+    let date = $[0];
+    let time = $[1];
+    let $1 = generate_offset(o);
+    if (!$1.isOk()) {
+      throw makeError(
+        "let_assert",
+        "birl",
+        1317,
+        "to_parts",
+        "Pattern match failed, no pattern matched the value.",
+        { value: $1 }
+      );
+    }
+    let offset = $1[0];
+    return [date, time, offset];
+  }
+}
+function to_date_string(value3) {
+  let $ = to_parts2(value3);
+  let year2 = $[0][0];
+  let month$1 = $[0][1];
+  let day2 = $[0][2];
+  let offset = $[2];
+  return to_string(year2) + "-" + (() => {
+    let _pipe = month$1;
+    let _pipe$1 = to_string(_pipe);
+    return pad_left(_pipe$1, 2, "0");
+  })() + "-" + (() => {
+    let _pipe = day2;
+    let _pipe$1 = to_string(_pipe);
+    return pad_left(_pipe$1, 2, "0");
+  })() + offset;
+}
+function now2() {
+  let now$1 = now();
+  let offset_in_minutes = local_offset();
+  let monotonic_now$1 = monotonic_now();
+  let timezone = local_timezone();
+  return new Time(
+    now$1,
+    offset_in_minutes * 6e7,
+    (() => {
+      let _pipe = map(
+        timezone,
+        (tz) => {
+          let $ = any(list, (item) => {
+            return item[0] === tz;
+          });
+          if ($) {
+            return new Some(tz);
+          } else {
+            return new None();
+          }
+        }
+      );
+      return flatten(_pipe);
+    })(),
+    new Some(monotonic_now$1)
+  );
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/io.mjs
 function debug(term) {
@@ -2089,6 +2837,9 @@ function class$(name) {
 }
 function id(name) {
   return attribute("id", name);
+}
+function role(name) {
+  return attribute("role", name);
 }
 function type_(name) {
   return attribute("type", name);
@@ -2894,7 +3645,7 @@ function on_input(msg) {
     "input",
     (event2) => {
       let _pipe = value2(event2);
-      return map2(_pipe, msg);
+      return map3(_pipe, msg);
     }
   );
 }
@@ -3015,19 +3766,63 @@ function init2(handler) {
 }
 
 // build/dev/javascript/budget_fe/date_utils.mjs
-function to_date_string(value3) {
-  let year = value3.year;
-  let month = value3.month;
-  let day = value3.date;
-  return to_string(year) + "." + (() => {
-    let _pipe = month;
+function to_date_string2(value3) {
+  let year2 = value3.year;
+  let month2 = value3.month;
+  let day2 = value3.date;
+  return to_string(year2) + "." + (() => {
+    let _pipe = month2;
     let _pipe$1 = to_string(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })() + "." + (() => {
-    let _pipe = day;
+    let _pipe = day2;
     let _pipe$1 = to_string(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })();
+}
+function from_date_string(date_str) {
+  let $ = (() => {
+    let _pipe = split2(date_str, ".");
+    return map2(
+      _pipe,
+      (s) => {
+        let _pipe$1 = parse_int(s);
+        return unwrap(_pipe$1, 1);
+      }
+    );
+  })();
+  if ($.atLeastLength(3)) {
+    let year2 = $.head;
+    let month2 = $.tail.head;
+    let day2 = $.tail.tail.head;
+    let rest = $.tail.tail.tail;
+    return new Ok(new Day2(year2, month2, day2));
+  } else {
+    return new Error("error parsing");
+  }
+}
+function time_to_day(time) {
+  let $ = (() => {
+    let _pipe = to_date_string(time);
+    let _pipe$1 = split2(_pipe, "-");
+    return map2(
+      _pipe$1,
+      (s) => {
+        let _pipe$2 = parse_int(s);
+        return unwrap(_pipe$2, 1);
+      }
+    );
+  })();
+  if ($.atLeastLength(3)) {
+    let year2 = $.head;
+    let month2 = $.tail.head;
+    let day2 = $.tail.tail.head;
+    let rest = $.tail.tail.tail;
+    return new Day2(year2, month2, day2);
+  } else {
+    let rest = $;
+    return new Day2(2024, 12, 12);
+  }
 }
 
 // build/dev/javascript/budget_fe/budget_fe.mjs
@@ -3129,8 +3924,50 @@ var AddTransactionResult = class extends CustomType {
     this.c = c;
   }
 };
+var EditTarget = class extends CustomType {
+  constructor(c) {
+    super();
+    this.c = c;
+  }
+};
+var SaveTarget = class extends CustomType {
+  constructor(c) {
+    super();
+    this.c = c;
+  }
+};
+var DeleteTarget = class extends CustomType {
+  constructor(c) {
+    super();
+    this.c = c;
+  }
+};
+var UserTargetUpdateAmount = class extends CustomType {
+  constructor(amount) {
+    super();
+    this.amount = amount;
+  }
+};
+var EditTargetCadence = class extends CustomType {
+  constructor(is_monthly) {
+    super();
+    this.is_monthly = is_monthly;
+  }
+};
+var UserTargetUpdateCustomDate = class extends CustomType {
+  constructor(date) {
+    super();
+    this.date = date;
+  }
+};
+var CategorySaveTarget = class extends CustomType {
+  constructor(a2) {
+    super();
+    this.a = a2;
+  }
+};
 var Model2 = class extends CustomType {
-  constructor(user, cycle, route, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, user_transaction_input) {
+  constructor(user, cycle, route, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, user_transaction_input, target_edit) {
     super();
     this.user = user;
     this.cycle = cycle;
@@ -3142,6 +3979,7 @@ var Model2 = class extends CustomType {
     this.show_add_category_ui = show_add_category_ui;
     this.user_category_name_input = user_category_name_input;
     this.user_transaction_input = user_transaction_input;
+    this.target_edit = target_edit;
   }
 };
 var TransactionForm = class extends CustomType {
@@ -3153,11 +3991,19 @@ var TransactionForm = class extends CustomType {
     this.amount = amount;
   }
 };
-var Cycle = class extends CustomType {
-  constructor(year, month) {
+var TargetEdit = class extends CustomType {
+  constructor(cat_id, enabled, target) {
     super();
-    this.year = year;
-    this.month = month;
+    this.cat_id = cat_id;
+    this.enabled = enabled;
+    this.target = target;
+  }
+};
+var Cycle = class extends CustomType {
+  constructor(year2, month2) {
+    super();
+    this.year = year2;
+    this.month = month2;
   }
 };
 var User = class extends CustomType {
@@ -3195,6 +4041,13 @@ var Custom = class extends CustomType {
     this.date = date;
   }
 };
+var MonthInYear = class extends CustomType {
+  constructor(month2, year2) {
+    super();
+    this.month = month2;
+    this.year = year2;
+  }
+};
 var Allocation = class extends CustomType {
   constructor(id2, amount, category_id, date) {
     super();
@@ -3215,6 +4068,28 @@ var Transaction = class extends CustomType {
     this.is_inflow = is_inflow;
   }
 };
+function save_target_eff(category, target_edit) {
+  return from(
+    (dispatch) => {
+      return dispatch(
+        new CategorySaveTarget(
+          new Ok(category.withFields({ target: new Some(target_edit) }))
+        )
+      );
+    }
+  );
+}
+function delete_target_eff(category) {
+  return from(
+    (dispatch) => {
+      return dispatch(
+        new CategorySaveTarget(
+          new Ok(category.withFields({ target: new None() }))
+        )
+      );
+    }
+  );
+}
 function uri_to_route(uri) {
   let $ = path_segments(uri.path);
   if ($.hasLength(1) && $.head === "transactions") {
@@ -3271,7 +4146,8 @@ function init3(_) {
       ),
       false,
       "",
-      new TransactionForm("", "", new None(), new None())
+      new TransactionForm("", "", new None(), new None()),
+      new TargetEdit("", false, new Monthly(new Money(0, 0)))
     ),
     batch(toList([init2(on_route_change), initial_eff()]))
   ];
@@ -3558,7 +4434,7 @@ function update(model, msg) {
     let c = msg.c[0];
     return [
       model.withFields({
-        categories: flatten(toList([model.categories, toList([c])]))
+        categories: flatten2(toList([model.categories, toList([c])]))
       }),
       none()
     ];
@@ -3566,7 +4442,7 @@ function update(model, msg) {
     throw makeError(
       "todo",
       "budget_fe",
-      158,
+      170,
       "update",
       "`todo` expression evaluated. This code has not yet been implemented.",
       {}
@@ -3587,7 +4463,7 @@ function update(model, msg) {
     let t = msg.c[0];
     return [
       model.withFields({
-        transactions: flatten(toList([model.transactions, toList([t])]))
+        transactions: flatten2(toList([model.transactions, toList([t])]))
       }),
       none()
     ];
@@ -3595,7 +4471,7 @@ function update(model, msg) {
     throw makeError(
       "todo",
       "budget_fe",
-      175,
+      187,
       "update",
       "`todo` expression evaluated. This code has not yet been implemented.",
       {}
@@ -3639,14 +4515,14 @@ function update(model, msg) {
       }),
       none()
     ];
-  } else {
+  } else if (msg instanceof UserUpdatedTransactionAmount) {
     let amount = msg.amount;
     return [
       model.withFields({
         user_transaction_input: model.user_transaction_input.withFields({
           amount: (() => {
             let _pipe = parse_int(amount);
-            let _pipe$1 = map2(
+            let _pipe$1 = map3(
               _pipe,
               (amount2) => {
                 return new Money(amount2, 0);
@@ -3658,6 +4534,131 @@ function update(model, msg) {
       }),
       none()
     ];
+  } else if (msg instanceof EditTarget) {
+    let c = msg.c;
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ enabled: true })
+      }),
+      none()
+    ];
+  } else if (msg instanceof SaveTarget) {
+    let c = msg.c;
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ enabled: false })
+      }),
+      save_target_eff(c, model.target_edit.target)
+    ];
+  } else if (msg instanceof DeleteTarget) {
+    let c = msg.c;
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ enabled: false })
+      }),
+      delete_target_eff(c)
+    ];
+  } else if (msg instanceof UserTargetUpdateAmount) {
+    let amount = msg.amount;
+    let amount$1 = (() => {
+      let _pipe = amount;
+      let _pipe$1 = parse_int(_pipe);
+      return unwrap(_pipe$1, 0);
+    })();
+    let target = (() => {
+      let $ = model.target_edit.target;
+      if ($ instanceof Custom) {
+        let date = $.date;
+        return new Custom(new Money(amount$1, 0), date);
+      } else {
+        return new Monthly(new Money(amount$1, 0));
+      }
+    })();
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ target })
+      }),
+      none()
+    ];
+  } else if (msg instanceof EditTargetCadence) {
+    let is_monthly = msg.is_monthly;
+    let now3 = (() => {
+      let _pipe = now2();
+      return time_to_day(_pipe);
+    })();
+    let target = (() => {
+      let $ = model.target_edit.target;
+      if ($ instanceof Custom && is_monthly) {
+        let money = $.target;
+        return new Monthly(money);
+      } else if ($ instanceof Monthly && !is_monthly) {
+        let money = $.target;
+        return new Custom(money, new MonthInYear(now3.month, now3.year));
+      } else {
+        let target2 = $;
+        return target2;
+      }
+    })();
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ target })
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserTargetUpdateCustomDate) {
+    let date = msg.date;
+    let parsed_date = (() => {
+      let _pipe = from_date_string(date);
+      return lazy_unwrap(
+        _pipe,
+        () => {
+          let _pipe$1 = now2();
+          return time_to_day(_pipe$1);
+        }
+      );
+    })();
+    let target = (() => {
+      let $ = model.target_edit.target;
+      if ($ instanceof Custom) {
+        let money = $.target;
+        return new Custom(
+          money,
+          new MonthInYear(parsed_date.month, parsed_date.year)
+        );
+      } else {
+        let money = $.target;
+        return new Monthly(money);
+      }
+    })();
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ target })
+      }),
+      none()
+    ];
+  } else if (msg instanceof CategorySaveTarget && msg.a.isOk()) {
+    let cat = msg.a[0];
+    return [
+      model.withFields({
+        categories: (() => {
+          let _pipe = model.categories;
+          return map2(
+            _pipe,
+            (c) => {
+              let $ = c.id === cat.id;
+              if (!$) {
+                return c;
+              } else {
+                return cat;
+              }
+            }
+          );
+        })()
+      }),
+      none()
+    ];
+  } else {
+    return [model, none()];
   }
 }
 function user_selection(m) {
@@ -3694,6 +4695,43 @@ function user_selection(m) {
             toList([text2("Ekaterina")])
           )
         ])
+      )
+    ])
+  );
+}
+function target_switcher_ui(et) {
+  let $ = (() => {
+    let $1 = et.target;
+    if ($1 instanceof Custom) {
+      return ["", "active"];
+    } else {
+      return ["active", ""];
+    }
+  })();
+  let monthly = $[0];
+  let custom2 = $[1];
+  return div(
+    toList([
+      attribute("aria-label", "Basic example"),
+      role("group"),
+      class$("btn-group")
+    ]),
+    toList([
+      button(
+        toList([
+          on_click(new EditTargetCadence(true)),
+          class$("btn btn-primary" + monthly),
+          type_("button")
+        ]),
+        toList([text2("Monthly")])
+      ),
+      button(
+        toList([
+          on_click(new EditTargetCadence(false)),
+          class$("btn btn-primary" + custom2),
+          type_("button")
+        ]),
+        toList([text2("Custom")])
       )
     ])
   );
@@ -3741,10 +4779,10 @@ function add_transaction_ui(transactions, categories) {
             toList([id("payees_list")]),
             (() => {
               let _pipe = transactions;
-              let _pipe$1 = map(_pipe, (t) => {
+              let _pipe$1 = map2(_pipe, (t) => {
                 return t.payee;
               });
-              return map(
+              return map2(
                 _pipe$1,
                 (p2) => {
                   return option(toList([value(p2)]), "");
@@ -3775,10 +4813,10 @@ function add_transaction_ui(transactions, categories) {
             toList([id("categories_list")]),
             (() => {
               let _pipe = categories;
-              let _pipe$1 = map(_pipe, (c) => {
+              let _pipe$1 = map2(_pipe, (c) => {
                 return c.name;
               });
-              return map(
+              return map2(
                 _pipe$1,
                 (p2) => {
                   return option(toList([value(p2)]), "");
@@ -3834,10 +4872,10 @@ function budget_transactions(transactions, categories) {
       ),
       tbody(
         toList([]),
-        flatten(
+        flatten2(
           toList([
             toList([add_transaction_ui(transactions, categories)]),
-            map(
+            map2(
               transactions,
               (t) => {
                 return tr(
@@ -3845,7 +4883,7 @@ function budget_transactions(transactions, categories) {
                   toList([
                     td(
                       toList([]),
-                      toList([text2(to_date_string(t.date))])
+                      toList([text2(to_date_string2(t.date))])
                     ),
                     td(toList([]), toList([text2(t.payee)])),
                     td(
@@ -3979,7 +5017,7 @@ function budget_categories(model) {
       tbody(
         toList([]),
         (() => {
-          let cats_ui = map(
+          let cats_ui = map2(
             model.categories,
             (c) => {
               let active_class = (() => {
@@ -4049,7 +5087,7 @@ function budget_categories(model) {
               ]);
             }
           })();
-          return flatten(toList([add_cat_ui, cats_ui]));
+          return flatten2(toList([add_cat_ui, cats_ui]));
         })()
       )
     ])
@@ -4135,37 +5173,144 @@ function target_string(category) {
     return "Monthly: " + money_to_string(amount);
   }
 }
-function category_details(category, allocations, transactions) {
+function category_target_ui(c, et) {
+  let cat_id = c.id;
+  let $ = et.cat_id;
+  let $1 = et.enabled;
+  if ($1) {
+    let cat_id$1 = $;
+    return div(
+      toList([class$("col")]),
+      toList([
+        div(
+          toList([]),
+          toList([
+            text2("Target"),
+            button(
+              toList([on_click(new SaveTarget(c))]),
+              toList([text("Save")])
+            ),
+            button(
+              toList([on_click(new DeleteTarget(c))]),
+              toList([text("Delete")])
+            )
+          ])
+        ),
+        target_switcher_ui(et),
+        (() => {
+          let $2 = et.target;
+          if ($2 instanceof Custom) {
+            let money = $2.target;
+            let date = $2.date;
+            return div(
+              toList([]),
+              toList([
+                text2("Amount needed for date: "),
+                input(
+                  toList([
+                    on_input(
+                      (var0) => {
+                        return new UserTargetUpdateAmount(var0);
+                      }
+                    ),
+                    placeholder("amount"),
+                    class$("form-control"),
+                    type_("text"),
+                    style(toList([["width", "120px"]]))
+                  ])
+                ),
+                input(
+                  toList([
+                    on_input(
+                      (var0) => {
+                        return new UserTargetUpdateCustomDate(var0);
+                      }
+                    ),
+                    placeholder("date"),
+                    class$("form-control"),
+                    type_("date")
+                  ])
+                )
+              ])
+            );
+          } else {
+            let money = $2.target;
+            return div(
+              toList([]),
+              toList([
+                text2("Amount monthly: "),
+                input(
+                  toList([
+                    on_input(
+                      (var0) => {
+                        return new UserTargetUpdateAmount(var0);
+                      }
+                    ),
+                    placeholder("amount"),
+                    class$("form-control"),
+                    type_("text"),
+                    style(toList([["width", "120px"]]))
+                  ])
+                )
+              ])
+            );
+          }
+        })()
+      ])
+    );
+  } else {
+    return div(
+      toList([class$("col")]),
+      toList([
+        div(
+          toList([]),
+          toList([
+            text2("Target"),
+            button(
+              toList([on_click(new EditTarget(c))]),
+              toList([text("Edit")])
+            )
+          ])
+        ),
+        div(toList([]), toList([text2(target_string(c))]))
+      ])
+    );
+  }
+}
+function category_details(category, model) {
   return div(
-    toList([class$("row")]),
+    toList([class$("col")]),
     toList([
       div(
-        toList([class$("col")]),
+        toList([class$("row")]),
         toList([
-          div(toList([]), toList([text2("Target")])),
-          div(toList([]), toList([text2(target_string(category))]))
-        ])
-      ),
-      div(
-        toList([class$("col")]),
-        toList([
-          div(toList([]), toList([text2("Assigned")])),
           div(
-            toList([]),
-            toList([text2(category_assigned(category, allocations))])
+            toList([class$("col")]),
+            toList([
+              div(toList([]), toList([text2("Assigned")])),
+              div(
+                toList([]),
+                toList([
+                  text2(category_assigned(category, model.allocations))
+                ])
+              )
+            ])
+          ),
+          div(
+            toList([class$("col")]),
+            toList([
+              div(toList([]), toList([text2("Activity")])),
+              div(
+                toList([]),
+                toList([
+                  text2(category_activity(category, model.transactions))
+                ])
+              )
+            ])
           )
         ])
       ),
-      div(
-        toList([class$("col")]),
-        toList([
-          div(toList([]), toList([text2("Activity")])),
-          div(
-            toList([]),
-            toList([text2(category_activity(category, transactions))])
-          )
-        ])
-      )
+      category_target_ui(category, model.target_edit)
     ])
   );
 }
@@ -4253,11 +5398,7 @@ function view(model) {
                     let $1 = model.route;
                     if ($ instanceof Some && $1 instanceof Home) {
                       let c = $[0];
-                      return category_details(
-                        c,
-                        model.allocations,
-                        model.transactions
-                      );
+                      return category_details(c, model);
                     } else {
                       return text2("");
                     }
@@ -4278,7 +5419,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      113,
+      125,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
