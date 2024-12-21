@@ -110,48 +110,48 @@ var BitArray = class _BitArray {
   }
 };
 var UtfCodepoint = class {
-  constructor(value2) {
-    this.value = value2;
+  constructor(value3) {
+    this.value = value3;
   }
 };
 function byteArrayToInt(byteArray, start3, end, isBigEndian, isSigned) {
   const byteSize = end - start3;
   if (byteSize <= 6) {
-    let value2 = 0;
+    let value3 = 0;
     if (isBigEndian) {
       for (let i = start3; i < end; i++) {
-        value2 = value2 * 256 + byteArray[i];
+        value3 = value3 * 256 + byteArray[i];
       }
     } else {
       for (let i = end - 1; i >= start3; i--) {
-        value2 = value2 * 256 + byteArray[i];
+        value3 = value3 * 256 + byteArray[i];
       }
     }
     if (isSigned) {
       const highBit = 2 ** (byteSize * 8 - 1);
-      if (value2 >= highBit) {
-        value2 -= highBit * 2;
+      if (value3 >= highBit) {
+        value3 -= highBit * 2;
       }
     }
-    return value2;
+    return value3;
   } else {
-    let value2 = 0n;
+    let value3 = 0n;
     if (isBigEndian) {
       for (let i = start3; i < end; i++) {
-        value2 = (value2 << 8n) + BigInt(byteArray[i]);
+        value3 = (value3 << 8n) + BigInt(byteArray[i]);
       }
     } else {
       for (let i = end - 1; i >= start3; i--) {
-        value2 = (value2 << 8n) + BigInt(byteArray[i]);
+        value3 = (value3 << 8n) + BigInt(byteArray[i]);
       }
     }
     if (isSigned) {
       const highBit = 1n << BigInt(byteSize * 8 - 1);
-      if (value2 >= highBit) {
-        value2 -= highBit * 2n;
+      if (value3 >= highBit) {
+        value3 -= highBit * 2n;
       }
     }
-    return Number(value2);
+    return Number(value3);
   }
 }
 function byteArrayToFloat(byteArray, start3, end, isBigEndian) {
@@ -173,9 +173,9 @@ var Result = class _Result extends CustomType {
   }
 };
 var Ok = class extends Result {
-  constructor(value2) {
+  constructor(value3) {
     super();
-    this[0] = value2;
+    this[0] = value3;
   }
   // @internal
   isOk() {
@@ -305,9 +305,9 @@ var Some = class extends CustomType {
 };
 var None = class extends CustomType {
 };
-function to_result(option, e) {
-  if (option instanceof Some) {
-    let a2 = option[0];
+function to_result(option2, e) {
+  if (option2 instanceof Some) {
+    let a2 = option2[0];
     return new Ok(a2);
   } else {
     return new Error(e);
@@ -323,8 +323,8 @@ function from_result(result) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/dict.mjs
-function insert(dict, key, value2) {
-  return map_insert(key, value2, dict);
+function insert(dict, key, value3) {
+  return map_insert(key, value3, dict);
 }
 function reverse_and_concat(loop$remaining, loop$accumulator) {
   while (true) {
@@ -711,10 +711,10 @@ function string(data) {
   return decode_string(data);
 }
 function field(name, inner_type) {
-  return (value2) => {
+  return (value3) => {
     let missing_field_error = new DecodeError("field", "nothing", toList([]));
     return try$(
-      decode_field(value2, name),
+      decode_field(value3, name),
       (maybe_inner) => {
         let _pipe = maybe_inner;
         let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
@@ -1442,9 +1442,9 @@ var NOT_FOUND = {};
 function identity(x) {
   return x;
 }
-function parse_int(value2) {
-  if (/^[-+]?(\d+)$/.test(value2)) {
-    return new Ok(parseInt(value2));
+function parse_int(value3) {
+  if (/^[-+]?(\d+)$/.test(value3)) {
+    return new Ok(parseInt(value3));
   } else {
     return new Error(Nil);
   }
@@ -1595,14 +1595,14 @@ function map_to_list(map6) {
   return List.fromArray(map6.entries());
 }
 function map_get(map6, key) {
-  const value2 = map6.get(key, NOT_FOUND);
-  if (value2 === NOT_FOUND) {
+  const value3 = map6.get(key, NOT_FOUND);
+  if (value3 === NOT_FOUND) {
     return new Error(Nil);
   }
-  return new Ok(value2);
+  return new Ok(value3);
 }
-function map_insert(key, value2, map6) {
-  return map6.set(key, value2);
+function map_insert(key, value3, map6) {
+  return map6.set(key, value3);
 }
 function classify_dynamic(data) {
   if (typeof data === "string") {
@@ -1646,22 +1646,22 @@ function decode_string(data) {
 function decode_int(data) {
   return Number.isInteger(data) ? new Ok(data) : decoder_error("Int", data);
 }
-function decode_field(value2, name) {
-  const not_a_map_error = () => decoder_error("Dict", value2);
-  if (value2 instanceof Dict || value2 instanceof WeakMap || value2 instanceof Map) {
-    const entry = map_get(value2, name);
+function decode_field(value3, name) {
+  const not_a_map_error = () => decoder_error("Dict", value3);
+  if (value3 instanceof Dict || value3 instanceof WeakMap || value3 instanceof Map) {
+    const entry = map_get(value3, name);
     return new Ok(entry.isOk() ? new Some(entry[0]) : new None());
-  } else if (value2 === null) {
+  } else if (value3 === null) {
     return not_a_map_error();
-  } else if (Object.getPrototypeOf(value2) == Object.prototype) {
-    return try_get_field(value2, name, () => new Ok(new None()));
+  } else if (Object.getPrototypeOf(value3) == Object.prototype) {
+    return try_get_field(value3, name, () => new Ok(new None()));
   } else {
-    return try_get_field(value2, name, not_a_map_error);
+    return try_get_field(value3, name, not_a_map_error);
   }
 }
-function try_get_field(value2, field2, or_else) {
+function try_get_field(value3, field2, or_else) {
   try {
-    return field2 in value2 ? new Ok(new Some(value2[field2])) : or_else();
+    return field2 in value3 ? new Ok(new Some(value3[field2])) : or_else();
   } catch {
     return or_else();
   }
@@ -1757,10 +1757,10 @@ function inspectString(str) {
 function inspectDict(map6) {
   let body = "dict.from_list([";
   let first3 = true;
-  map6.forEach((value2, key) => {
+  map6.forEach((value3, key) => {
     if (!first3)
       body = body + ", ";
-    body = body + "#(" + inspect(key) + ", " + inspect(value2) + ")";
+    body = body + "#(" + inspect(key) + ", " + inspect(value3) + ")";
     first3 = false;
   });
   return body + "])";
@@ -1777,8 +1777,8 @@ function inspectObject(v) {
 }
 function inspectCustomType(record) {
   const props = Object.keys(record).map((label) => {
-    const value2 = inspect(record[label]);
-    return isNaN(parseInt(label)) ? `${label}: ${value2}` : value2;
+    const value3 = inspect(record[label]);
+    return isNaN(parseInt(label)) ? `${label}: ${value3}` : value3;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
@@ -2064,8 +2064,8 @@ function handlers(element2) {
 }
 
 // build/dev/javascript/lustre/lustre/attribute.mjs
-function attribute(name, value2) {
-  return new Attribute(name, identity(value2), false);
+function attribute(name, value3) {
+  return new Attribute(name, identity(value3), false);
 }
 function on(name, handler) {
   return new Event("on" + name, handler);
@@ -2092,6 +2092,9 @@ function id(name) {
 }
 function type_(name) {
   return attribute("type", name);
+}
+function value(val) {
+  return attribute("value", val);
 }
 function placeholder(text3) {
   return attribute("placeholder", text3);
@@ -2313,15 +2316,15 @@ function createElementNode({ prev, next, dispatch, stack }) {
   const delegated = [];
   for (const attr of next.attrs) {
     const name = attr[0];
-    const value2 = attr[1];
+    const value3 = attr[1];
     if (attr.as_property) {
-      if (el[name] !== value2)
-        el[name] = value2;
+      if (el[name] !== value3)
+        el[name] = value3;
       if (canMorph)
         prevAttributes.delete(name);
     } else if (name.startsWith("on")) {
       const eventName = name.slice(2);
-      const callback = dispatch(value2, eventName === "input");
+      const callback = dispatch(value3, eventName === "input");
       if (!handlersForEl.has(eventName)) {
         el.addEventListener(eventName, lustreGenericEventHandler);
       }
@@ -2335,25 +2338,25 @@ function createElementNode({ prev, next, dispatch, stack }) {
         el.addEventListener(eventName, lustreGenericEventHandler);
       }
       handlersForEl.set(eventName, callback);
-      el.setAttribute(name, value2);
+      el.setAttribute(name, value3);
       if (canMorph) {
         prevHandlers.delete(eventName);
         prevAttributes.delete(name);
       }
     } else if (name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) {
-      el.setAttribute(name, value2);
-      delegated.push([name.slice(10), value2]);
+      el.setAttribute(name, value3);
+      delegated.push([name.slice(10), value3]);
     } else if (name === "class") {
-      className = className === null ? value2 : className + " " + value2;
+      className = className === null ? value3 : className + " " + value3;
     } else if (name === "style") {
-      style2 = style2 === null ? value2 : style2 + value2;
+      style2 = style2 === null ? value3 : style2 + value3;
     } else if (name === "dangerous-unescaped-html") {
-      innerHTML = value2;
+      innerHTML = value3;
     } else {
-      if (el.getAttribute(name) !== value2)
-        el.setAttribute(name, value2);
+      if (el.getAttribute(name) !== value3)
+        el.setAttribute(name, value3);
       if (name === "value" || name === "selected")
-        el[name] = value2;
+        el[name] = value3;
       if (canMorph)
         prevAttributes.delete(name);
     }
@@ -2380,9 +2383,9 @@ function createElementNode({ prev, next, dispatch, stack }) {
   if (next.tag === "slot") {
     window.queueMicrotask(() => {
       for (const child of el.assignedElements()) {
-        for (const [name, value2] of delegated) {
+        for (const [name, value3] of delegated) {
           if (!child.hasAttribute(name)) {
-            child.setAttribute(name, value2);
+            child.setAttribute(name, value3);
           }
         }
       }
@@ -2861,8 +2864,14 @@ function tr(attrs, children2) {
 function button(attrs, children2) {
   return element("button", attrs, children2);
 }
+function datalist(attrs, children2) {
+  return element("datalist", attrs, children2);
+}
 function input(attrs) {
   return element("input", attrs, toList([]));
+}
+function option(attrs, label) {
+  return element("option", attrs, toList([text(label)]));
 }
 
 // build/dev/javascript/lustre/lustre/event.mjs
@@ -2874,7 +2883,7 @@ function on_click(msg) {
     return new Ok(msg);
   });
 }
-function value(event2) {
+function value2(event2) {
   let _pipe = event2;
   return field("target", field("value", string))(
     _pipe
@@ -2884,7 +2893,7 @@ function on_input(msg) {
   return on2(
     "input",
     (event2) => {
-      let _pipe = value(event2);
+      let _pipe = value2(event2);
       return map2(_pipe, msg);
     }
   );
@@ -3006,10 +3015,10 @@ function init2(handler) {
 }
 
 // build/dev/javascript/budget_fe/date_utils.mjs
-function to_date_string(value2) {
-  let year = value2.year;
-  let month = value2.month;
-  let day = value2.date;
+function to_date_string(value3) {
+  let year = value3.year;
+  let month = value3.month;
+  let day = value3.date;
   return to_string(year) + "." + (() => {
     let _pipe = month;
     let _pipe$1 = to_string(_pipe);
@@ -3196,13 +3205,13 @@ var Allocation = class extends CustomType {
   }
 };
 var Transaction = class extends CustomType {
-  constructor(id2, date, payee, category_id, value2, is_inflow) {
+  constructor(id2, date, payee, category_id, value3, is_inflow) {
     super();
     this.id = id2;
     this.date = date;
     this.payee = payee;
     this.category_id = category_id;
-    this.value = value2;
+    this.value = value3;
     this.is_inflow = is_inflow;
   }
 };
@@ -3689,7 +3698,7 @@ function user_selection(m) {
     ])
   );
 }
-function add_transaction_ui() {
+function add_transaction_ui(transactions, categories) {
   return tr(
     toList([]),
     toList([
@@ -3706,7 +3715,7 @@ function add_transaction_ui() {
               placeholder("date"),
               id("addTransactionDateId"),
               class$("form-control"),
-              type_("text")
+              type_("date")
             ])
           )
         ])
@@ -3724,8 +3733,24 @@ function add_transaction_ui() {
               placeholder("payee"),
               id("addTransactionPayeeId"),
               class$("form-control"),
-              type_("text")
+              type_("text"),
+              attribute("list", "payees_list")
             ])
+          ),
+          datalist(
+            toList([id("payees_list")]),
+            (() => {
+              let _pipe = transactions;
+              let _pipe$1 = map(_pipe, (t) => {
+                return t.payee;
+              });
+              return map(
+                _pipe$1,
+                (p2) => {
+                  return option(toList([value(p2)]), "");
+                }
+              );
+            })()
           )
         ])
       ),
@@ -3742,8 +3767,24 @@ function add_transaction_ui() {
               placeholder("category"),
               id("addTransactionCategoryId"),
               class$("form-control"),
-              type_("text")
+              type_("text"),
+              attribute("list", "categories_list")
             ])
+          ),
+          datalist(
+            toList([id("categories_list")]),
+            (() => {
+              let _pipe = categories;
+              let _pipe$1 = map(_pipe, (c) => {
+                return c.name;
+              });
+              return map(
+                _pipe$1,
+                (p2) => {
+                  return option(toList([value(p2)]), "");
+                }
+              );
+            })()
           )
         ])
       ),
@@ -3795,7 +3836,7 @@ function budget_transactions(transactions, categories) {
         toList([]),
         flatten(
           toList([
-            toList([add_transaction_ui()]),
+            toList([add_transaction_ui(transactions, categories)]),
             map(
               transactions,
               (t) => {
@@ -3883,8 +3924,8 @@ function category_target(cat) {
   if ($ instanceof Some) {
     let v = $[0];
     if (v instanceof Monthly) {
-      let value2 = v.target;
-      return money_to_string(value2);
+      let value3 = v.target;
+      return money_to_string(value3);
     } else {
       return "";
     }
@@ -4071,13 +4112,13 @@ function category_activity(cat, transactions) {
   let _pipe$3 = money_to_string(_pipe$2);
   return prepend3(_pipe$3, "-");
 }
-function month_to_string(value2) {
+function month_to_string(value3) {
   return (() => {
-    let _pipe = value2.month;
+    let _pipe = value3.month;
     let _pipe$1 = to_string(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })() + "." + (() => {
-    let _pipe = value2.year;
+    let _pipe = value3.year;
     let _pipe$1 = to_string(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })();

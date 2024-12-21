@@ -654,7 +654,7 @@ fn budget_transactions(
     html.tbody(
       [],
       list.flatten([
-        [add_transaction_ui()],
+        [add_transaction_ui(transactions, categories)],
         list.map(transactions, fn(t) {
           html.tr([], [
             html.td([], [html.text(date_utils.to_date_string(t.date))]),
@@ -691,7 +691,10 @@ fn budget_transactions(
   ])
 }
 
-fn add_transaction_ui() -> element.Element(Msg) {
+fn add_transaction_ui(
+  transactions: List(Transaction),
+  categories: List(Category),
+) -> element.Element(Msg) {
   html.tr([], [
     html.td([], [
       html.input([
@@ -699,7 +702,7 @@ fn add_transaction_ui() -> element.Element(Msg) {
         attribute.placeholder("date"),
         attribute.id("addTransactionDateId"),
         attribute.class("form-control"),
-        attribute.type_("text"),
+        attribute.type_("date"),
       ]),
     ]),
     html.td([], [
@@ -709,7 +712,14 @@ fn add_transaction_ui() -> element.Element(Msg) {
         attribute.id("addTransactionPayeeId"),
         attribute.class("form-control"),
         attribute.type_("text"),
+        attribute.attribute("list", "payees_list"),
       ]),
+      html.datalist(
+        [attribute.id("payees_list")],
+        transactions
+          |> list.map(fn(t) { t.payee })
+          |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
+      ),
     ]),
     html.td([], [
       html.input([
@@ -718,7 +728,14 @@ fn add_transaction_ui() -> element.Element(Msg) {
         attribute.id("addTransactionCategoryId"),
         attribute.class("form-control"),
         attribute.type_("text"),
+        attribute.attribute("list", "categories_list"),
       ]),
+      html.datalist(
+        [attribute.id("categories_list")],
+        categories
+          |> list.map(fn(c) { c.name })
+          |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
+      ),
     ]),
     html.td([attribute.class("d-flex flex-row")], [
       html.input([
