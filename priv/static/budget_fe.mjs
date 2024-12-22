@@ -288,6 +288,20 @@ function makeError(variant, module, line, fn, message, extra) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
+function to_int(bool3) {
+  if (!bool3) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+function to_string(bool3) {
+  if (!bool3) {
+    return "False";
+  } else {
+    return "True";
+  }
+}
 function guard(requirement, consequence, alternative) {
   if (requirement) {
     return consequence;
@@ -321,6 +335,14 @@ function from_result(result) {
     return new None();
   }
 }
+function unwrap(option2, default$) {
+  if (option2 instanceof Some) {
+    let x = option2[0];
+    return x;
+  } else {
+    return default$;
+  }
+}
 function map(option2, fun) {
   if (option2 instanceof Some) {
     let x = option2[0];
@@ -337,6 +359,22 @@ function flatten(option2) {
     return new None();
   }
 }
+
+// build/dev/javascript/gleam_stdlib/gleam/regex.mjs
+var CompileError = class extends CustomType {
+  constructor(error, byte_index) {
+    super();
+    this.error = error;
+    this.byte_index = byte_index;
+  }
+};
+var Options = class extends CustomType {
+  constructor(case_insensitive, multi_line) {
+    super();
+    this.case_insensitive = case_insensitive;
+    this.multi_line = multi_line;
+  }
+};
 
 // build/dev/javascript/gleam_stdlib/gleam/dict.mjs
 function insert(dict, key, value3) {
@@ -358,15 +396,15 @@ function reverse_and_concat(loop$remaining, loop$accumulator) {
 }
 function do_keys_loop(loop$list, loop$acc) {
   while (true) {
-    let list2 = loop$list;
+    let list = loop$list;
     let acc = loop$acc;
-    if (list2.hasLength(0)) {
+    if (list.hasLength(0)) {
       return reverse_and_concat(acc, toList([]));
     } else {
-      let first3 = list2.head;
-      let rest = list2.tail;
+      let first2 = list.head;
+      let rest = list.tail;
       loop$list = rest;
-      loop$acc = prepend(first3[0], acc);
+      loop$acc = prepend(first2[0], acc);
     }
   }
 }
@@ -376,6 +414,34 @@ function keys(dict) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
+var Continue = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Stop = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+function length_loop(loop$list, loop$count) {
+  while (true) {
+    let list = loop$list;
+    let count = loop$count;
+    if (list.atLeastLength(1)) {
+      let list$1 = list.tail;
+      loop$list = list$1;
+      loop$count = count + 1;
+    } else {
+      return count;
+    }
+  }
+}
+function length(list) {
+  return length_loop(list, 0);
+}
 function reverse_loop(loop$remaining, loop$accumulator) {
   while (true) {
     let remaining = loop$remaining;
@@ -390,19 +456,19 @@ function reverse_loop(loop$remaining, loop$accumulator) {
     }
   }
 }
-function reverse(list2) {
-  return reverse_loop(list2, toList([]));
+function reverse(list) {
+  return reverse_loop(list, toList([]));
 }
 function filter_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list2 = loop$list;
+    let list = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list2.hasLength(0)) {
+    if (list.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list2.head;
-      let rest$1 = list2.tail;
+      let first$1 = list.head;
+      let rest$1 = list.tail;
       let new_acc = (() => {
         let $ = fun(first$1);
         if ($) {
@@ -417,44 +483,44 @@ function filter_loop(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter(list2, predicate) {
-  return filter_loop(list2, predicate, toList([]));
+function filter(list, predicate) {
+  return filter_loop(list, predicate, toList([]));
 }
 function map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list2 = loop$list;
+    let list = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list2.hasLength(0)) {
+    if (list.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list2.head;
-      let rest$1 = list2.tail;
+      let first$1 = list.head;
+      let rest$1 = list.tail;
       loop$list = rest$1;
       loop$fun = fun;
       loop$acc = prepend(fun(first$1), acc);
     }
   }
 }
-function map2(list2, fun) {
-  return map_loop(list2, fun, toList([]));
+function map2(list, fun) {
+  return map_loop(list, fun, toList([]));
 }
 function append_loop(loop$first, loop$second) {
   while (true) {
-    let first3 = loop$first;
-    let second2 = loop$second;
-    if (first3.hasLength(0)) {
-      return second2;
+    let first2 = loop$first;
+    let second = loop$second;
+    if (first2.hasLength(0)) {
+      return second;
     } else {
-      let item = first3.head;
-      let rest$1 = first3.tail;
+      let item = first2.head;
+      let rest$1 = first2.tail;
       loop$first = rest$1;
-      loop$second = prepend(item, second2);
+      loop$second = prepend(item, second);
     }
   }
 }
-function append(first3, second2) {
-  return append_loop(reverse(first3), second2);
+function append(first2, second) {
+  return append_loop(reverse(first2), second);
 }
 function reverse_and_prepend(loop$prefix, loop$suffix) {
   while (true) {
@@ -477,10 +543,10 @@ function concat_loop(loop$lists, loop$acc) {
     if (lists.hasLength(0)) {
       return reverse(acc);
     } else {
-      let list2 = lists.head;
+      let list = lists.head;
       let further_lists = lists.tail;
       loop$lists = further_lists;
-      loop$acc = reverse_and_prepend(list2, acc);
+      loop$acc = reverse_and_prepend(list, acc);
     }
   }
 }
@@ -489,14 +555,14 @@ function flatten2(lists) {
 }
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list2 = loop$list;
+    let list = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list2.hasLength(0)) {
+    if (list.hasLength(0)) {
       return initial;
     } else {
-      let x = list2.head;
-      let rest$1 = list2.tail;
+      let x = list.head;
+      let rest$1 = list.tail;
       loop$list = rest$1;
       loop$initial = fun(initial, x);
       loop$fun = fun;
@@ -521,43 +587,47 @@ function index_fold_loop(loop$over, loop$acc, loop$with, loop$index) {
     }
   }
 }
-function index_fold(list2, initial, fun) {
-  return index_fold_loop(list2, initial, fun, 0);
+function index_fold(list, initial, fun) {
+  return index_fold_loop(list, initial, fun, 0);
+}
+function fold_until(loop$list, loop$initial, loop$fun) {
+  while (true) {
+    let list = loop$list;
+    let initial = loop$initial;
+    let fun = loop$fun;
+    if (list.hasLength(0)) {
+      return initial;
+    } else {
+      let first$1 = list.head;
+      let rest$1 = list.tail;
+      let $ = fun(initial, first$1);
+      if ($ instanceof Continue) {
+        let next_accumulator = $[0];
+        loop$list = rest$1;
+        loop$initial = next_accumulator;
+        loop$fun = fun;
+      } else {
+        let b = $[0];
+        return b;
+      }
+    }
+  }
 }
 function find(loop$list, loop$is_desired) {
   while (true) {
-    let list2 = loop$list;
+    let list = loop$list;
     let is_desired = loop$is_desired;
-    if (list2.hasLength(0)) {
+    if (list.hasLength(0)) {
       return new Error(void 0);
     } else {
-      let x = list2.head;
-      let rest$1 = list2.tail;
+      let x = list.head;
+      let rest$1 = list.tail;
       let $ = is_desired(x);
       if ($) {
         return new Ok(x);
       } else {
         loop$list = rest$1;
         loop$is_desired = is_desired;
-      }
-    }
-  }
-}
-function any(loop$list, loop$predicate) {
-  while (true) {
-    let list2 = loop$list;
-    let predicate = loop$predicate;
-    if (list2.hasLength(0)) {
-      return false;
-    } else {
-      let first$1 = list2.head;
-      let rest$1 = list2.tail;
-      let $ = predicate(first$1);
-      if ($) {
-        return true;
-      } else {
-        loop$list = rest$1;
-        loop$predicate = predicate;
       }
     }
   }
@@ -660,6 +730,13 @@ function inspect2(term) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/result.mjs
+function is_ok(result) {
+  if (!result.isOk()) {
+    return false;
+  } else {
+    return true;
+  }
+}
 function map3(result, fun) {
   if (result.isOk()) {
     let x = result[0];
@@ -687,7 +764,7 @@ function try$(result, fun) {
     return new Error(e);
   }
 }
-function unwrap(result, default$) {
+function unwrap2(result, default$) {
   if (result.isOk()) {
     let v = result[0];
     return v;
@@ -716,7 +793,7 @@ var DecodeError = class extends CustomType {
 function int(data) {
   return decode_int(data);
 }
-function any2(decoders) {
+function any(decoders) {
   return (data) => {
     if (decoders.hasLength(0)) {
       return new Error(
@@ -730,16 +807,16 @@ function any2(decoders) {
         let decoded = $[0];
         return new Ok(decoded);
       } else {
-        return any2(decoders$1)(data);
+        return any(decoders$1)(data);
       }
     }
   };
 }
 function push_path(error, name) {
   let name$1 = identity(name);
-  let decoder = any2(
+  let decoder = any(
     toList([string, (x) => {
-      return map3(int(x), to_string);
+      return map3(int(x), to_string2);
     }])
   );
   let name$2 = (() => {
@@ -1505,7 +1582,7 @@ function parse_int(value3) {
     return new Error(Nil);
   }
 }
-function to_string(term) {
+function to_string2(term) {
   return term.toString();
 }
 function float_to_string(float3) {
@@ -1555,31 +1632,21 @@ function graphemes_iterator(string3) {
   }
 }
 function pop_grapheme(string3) {
-  let first3;
+  let first2;
   const iterator = graphemes_iterator(string3);
   if (iterator) {
-    first3 = iterator.next().value?.segment;
+    first2 = iterator.next().value?.segment;
   } else {
-    first3 = string3.match(/./su)?.[0];
+    first2 = string3.match(/./su)?.[0];
   }
-  if (first3) {
-    return new Ok([first3, string3.slice(first3.length)]);
+  if (first2) {
+    return new Ok([first2, string3.slice(first2.length)]);
   } else {
     return new Error(Nil);
   }
 }
 function split(xs, pattern) {
   return List.fromArray(xs.split(pattern));
-}
-function join(xs, separator) {
-  const iterator = xs[Symbol.iterator]();
-  let result = iterator.next().value || "";
-  let current = iterator.next();
-  while (!current.done) {
-    result = result + separator + current.value;
-    current = iterator.next();
-  }
-  return result;
 }
 function concat(xs) {
   let result = "";
@@ -1647,6 +1714,9 @@ function floor(float3) {
 function round(float3) {
   return Math.round(float3);
 }
+function truncate(float3) {
+  return Math.trunc(float3);
+}
 function random_uniform() {
   const random_uniform_result = Math.random();
   if (random_uniform_result === 1) {
@@ -1654,21 +1724,38 @@ function random_uniform() {
   }
   return random_uniform_result;
 }
+function regex_check(regex, string3) {
+  regex.lastIndex = 0;
+  return regex.test(string3);
+}
+function compile_regex(pattern, options) {
+  try {
+    let flags = "gu";
+    if (options.case_insensitive)
+      flags += "i";
+    if (options.multi_line)
+      flags += "m";
+    return new Ok(new RegExp(pattern, flags));
+  } catch (error) {
+    const number = (error.columnNumber || 0) | 0;
+    return new Error(new CompileError(error.message, number));
+  }
+}
 function new_map() {
   return Dict.new();
 }
-function map_to_list(map6) {
-  return List.fromArray(map6.entries());
+function map_to_list(map7) {
+  return List.fromArray(map7.entries());
 }
-function map_get(map6, key) {
-  const value3 = map6.get(key, NOT_FOUND);
+function map_get(map7, key) {
+  const value3 = map7.get(key, NOT_FOUND);
   if (value3 === NOT_FOUND) {
     return new Error(Nil);
   }
   return new Ok(value3);
 }
-function map_insert(key, value3, map6) {
-  return map6.set(key, value3);
+function map_insert(key, value3, map7) {
+  return map7.set(key, value3);
 }
 function classify_dynamic(data) {
   if (typeof data === "string") {
@@ -1725,9 +1812,9 @@ function decode_field(value3, name) {
     return try_get_field(value3, name, not_a_map_error);
   }
 }
-function try_get_field(value3, field2, or_else) {
+function try_get_field(value3, field3, or_else) {
   try {
-    return field2 in value3 ? new Ok(new Some(value3[field2])) : or_else();
+    return field3 in value3 ? new Ok(new Some(value3[field3])) : or_else();
   } catch {
     return or_else();
   }
@@ -1820,14 +1907,14 @@ function inspectString(str) {
   new_str += '"';
   return new_str;
 }
-function inspectDict(map6) {
+function inspectDict(map7) {
   let body = "dict.from_list([";
-  let first3 = true;
-  map6.forEach((value3, key) => {
-    if (!first3)
+  let first2 = true;
+  map7.forEach((value3, key) => {
+    if (!first2)
       body = body + ", ";
     body = body + "#(" + inspect(key) + ", " + inspect(value3) + ")";
-    first3 = false;
+    first2 = false;
   });
   return body + "])";
 }
@@ -1848,8 +1935,8 @@ function inspectCustomType(record) {
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
-function inspectList(list2) {
-  return `[${list2.toArray().map(inspect).join(", ")}]`;
+function inspectList(list) {
+  return `[${list.toArray().map(inspect).join(", ")}]`;
 }
 function inspectBitArray(bits) {
   return `<<${Array.from(bits.buffer).join(", ")}>>`;
@@ -1883,696 +1970,39 @@ function absolute_value(x) {
 function to_base16(x) {
   return int_to_base_string(x, 16);
 }
-function random(max) {
-  let _pipe = random_uniform() * identity(max);
+function min(a2, b) {
+  let $ = a2 < b;
+  if ($) {
+    return a2;
+  } else {
+    return b;
+  }
+}
+function max(a2, b) {
+  let $ = a2 > b;
+  if ($) {
+    return a2;
+  } else {
+    return b;
+  }
+}
+function clamp(x, min_bound, max_bound) {
+  let _pipe = x;
+  let _pipe$1 = min(_pipe, max_bound);
+  return max(_pipe$1, min_bound);
+}
+function random(max2) {
+  let _pipe = random_uniform() * identity(max2);
   let _pipe$1 = floor(_pipe);
   return round2(_pipe$1);
 }
-
-// build/dev/javascript/birl/birl/duration.mjs
-var Duration = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
+function divide(dividend, divisor) {
+  if (divisor === 0) {
+    return new Error(void 0);
+  } else {
+    let divisor$1 = divisor;
+    return new Ok(divideInt(dividend, divisor$1));
   }
-};
-var MicroSecond = class extends CustomType {
-};
-var MilliSecond = class extends CustomType {
-};
-var Second = class extends CustomType {
-};
-var Minute = class extends CustomType {
-};
-var Hour = class extends CustomType {
-};
-var Day = class extends CustomType {
-};
-var Week = class extends CustomType {
-};
-var Month = class extends CustomType {
-};
-var Year = class extends CustomType {
-};
-function extract(duration, unit_value) {
-  return [divideInt(duration, unit_value), remainderInt(duration, unit_value)];
-}
-var milli_second = 1e3;
-var second = 1e6;
-var minute = 6e7;
-var hour = 36e8;
-var day = 864e8;
-var week = 6048e8;
-var month = 2592e9;
-var year = 31536e9;
-function new$(values) {
-  let _pipe = values;
-  let _pipe$1 = fold(
-    _pipe,
-    0,
-    (total, current) => {
-      if (current[1] instanceof MicroSecond) {
-        let amount = current[0];
-        return total + amount;
-      } else if (current[1] instanceof MilliSecond) {
-        let amount = current[0];
-        return total + amount * milli_second;
-      } else if (current[1] instanceof Second) {
-        let amount = current[0];
-        return total + amount * second;
-      } else if (current[1] instanceof Minute) {
-        let amount = current[0];
-        return total + amount * minute;
-      } else if (current[1] instanceof Hour) {
-        let amount = current[0];
-        return total + amount * hour;
-      } else if (current[1] instanceof Day) {
-        let amount = current[0];
-        return total + amount * day;
-      } else if (current[1] instanceof Week) {
-        let amount = current[0];
-        return total + amount * week;
-      } else if (current[1] instanceof Month) {
-        let amount = current[0];
-        return total + amount * month;
-      } else {
-        let amount = current[0];
-        return total + amount * year;
-      }
-    }
-  );
-  return new Duration(_pipe$1);
-}
-function decompose(duration) {
-  let value3 = duration[0];
-  let absolute_value2 = absolute_value(value3);
-  let $ = extract(absolute_value2, year);
-  let years$1 = $[0];
-  let remaining = $[1];
-  let $1 = extract(remaining, month);
-  let months$1 = $1[0];
-  let remaining$1 = $1[1];
-  let $2 = extract(remaining$1, week);
-  let weeks$1 = $2[0];
-  let remaining$2 = $2[1];
-  let $3 = extract(remaining$2, day);
-  let days$1 = $3[0];
-  let remaining$3 = $3[1];
-  let $4 = extract(remaining$3, hour);
-  let hours$1 = $4[0];
-  let remaining$4 = $4[1];
-  let $5 = extract(remaining$4, minute);
-  let minutes$1 = $5[0];
-  let remaining$5 = $5[1];
-  let $6 = extract(remaining$5, second);
-  let seconds$1 = $6[0];
-  let remaining$6 = $6[1];
-  let $7 = extract(remaining$6, milli_second);
-  let milli_seconds$1 = $7[0];
-  let remaining$7 = $7[1];
-  let _pipe = toList([
-    [years$1, new Year()],
-    [months$1, new Month()],
-    [weeks$1, new Week()],
-    [days$1, new Day()],
-    [hours$1, new Hour()],
-    [minutes$1, new Minute()],
-    [seconds$1, new Second()],
-    [milli_seconds$1, new MilliSecond()],
-    [remaining$7, new MicroSecond()]
-  ]);
-  let _pipe$1 = filter(_pipe, (item) => {
-    return item[0] > 0;
-  });
-  return map2(
-    _pipe$1,
-    (item) => {
-      let $8 = value3 < 0;
-      if ($8) {
-        return [-1 * item[0], item[1]];
-      } else {
-        return item;
-      }
-    }
-  );
-}
-
-// build/dev/javascript/birl/birl/zones.mjs
-var list = /* @__PURE__ */ toList([
-  ["Africa/Abidjan", 0],
-  ["Africa/Algiers", 3600],
-  ["Africa/Bissau", 0],
-  ["Africa/Cairo", 7200],
-  ["Africa/Casablanca", 3600],
-  ["Africa/Ceuta", 3600],
-  ["Africa/El_Aaiun", 3600],
-  ["Africa/Johannesburg", 7200],
-  ["Africa/Juba", 7200],
-  ["Africa/Khartoum", 7200],
-  ["Africa/Lagos", 3600],
-  ["Africa/Maputo", 7200],
-  ["Africa/Monrovia", 0],
-  ["Africa/Nairobi", 10800],
-  ["Africa/Ndjamena", 3600],
-  ["Africa/Sao_Tome", 0],
-  ["Africa/Tripoli", 7200],
-  ["Africa/Tunis", 3600],
-  ["Africa/Windhoek", 7200],
-  ["America/Adak", -36e3],
-  ["America/Anchorage", -32400],
-  ["America/Araguaina", -10800],
-  ["America/Argentina/Buenos_Aires", -10800],
-  ["America/Argentina/Catamarca", -10800],
-  ["America/Argentina/Cordoba", -10800],
-  ["America/Argentina/Jujuy", -10800],
-  ["America/Argentina/La_Rioja", -10800],
-  ["America/Argentina/Mendoza", -10800],
-  ["America/Argentina/Rio_Gallegos", -10800],
-  ["America/Argentina/Salta", -10800],
-  ["America/Argentina/San_Juan", -10800],
-  ["America/Argentina/San_Luis", -10800],
-  ["America/Argentina/Tucuman", -10800],
-  ["America/Argentina/Ushuaia", -10800],
-  ["America/Asuncion", -14400],
-  ["America/Bahia", -10800],
-  ["America/Bahia_Banderas", -21600],
-  ["America/Barbados", -14400],
-  ["America/Belem", -10800],
-  ["America/Belize", -21600],
-  ["America/Boa_Vista", -14400],
-  ["America/Bogota", -18e3],
-  ["America/Boise", -25200],
-  ["America/Cambridge_Bay", -25200],
-  ["America/Campo_Grande", -14400],
-  ["America/Cancun", -18e3],
-  ["America/Caracas", -14400],
-  ["America/Cayenne", -10800],
-  ["America/Chicago", -21600],
-  ["America/Chihuahua", -21600],
-  ["America/Ciudad_Juarez", -25200],
-  ["America/Costa_Rica", -21600],
-  ["America/Cuiaba", -14400],
-  ["America/Danmarkshavn", 0],
-  ["America/Dawson", -25200],
-  ["America/Dawson_Creek", -25200],
-  ["America/Denver", -25200],
-  ["America/Detroit", -18e3],
-  ["America/Edmonton", -25200],
-  ["America/Eirunepe", -18e3],
-  ["America/El_Salvador", -21600],
-  ["America/Fort_Nelson", -25200],
-  ["America/Fortaleza", -10800],
-  ["America/Glace_Bay", -14400],
-  ["America/Goose_Bay", -14400],
-  ["America/Grand_Turk", -18e3],
-  ["America/Guatemala", -21600],
-  ["America/Guayaquil", -18e3],
-  ["America/Guyana", -14400],
-  ["America/Halifax", -14400],
-  ["America/Havana", -18e3],
-  ["America/Hermosillo", -25200],
-  ["America/Indiana/Indianapolis", -18e3],
-  ["America/Indiana/Knox", -21600],
-  ["America/Indiana/Marengo", -18e3],
-  ["America/Indiana/Petersburg", -18e3],
-  ["America/Indiana/Tell_City", -21600],
-  ["America/Indiana/Vevay", -18e3],
-  ["America/Indiana/Vincennes", -18e3],
-  ["America/Indiana/Winamac", -18e3],
-  ["America/Inuvik", -25200],
-  ["America/Iqaluit", -18e3],
-  ["America/Jamaica", -18e3],
-  ["America/Juneau", -32400],
-  ["America/Kentucky/Louisville", -18e3],
-  ["America/Kentucky/Monticello", -18e3],
-  ["America/La_Paz", -14400],
-  ["America/Lima", -18e3],
-  ["America/Los_Angeles", -28800],
-  ["America/Maceio", -10800],
-  ["America/Managua", -21600],
-  ["America/Manaus", -14400],
-  ["America/Martinique", -14400],
-  ["America/Matamoros", -21600],
-  ["America/Mazatlan", -25200],
-  ["America/Menominee", -21600],
-  ["America/Merida", -21600],
-  ["America/Metlakatla", -32400],
-  ["America/Mexico_City", -21600],
-  ["America/Miquelon", -10800],
-  ["America/Moncton", -14400],
-  ["America/Monterrey", -21600],
-  ["America/Montevideo", -10800],
-  ["America/New_York", -18e3],
-  ["America/Nome", -32400],
-  ["America/Noronha", -7200],
-  ["America/North_Dakota/Beulah", -21600],
-  ["America/North_Dakota/Center", -21600],
-  ["America/North_Dakota/New_Salem", -21600],
-  ["America/Nuuk", -7200],
-  ["America/Ojinaga", -21600],
-  ["America/Panama", -18e3],
-  ["America/Paramaribo", -10800],
-  ["America/Phoenix", -25200],
-  ["America/Port-au-Prince", -18e3],
-  ["America/Porto_Velho", -14400],
-  ["America/Puerto_Rico", -14400],
-  ["America/Punta_Arenas", -10800],
-  ["America/Rankin_Inlet", -21600],
-  ["America/Recife", -10800],
-  ["America/Regina", -21600],
-  ["America/Resolute", -21600],
-  ["America/Rio_Branco", -18e3],
-  ["America/Santarem", -10800],
-  ["America/Santiago", -14400],
-  ["America/Santo_Domingo", -14400],
-  ["America/Sao_Paulo", -10800],
-  ["America/Scoresbysund", -7200],
-  ["America/Sitka", -32400],
-  ["America/St_Johns", -12600],
-  ["America/Swift_Current", -21600],
-  ["America/Tegucigalpa", -21600],
-  ["America/Thule", -14400],
-  ["America/Tijuana", -28800],
-  ["America/Toronto", -18e3],
-  ["America/Vancouver", -28800],
-  ["America/Whitehorse", -25200],
-  ["America/Winnipeg", -21600],
-  ["America/Yakutat", -32400],
-  ["Antarctica/Casey", 28800],
-  ["Antarctica/Davis", 25200],
-  ["Antarctica/Macquarie", 36e3],
-  ["Antarctica/Mawson", 18e3],
-  ["Antarctica/Palmer", -10800],
-  ["Antarctica/Rothera", -10800],
-  ["Antarctica/Troll", 0],
-  ["Antarctica/Vostok", 18e3],
-  ["Asia/Almaty", 18e3],
-  ["Asia/Amman", 10800],
-  ["Asia/Anadyr", 43200],
-  ["Asia/Aqtau", 18e3],
-  ["Asia/Aqtobe", 18e3],
-  ["Asia/Ashgabat", 18e3],
-  ["Asia/Atyrau", 18e3],
-  ["Asia/Baghdad", 10800],
-  ["Asia/Baku", 14400],
-  ["Asia/Bangkok", 25200],
-  ["Asia/Barnaul", 25200],
-  ["Asia/Beirut", 7200],
-  ["Asia/Bishkek", 21600],
-  ["Asia/Chita", 32400],
-  ["Asia/Choibalsan", 28800],
-  ["Asia/Colombo", 19800],
-  ["Asia/Damascus", 10800],
-  ["Asia/Dhaka", 21600],
-  ["Asia/Dili", 32400],
-  ["Asia/Dubai", 14400],
-  ["Asia/Dushanbe", 18e3],
-  ["Asia/Famagusta", 7200],
-  ["Asia/Gaza", 7200],
-  ["Asia/Hebron", 7200],
-  ["Asia/Ho_Chi_Minh", 25200],
-  ["Asia/Hong_Kong", 28800],
-  ["Asia/Hovd", 25200],
-  ["Asia/Irkutsk", 28800],
-  ["Asia/Jakarta", 25200],
-  ["Asia/Jayapura", 32400],
-  ["Asia/Jerusalem", 7200],
-  ["Asia/Kabul", 16200],
-  ["Asia/Kamchatka", 43200],
-  ["Asia/Karachi", 18e3],
-  ["Asia/Kathmandu", 20700],
-  ["Asia/Khandyga", 32400],
-  ["Asia/Kolkata", 19800],
-  ["Asia/Krasnoyarsk", 25200],
-  ["Asia/Kuching", 28800],
-  ["Asia/Macau", 28800],
-  ["Asia/Magadan", 39600],
-  ["Asia/Makassar", 28800],
-  ["Asia/Manila", 28800],
-  ["Asia/Nicosia", 7200],
-  ["Asia/Novokuznetsk", 25200],
-  ["Asia/Novosibirsk", 25200],
-  ["Asia/Omsk", 21600],
-  ["Asia/Oral", 18e3],
-  ["Asia/Pontianak", 25200],
-  ["Asia/Pyongyang", 32400],
-  ["Asia/Qatar", 10800],
-  ["Asia/Qostanay", 18e3],
-  ["Asia/Qyzylorda", 18e3],
-  ["Asia/Riyadh", 10800],
-  ["Asia/Sakhalin", 39600],
-  ["Asia/Samarkand", 18e3],
-  ["Asia/Seoul", 32400],
-  ["Asia/Shanghai", 28800],
-  ["Asia/Singapore", 28800],
-  ["Asia/Srednekolymsk", 39600],
-  ["Asia/Taipei", 28800],
-  ["Asia/Tashkent", 18e3],
-  ["Asia/Tbilisi", 14400],
-  ["Asia/Tehran", 12600],
-  ["Asia/Thimphu", 21600],
-  ["Asia/Tokyo", 32400],
-  ["Asia/Tomsk", 25200],
-  ["Asia/Ulaanbaatar", 28800],
-  ["Asia/Urumqi", 21600],
-  ["Asia/Ust-Nera", 36e3],
-  ["Asia/Vladivostok", 36e3],
-  ["Asia/Yakutsk", 32400],
-  ["Asia/Yangon", 23400],
-  ["Asia/Yekaterinburg", 18e3],
-  ["Asia/Yerevan", 14400],
-  ["Atlantic/Azores", -3600],
-  ["Atlantic/Bermuda", -14400],
-  ["Atlantic/Canary", 0],
-  ["Atlantic/Cape_Verde", -3600],
-  ["Atlantic/Faroe", 0],
-  ["Atlantic/Madeira", 0],
-  ["Atlantic/South_Georgia", -7200],
-  ["Atlantic/Stanley", -10800],
-  ["Australia/Adelaide", 34200],
-  ["Australia/Brisbane", 36e3],
-  ["Australia/Broken_Hill", 34200],
-  ["Australia/Darwin", 34200],
-  ["Australia/Eucla", 31500],
-  ["Australia/Hobart", 36e3],
-  ["Australia/Lindeman", 36e3],
-  ["Australia/Lord_Howe", 37800],
-  ["Australia/Melbourne", 36e3],
-  ["Australia/Perth", 28800],
-  ["Australia/Sydney", 36e3],
-  ["CET", 3600],
-  ["CST6CDT", -21600],
-  ["EET", 7200],
-  ["EST", -18e3],
-  ["EST5EDT", -18e3],
-  ["Etc/GMT", 0],
-  ["Etc/GMT+1", -3600],
-  ["Etc/GMT+10", -36e3],
-  ["Etc/GMT+11", -39600],
-  ["Etc/GMT+12", -43200],
-  ["Etc/GMT+2", -7200],
-  ["Etc/GMT+3", -10800],
-  ["Etc/GMT+4", -14400],
-  ["Etc/GMT+5", -18e3],
-  ["Etc/GMT+6", -21600],
-  ["Etc/GMT+7", -25200],
-  ["Etc/GMT+8", -28800],
-  ["Etc/GMT+9", -32400],
-  ["Etc/GMT-1", 3600],
-  ["Etc/GMT-10", 36e3],
-  ["Etc/GMT-11", 39600],
-  ["Etc/GMT-12", 43200],
-  ["Etc/GMT-13", 46800],
-  ["Etc/GMT-14", 50400],
-  ["Etc/GMT-2", 7200],
-  ["Etc/GMT-3", 10800],
-  ["Etc/GMT-4", 14400],
-  ["Etc/GMT-5", 18e3],
-  ["Etc/GMT-6", 21600],
-  ["Etc/GMT-7", 25200],
-  ["Etc/GMT-8", 28800],
-  ["Etc/GMT-9", 32400],
-  ["Etc/UTC", 0],
-  ["Europe/Andorra", 3600],
-  ["Europe/Astrakhan", 14400],
-  ["Europe/Athens", 7200],
-  ["Europe/Belgrade", 3600],
-  ["Europe/Berlin", 3600],
-  ["Europe/Brussels", 3600],
-  ["Europe/Bucharest", 7200],
-  ["Europe/Budapest", 3600],
-  ["Europe/Chisinau", 7200],
-  ["Europe/Dublin", 3600],
-  ["Europe/Gibraltar", 3600],
-  ["Europe/Helsinki", 7200],
-  ["Europe/Istanbul", 10800],
-  ["Europe/Kaliningrad", 7200],
-  ["Europe/Kirov", 10800],
-  ["Europe/Kyiv", 7200],
-  ["Europe/Lisbon", 0],
-  ["Europe/London", 0],
-  ["Europe/Madrid", 3600],
-  ["Europe/Malta", 3600],
-  ["Europe/Minsk", 10800],
-  ["Europe/Moscow", 10800],
-  ["Europe/Paris", 3600],
-  ["Europe/Prague", 3600],
-  ["Europe/Riga", 7200],
-  ["Europe/Rome", 3600],
-  ["Europe/Samara", 14400],
-  ["Europe/Saratov", 14400],
-  ["Europe/Simferopol", 10800],
-  ["Europe/Sofia", 7200],
-  ["Europe/Tallinn", 7200],
-  ["Europe/Tirane", 3600],
-  ["Europe/Ulyanovsk", 14400],
-  ["Europe/Vienna", 3600],
-  ["Europe/Vilnius", 7200],
-  ["Europe/Volgograd", 10800],
-  ["Europe/Warsaw", 3600],
-  ["Europe/Zurich", 3600],
-  ["HST", -36e3],
-  ["Indian/Chagos", 21600],
-  ["Indian/Maldives", 18e3],
-  ["Indian/Mauritius", 14400],
-  ["MET", 3600],
-  ["MST", -25200],
-  ["MST7MDT", -25200],
-  ["PST8PDT", -28800],
-  ["Pacific/Apia", 46800],
-  ["Pacific/Auckland", 43200],
-  ["Pacific/Bougainville", 39600],
-  ["Pacific/Chatham", 45900],
-  ["Pacific/Easter", -21600],
-  ["Pacific/Efate", 39600],
-  ["Pacific/Fakaofo", 46800],
-  ["Pacific/Fiji", 43200],
-  ["Pacific/Galapagos", -21600],
-  ["Pacific/Gambier", -32400],
-  ["Pacific/Guadalcanal", 39600],
-  ["Pacific/Guam", 36e3],
-  ["Pacific/Honolulu", -36e3],
-  ["Pacific/Kanton", 46800],
-  ["Pacific/Kiritimati", 50400],
-  ["Pacific/Kosrae", 39600],
-  ["Pacific/Kwajalein", 43200],
-  ["Pacific/Marquesas", -34200],
-  ["Pacific/Nauru", 43200],
-  ["Pacific/Niue", -39600],
-  ["Pacific/Norfolk", 39600],
-  ["Pacific/Noumea", 39600],
-  ["Pacific/Pago_Pago", -39600],
-  ["Pacific/Palau", 32400],
-  ["Pacific/Pitcairn", -28800],
-  ["Pacific/Port_Moresby", 36e3],
-  ["Pacific/Rarotonga", -36e3],
-  ["Pacific/Tahiti", -36e3],
-  ["Pacific/Tarawa", 43200],
-  ["Pacific/Tongatapu", 46800],
-  ["WET", 0]
-]);
-
-// build/dev/javascript/birl/birl_ffi.mjs
-function now() {
-  return Date.now() * 1e3;
-}
-function local_offset() {
-  const date = /* @__PURE__ */ new Date();
-  return -date.getTimezoneOffset();
-}
-function local_timezone() {
-  return new Some(Intl.DateTimeFormat().resolvedOptions().timeZone);
-}
-function monotonic_now() {
-  return Math.floor(globalThis.performance.now() * 1e3);
-}
-function to_parts(timestamp, offset) {
-  const date = new Date((timestamp + offset) / 1e3);
-  return [
-    [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()],
-    [
-      date.getUTCHours(),
-      date.getUTCMinutes(),
-      date.getUTCSeconds(),
-      date.getUTCMilliseconds()
-    ]
-  ];
-}
-
-// build/dev/javascript/birl/birl.mjs
-var Time = class extends CustomType {
-  constructor(wall_time, offset, timezone, monotonic_time) {
-    super();
-    this.wall_time = wall_time;
-    this.offset = offset;
-    this.timezone = timezone;
-    this.monotonic_time = monotonic_time;
-  }
-};
-var Day2 = class extends CustomType {
-  constructor(year2, month2, date) {
-    super();
-    this.year = year2;
-    this.month = month2;
-    this.date = date;
-  }
-};
-var Dec = class extends CustomType {
-};
-function generate_offset(offset) {
-  return guard(
-    offset === 0,
-    new Ok("Z"),
-    () => {
-      let $ = (() => {
-        let _pipe = toList([[offset, new MicroSecond()]]);
-        let _pipe$1 = new$(_pipe);
-        return decompose(_pipe$1);
-      })();
-      if ($.hasLength(2) && $.head[1] instanceof Hour && $.tail.head[1] instanceof Minute) {
-        let hour2 = $.head[0];
-        let minute2 = $.tail.head[0];
-        let _pipe = toList([
-          (() => {
-            let $1 = hour2 > 0;
-            if ($1) {
-              return concat2(
-                toList([
-                  "+",
-                  (() => {
-                    let _pipe2 = hour2;
-                    let _pipe$12 = to_string(_pipe2);
-                    return pad_left(_pipe$12, 2, "0");
-                  })()
-                ])
-              );
-            } else {
-              return concat2(
-                toList([
-                  "-",
-                  (() => {
-                    let _pipe2 = hour2;
-                    let _pipe$12 = absolute_value(_pipe2);
-                    let _pipe$2 = to_string(_pipe$12);
-                    return pad_left(_pipe$2, 2, "0");
-                  })()
-                ])
-              );
-            }
-          })(),
-          (() => {
-            let _pipe2 = minute2;
-            let _pipe$12 = absolute_value(_pipe2);
-            let _pipe$2 = to_string(_pipe$12);
-            return pad_left(_pipe$2, 2, "0");
-          })()
-        ]);
-        let _pipe$1 = join(_pipe, ":");
-        return new Ok(_pipe$1);
-      } else if ($.hasLength(1) && $.head[1] instanceof Hour) {
-        let hour2 = $.head[0];
-        let _pipe = toList([
-          (() => {
-            let $1 = hour2 > 0;
-            if ($1) {
-              return concat2(
-                toList([
-                  "+",
-                  (() => {
-                    let _pipe2 = hour2;
-                    let _pipe$12 = to_string(_pipe2);
-                    return pad_left(_pipe$12, 2, "0");
-                  })()
-                ])
-              );
-            } else {
-              return concat2(
-                toList([
-                  "-",
-                  (() => {
-                    let _pipe2 = hour2;
-                    let _pipe$12 = absolute_value(_pipe2);
-                    let _pipe$2 = to_string(_pipe$12);
-                    return pad_left(_pipe$2, 2, "0");
-                  })()
-                ])
-              );
-            }
-          })(),
-          "00"
-        ]);
-        let _pipe$1 = join(_pipe, ":");
-        return new Ok(_pipe$1);
-      } else {
-        return new Error(void 0);
-      }
-    }
-  );
-}
-function to_parts2(value3) {
-  {
-    let t = value3.wall_time;
-    let o = value3.offset;
-    let $ = to_parts(t, o);
-    let date = $[0];
-    let time = $[1];
-    let $1 = generate_offset(o);
-    if (!$1.isOk()) {
-      throw makeError(
-        "let_assert",
-        "birl",
-        1317,
-        "to_parts",
-        "Pattern match failed, no pattern matched the value.",
-        { value: $1 }
-      );
-    }
-    let offset = $1[0];
-    return [date, time, offset];
-  }
-}
-function to_date_string(value3) {
-  let $ = to_parts2(value3);
-  let year2 = $[0][0];
-  let month$1 = $[0][1];
-  let day2 = $[0][2];
-  let offset = $[2];
-  return to_string(year2) + "-" + (() => {
-    let _pipe = month$1;
-    let _pipe$1 = to_string(_pipe);
-    return pad_left(_pipe$1, 2, "0");
-  })() + "-" + (() => {
-    let _pipe = day2;
-    let _pipe$1 = to_string(_pipe);
-    return pad_left(_pipe$1, 2, "0");
-  })() + offset;
-}
-function now2() {
-  let now$1 = now();
-  let offset_in_minutes = local_offset();
-  let monotonic_now$1 = monotonic_now();
-  let timezone = local_timezone();
-  return new Time(
-    now$1,
-    offset_in_minutes * 6e7,
-    (() => {
-      let _pipe = map(
-        timezone,
-        (tz) => {
-          let $ = any(list, (item) => {
-            return item[0] === tz;
-          });
-          if ($) {
-            return new Some(tz);
-          } else {
-            return new None();
-          }
-        }
-      );
-      return flatten(_pipe);
-    })(),
-    new Some(monotonic_now$1)
-  );
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/io.mjs
@@ -2684,11 +2114,11 @@ var Effect = class extends CustomType {
     this.all = all;
   }
 };
-function custom(run) {
+function custom(run3) {
   return new Effect(
     toList([
       (actions) => {
-        return run(actions.dispatch, actions.emit, actions.select, actions.root);
+        return run3(actions.dispatch, actions.emit, actions.select, actions.root);
       }
     ])
   );
@@ -2769,7 +2199,7 @@ function do_element_list_handlers(elements2, handlers2, key) {
     elements2,
     handlers2,
     (handlers3, element2, index3) => {
-      let key$1 = key + "-" + to_string(index3);
+      let key$1 = key + "-" + to_string2(index3);
       return do_handlers(element2, handlers3, key$1);
     }
   );
@@ -2899,8 +2329,24 @@ var Set2 = class extends CustomType {
     this.dict = dict;
   }
 };
-function new$3() {
+function new$2() {
   return new Set2(new_map());
+}
+function contains(set, member) {
+  let _pipe = set.dict;
+  let _pipe$1 = map_get(_pipe, member);
+  return is_ok(_pipe$1);
+}
+var token = void 0;
+function from_list2(members) {
+  let dict = fold(
+    members,
+    new_map(),
+    (m, k) => {
+      return insert(m, k, token);
+    }
+  );
+  return new Set2(dict);
 }
 
 // build/dev/javascript/lustre/lustre/internals/patch.mjs
@@ -2924,11 +2370,11 @@ var Init = class extends CustomType {
     this[1] = x1;
   }
 };
-function is_empty_element_diff(diff2) {
-  return isEqual(diff2.created, new_map()) && isEqual(
-    diff2.removed,
-    new$3()
-  ) && isEqual(diff2.updated, new_map());
+function is_empty_element_diff(diff3) {
+  return isEqual(diff3.created, new_map()) && isEqual(
+    diff3.removed,
+    new$2()
+  ) && isEqual(diff3.updated, new_map());
 }
 
 // build/dev/javascript/lustre/lustre/internals/runtime.mjs
@@ -3004,31 +2450,31 @@ if (globalThis.customElements && !globalThis.customElements.get("lustre-fragment
     }
   );
 }
-function morph(prev, next, dispatch) {
+function morph(prev, next2, dispatch) {
   let out;
-  let stack = [{ prev, next, parent: prev.parentNode }];
+  let stack = [{ prev, next: next2, parent: prev.parentNode }];
   while (stack.length) {
-    let { prev: prev2, next: next2, parent } = stack.pop();
-    while (next2.subtree !== void 0)
-      next2 = next2.subtree();
-    if (next2.content !== void 0) {
+    let { prev: prev2, next: next3, parent } = stack.pop();
+    while (next3.subtree !== void 0)
+      next3 = next3.subtree();
+    if (next3.content !== void 0) {
       if (!prev2) {
-        const created = document.createTextNode(next2.content);
+        const created = document.createTextNode(next3.content);
         parent.appendChild(created);
         out ??= created;
       } else if (prev2.nodeType === Node.TEXT_NODE) {
-        if (prev2.textContent !== next2.content)
-          prev2.textContent = next2.content;
+        if (prev2.textContent !== next3.content)
+          prev2.textContent = next3.content;
         out ??= prev2;
       } else {
-        const created = document.createTextNode(next2.content);
+        const created = document.createTextNode(next3.content);
         parent.replaceChild(created, prev2);
         out ??= created;
       }
-    } else if (next2.tag !== void 0) {
+    } else if (next3.tag !== void 0) {
       const created = createElementNode({
         prev: prev2,
-        next: next2,
+        next: next3,
         dispatch,
         stack
       });
@@ -3042,10 +2488,10 @@ function morph(prev, next, dispatch) {
   }
   return out;
 }
-function createElementNode({ prev, next, dispatch, stack }) {
-  const namespace = next.namespace || "http://www.w3.org/1999/xhtml";
-  const canMorph = prev && prev.nodeType === Node.ELEMENT_NODE && prev.localName === next.tag && prev.namespaceURI === (next.namespace || "http://www.w3.org/1999/xhtml");
-  const el = canMorph ? prev : namespace ? document.createElementNS(namespace, next.tag) : document.createElement(next.tag);
+function createElementNode({ prev, next: next2, dispatch, stack }) {
+  const namespace = next2.namespace || "http://www.w3.org/1999/xhtml";
+  const canMorph = prev && prev.nodeType === Node.ELEMENT_NODE && prev.localName === next2.tag && prev.namespaceURI === (next2.namespace || "http://www.w3.org/1999/xhtml");
+  const el = canMorph ? prev : namespace ? document.createElementNS(namespace, next2.tag) : document.createElement(next2.tag);
   let handlersForEl;
   if (!registeredHandlers.has(el)) {
     const emptyHandlers = /* @__PURE__ */ new Map();
@@ -3059,13 +2505,13 @@ function createElementNode({ prev, next, dispatch, stack }) {
   let className = null;
   let style2 = null;
   let innerHTML = null;
-  if (canMorph && next.tag === "textarea") {
-    const innertText = next.children[Symbol.iterator]().next().value?.content;
+  if (canMorph && next2.tag === "textarea") {
+    const innertText = next2.children[Symbol.iterator]().next().value?.content;
     if (innertText !== void 0)
       el.value = innertText;
   }
   const delegated = [];
-  for (const attr of next.attrs) {
+  for (const attr of next2.attrs) {
     const name = attr[0];
     const value3 = attr[1];
     if (attr.as_property) {
@@ -3131,7 +2577,7 @@ function createElementNode({ prev, next, dispatch, stack }) {
       el.removeEventListener(eventName, lustreGenericEventHandler);
     }
   }
-  if (next.tag === "slot") {
+  if (next2.tag === "slot") {
     window.queueMicrotask(() => {
       for (const child of el.assignedElements()) {
         for (const [name, value3] of delegated) {
@@ -3142,8 +2588,8 @@ function createElementNode({ prev, next, dispatch, stack }) {
       }
     });
   }
-  if (next.key !== void 0 && next.key !== "") {
-    el.setAttribute("data-lustre-key", next.key);
+  if (next2.key !== void 0 && next2.key !== "") {
+    el.setAttribute("data-lustre-key", next2.key);
   } else if (innerHTML !== null) {
     el.innerHTML = innerHTML;
     return el;
@@ -3152,14 +2598,14 @@ function createElementNode({ prev, next, dispatch, stack }) {
   let seenKeys = null;
   let keyedChildren = null;
   let incomingKeyedChildren = null;
-  let firstChild = children(next).next().value;
+  let firstChild = children(next2).next().value;
   if (canMorph && firstChild !== void 0 && // Explicit checks are more verbose but truthy checks force a bunch of comparisons
   // we don't care about: it's never gonna be a number etc.
   firstChild.key !== void 0 && firstChild.key !== "") {
     seenKeys = /* @__PURE__ */ new Set();
     keyedChildren = getKeyedChildren(prev);
-    incomingKeyedChildren = getKeyedChildren(next);
-    for (const child of children(next)) {
+    incomingKeyedChildren = getKeyedChildren(next2);
+    for (const child of children(next2)) {
       prevChild = diffKeyedChild(
         prevChild,
         child,
@@ -3171,15 +2617,15 @@ function createElementNode({ prev, next, dispatch, stack }) {
       );
     }
   } else {
-    for (const child of children(next)) {
+    for (const child of children(next2)) {
       stack.unshift({ prev: prevChild, next: child, parent: el });
       prevChild = prevChild?.nextSibling;
     }
   }
   while (prevChild) {
-    const next2 = prevChild.nextSibling;
+    const next3 = prevChild.nextSibling;
     el.removeChild(prevChild);
-    prevChild = next2;
+    prevChild = next3;
   }
   return el;
 }
@@ -3412,9 +2858,9 @@ var LustreClientApplication = class _LustreClientApplication {
   #flush(effects = []) {
     while (this.#queue.length > 0) {
       const msg = this.#queue.shift();
-      const [next, effect] = this.#update(this.#model, msg);
+      const [next2, effect] = this.#update(this.#model, msg);
       effects = effects.concat(effect.all.toArray());
-      this.#model = next;
+      this.#model = next2;
     }
     while (effects.length > 0) {
       const effect = effects.shift();
@@ -3510,22 +2956,22 @@ var LustreServerApplication = class _LustreServerApplication {
   #tick(effects = []) {
     this.#flush(effects);
     const vdom = this.#view(this.#model);
-    const diff2 = elements(this.#html, vdom);
-    if (!is_empty_element_diff(diff2)) {
-      const patch = new Diff(diff2);
+    const diff3 = elements(this.#html, vdom);
+    if (!is_empty_element_diff(diff3)) {
+      const patch = new Diff(diff3);
       for (const [_, renderer] of this.#renderers) {
         renderer(patch);
       }
     }
     this.#html = vdom;
-    this.#handlers = diff2.handlers;
+    this.#handlers = diff3.handlers;
   }
   #flush(effects = []) {
     while (this.#queue.length > 0) {
       const msg = this.#queue.shift();
-      const [next, effect] = this.#update(this.#model, msg);
+      const [next2, effect] = this.#update(this.#model, msg);
       effects = effects.concat(effect.all.toArray());
-      this.#model = next;
+      this.#model = next2;
     }
     while (effects.length > 0) {
       const effect = effects.shift();
@@ -3765,64 +3211,2187 @@ function init2(handler) {
   );
 }
 
-// build/dev/javascript/budget_fe/date_utils.mjs
-function to_date_string2(value3) {
-  let year2 = value3.year;
-  let month2 = value3.month;
-  let day2 = value3.date;
-  return to_string(year2) + "." + (() => {
-    let _pipe = month2;
-    let _pipe$1 = to_string(_pipe);
-    return pad_start(_pipe$1, 2, "0");
-  })() + "." + (() => {
-    let _pipe = day2;
-    let _pipe$1 = to_string(_pipe);
-    return pad_start(_pipe$1, 2, "0");
+// build/dev/javascript/nibble/nibble/lexer.mjs
+var Matcher = class extends CustomType {
+  constructor(run3) {
+    super();
+    this.run = run3;
+  }
+};
+var Keep = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var Skip = class extends CustomType {
+};
+var Drop = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var NoMatch = class extends CustomType {
+};
+var Token = class extends CustomType {
+  constructor(span, lexeme, value3) {
+    super();
+    this.span = span;
+    this.lexeme = lexeme;
+    this.value = value3;
+  }
+};
+var Span = class extends CustomType {
+  constructor(row_start, col_start, row_end, col_end) {
+    super();
+    this.row_start = row_start;
+    this.col_start = col_start;
+    this.row_end = row_end;
+    this.col_end = col_end;
+  }
+};
+var NoMatchFound = class extends CustomType {
+  constructor(row, col, lexeme) {
+    super();
+    this.row = row;
+    this.col = col;
+    this.lexeme = lexeme;
+  }
+};
+var Lexer = class extends CustomType {
+  constructor(matchers) {
+    super();
+    this.matchers = matchers;
+  }
+};
+var State = class extends CustomType {
+  constructor(source, tokens, current, row, col) {
+    super();
+    this.source = source;
+    this.tokens = tokens;
+    this.current = current;
+    this.row = row;
+    this.col = col;
+  }
+};
+function simple(matchers) {
+  return new Lexer((_) => {
+    return matchers;
+  });
+}
+function keep(f) {
+  return new Matcher(
+    (mode, lexeme, lookahead) => {
+      let _pipe = f(lexeme, lookahead);
+      let _pipe$1 = map3(
+        _pipe,
+        (_capture) => {
+          return new Keep(_capture, mode);
+        }
+      );
+      return unwrap2(_pipe$1, new NoMatch());
+    }
+  );
+}
+function custom2(f) {
+  return new Matcher(f);
+}
+function do_match(mode, str, lookahead, matchers) {
+  return fold_until(
+    matchers,
+    new NoMatch(),
+    (_, matcher) => {
+      let $ = matcher.run(mode, str, lookahead);
+      if ($ instanceof Keep) {
+        let match = $;
+        return new Stop(match);
+      } else if ($ instanceof Skip) {
+        return new Stop(new Skip());
+      } else if ($ instanceof Drop) {
+        let match = $;
+        return new Stop(match);
+      } else {
+        return new Continue(new NoMatch());
+      }
+    }
+  );
+}
+function next_col(col, str) {
+  if (str === "\n") {
+    return 1;
+  } else {
+    return col + 1;
+  }
+}
+function next_row(row, str) {
+  if (str === "\n") {
+    return row + 1;
+  } else {
+    return row;
+  }
+}
+function do_run(loop$lexer, loop$mode, loop$state) {
+  while (true) {
+    let lexer2 = loop$lexer;
+    let mode = loop$mode;
+    let state = loop$state;
+    let matchers = lexer2.matchers(mode);
+    let $ = state.source;
+    let $1 = state.current;
+    if ($.hasLength(0) && $1[2] === "") {
+      return new Ok(reverse(state.tokens));
+    } else if ($.hasLength(0)) {
+      let start_row = $1[0];
+      let start_col = $1[1];
+      let lexeme = $1[2];
+      let $2 = do_match(mode, lexeme, "", matchers);
+      if ($2 instanceof NoMatch) {
+        return new Error(new NoMatchFound(start_row, start_col, lexeme));
+      } else if ($2 instanceof Skip) {
+        return new Error(new NoMatchFound(start_row, start_col, lexeme));
+      } else if ($2 instanceof Drop) {
+        return new Ok(reverse(state.tokens));
+      } else {
+        let value3 = $2[0];
+        let span = new Span(start_row, start_col, state.row, state.col);
+        let token$1 = new Token(span, lexeme, value3);
+        return new Ok(reverse(prepend(token$1, state.tokens)));
+      }
+    } else {
+      let lookahead = $.head;
+      let rest = $.tail;
+      let start_row = $1[0];
+      let start_col = $1[1];
+      let lexeme = $1[2];
+      let row = next_row(state.row, lookahead);
+      let col = next_col(state.col, lookahead);
+      let $2 = do_match(mode, lexeme, lookahead, matchers);
+      if ($2 instanceof Keep) {
+        let value3 = $2[0];
+        let mode$1 = $2[1];
+        let span = new Span(start_row, start_col, state.row, state.col);
+        let token$1 = new Token(span, lexeme, value3);
+        loop$lexer = lexer2;
+        loop$mode = mode$1;
+        loop$state = new State(
+          rest,
+          prepend(token$1, state.tokens),
+          [state.row, state.col, lookahead],
+          row,
+          col
+        );
+      } else if ($2 instanceof Skip) {
+        loop$lexer = lexer2;
+        loop$mode = mode;
+        loop$state = new State(
+          rest,
+          state.tokens,
+          [start_row, start_col, lexeme + lookahead],
+          row,
+          col
+        );
+      } else if ($2 instanceof Drop) {
+        let mode$1 = $2[0];
+        loop$lexer = lexer2;
+        loop$mode = mode$1;
+        loop$state = new State(
+          rest,
+          state.tokens,
+          [state.row, state.col, lookahead],
+          row,
+          col
+        );
+      } else {
+        loop$lexer = lexer2;
+        loop$mode = mode;
+        loop$state = new State(
+          rest,
+          state.tokens,
+          [start_row, start_col, lexeme + lookahead],
+          row,
+          col
+        );
+      }
+    }
+  }
+}
+function run(source, lexer2) {
+  let _pipe = graphemes(source);
+  let _pipe$1 = new State(_pipe, toList([]), [1, 1, ""], 1, 1);
+  return ((_capture) => {
+    return do_run(lexer2, void 0, _capture);
+  })(_pipe$1);
+}
+
+// build/dev/javascript/nibble/nibble.mjs
+var Parser = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Cont = class extends CustomType {
+  constructor(x0, x1, x2) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+    this[2] = x2;
+  }
+};
+var Fail = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var State2 = class extends CustomType {
+  constructor(src, idx, pos, ctx) {
+    super();
+    this.src = src;
+    this.idx = idx;
+    this.pos = pos;
+    this.ctx = ctx;
+  }
+};
+var CanBacktrack = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var EndOfInput = class extends CustomType {
+};
+var Expected = class extends CustomType {
+  constructor(x0, got) {
+    super();
+    this[0] = x0;
+    this.got = got;
+  }
+};
+var Unexpected = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var DeadEnd = class extends CustomType {
+  constructor(pos, problem, context) {
+    super();
+    this.pos = pos;
+    this.problem = problem;
+    this.context = context;
+  }
+};
+var Empty2 = class extends CustomType {
+};
+var Cons = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var Append = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+function runwrap(state, parser3) {
+  let parse3 = parser3[0];
+  return parse3(state);
+}
+function next(state) {
+  let $ = map_get(state.src, state.idx);
+  if (!$.isOk()) {
+    return [new None(), state];
+  } else {
+    let span$1 = $[0].span;
+    let tok = $[0].value;
+    return [
+      new Some(tok),
+      state.withFields({ idx: state.idx + 1, pos: span$1 })
+    ];
+  }
+}
+function return$(value3) {
+  return new Parser(
+    (state) => {
+      return new Cont(new CanBacktrack(false), value3, state);
+    }
+  );
+}
+function succeed(value3) {
+  return return$(value3);
+}
+function backtrackable(parser3) {
+  return new Parser(
+    (state) => {
+      let $ = runwrap(state, parser3);
+      if ($ instanceof Cont) {
+        let a2 = $[1];
+        let state$1 = $[2];
+        return new Cont(new CanBacktrack(false), a2, state$1);
+      } else {
+        let bag = $[1];
+        return new Fail(new CanBacktrack(false), bag);
+      }
+    }
+  );
+}
+function should_commit(a2, b) {
+  let a$1 = a2[0];
+  let b$1 = b[0];
+  return new CanBacktrack(a$1 || b$1);
+}
+function do$(parser3, f) {
+  return new Parser(
+    (state) => {
+      let $ = runwrap(state, parser3);
+      if ($ instanceof Cont) {
+        let to_a = $[0];
+        let a2 = $[1];
+        let state$1 = $[2];
+        let $1 = runwrap(state$1, f(a2));
+        if ($1 instanceof Cont) {
+          let to_b = $1[0];
+          let b = $1[1];
+          let state$2 = $1[2];
+          return new Cont(should_commit(to_a, to_b), b, state$2);
+        } else {
+          let to_b = $1[0];
+          let bag = $1[1];
+          return new Fail(should_commit(to_a, to_b), bag);
+        }
+      } else {
+        let can_backtrack = $[0];
+        let bag = $[1];
+        return new Fail(can_backtrack, bag);
+      }
+    }
+  );
+}
+function then$3(parser3, f) {
+  return do$(parser3, f);
+}
+function map6(parser3, f) {
+  return do$(parser3, (a2) => {
+    return return$(f(a2));
+  });
+}
+function take_while(predicate) {
+  return new Parser(
+    (state) => {
+      let $ = next(state);
+      let tok = $[0];
+      let next_state = $[1];
+      let $1 = map(tok, predicate);
+      if (tok instanceof Some && $1 instanceof Some && $1[0]) {
+        let tok$1 = tok[0];
+        return runwrap(
+          next_state,
+          do$(
+            take_while(predicate),
+            (toks) => {
+              return return$(prepend(tok$1, toks));
+            }
+          )
+        );
+      } else if (tok instanceof Some && $1 instanceof Some && !$1[0]) {
+        return new Cont(new CanBacktrack(false), toList([]), state);
+      } else {
+        return new Cont(new CanBacktrack(false), toList([]), state);
+      }
+    }
+  );
+}
+function take_exactly(parser3, count) {
+  if (count === 0) {
+    return return$(toList([]));
+  } else {
+    return do$(
+      parser3,
+      (x) => {
+        return do$(
+          take_exactly(parser3, count - 1),
+          (xs) => {
+            return return$(prepend(x, xs));
+          }
+        );
+      }
+    );
+  }
+}
+function bag_from_state(state, problem) {
+  return new Cons(new Empty2(), new DeadEnd(state.pos, problem, state.ctx));
+}
+function token2(tok) {
+  return new Parser(
+    (state) => {
+      let $ = next(state);
+      if ($[0] instanceof Some && isEqual(tok, $[0][0])) {
+        let t = $[0][0];
+        let state$1 = $[1];
+        return new Cont(new CanBacktrack(true), void 0, state$1);
+      } else if ($[0] instanceof Some) {
+        let t = $[0][0];
+        let state$1 = $[1];
+        return new Fail(
+          new CanBacktrack(false),
+          bag_from_state(state$1, new Expected(inspect2(tok), t))
+        );
+      } else {
+        let state$1 = $[1];
+        return new Fail(
+          new CanBacktrack(false),
+          bag_from_state(state$1, new EndOfInput())
+        );
+      }
+    }
+  );
+}
+function eof() {
+  return new Parser(
+    (state) => {
+      let $ = next(state);
+      if ($[0] instanceof Some) {
+        let tok = $[0][0];
+        let state$1 = $[1];
+        return new Fail(
+          new CanBacktrack(false),
+          bag_from_state(state$1, new Unexpected(tok))
+        );
+      } else {
+        return new Cont(new CanBacktrack(false), void 0, state);
+      }
+    }
+  );
+}
+function take_if(expecting, predicate) {
+  return new Parser(
+    (state) => {
+      let $ = next(state);
+      let tok = $[0];
+      let next_state = $[1];
+      let $1 = map(tok, predicate);
+      if (tok instanceof Some && $1 instanceof Some && $1[0]) {
+        let tok$1 = tok[0];
+        return new Cont(new CanBacktrack(false), tok$1, next_state);
+      } else if (tok instanceof Some && $1 instanceof Some && !$1[0]) {
+        let tok$1 = tok[0];
+        return new Fail(
+          new CanBacktrack(false),
+          bag_from_state(next_state, new Expected(expecting, tok$1))
+        );
+      } else {
+        return new Fail(
+          new CanBacktrack(false),
+          bag_from_state(next_state, new EndOfInput())
+        );
+      }
+    }
+  );
+}
+function take_while1(expecting, predicate) {
+  return do$(
+    take_if(expecting, predicate),
+    (x) => {
+      return do$(
+        take_while(predicate),
+        (xs) => {
+          return return$(prepend(x, xs));
+        }
+      );
+    }
+  );
+}
+function to_deadends(loop$bag, loop$acc) {
+  while (true) {
+    let bag = loop$bag;
+    let acc = loop$acc;
+    if (bag instanceof Empty2) {
+      return acc;
+    } else if (bag instanceof Cons && bag[0] instanceof Empty2) {
+      let deadend = bag[1];
+      return prepend(deadend, acc);
+    } else if (bag instanceof Cons) {
+      let bag$1 = bag[0];
+      let deadend = bag[1];
+      loop$bag = bag$1;
+      loop$acc = prepend(deadend, acc);
+    } else {
+      let left = bag[0];
+      let right = bag[1];
+      loop$bag = left;
+      loop$acc = to_deadends(right, acc);
+    }
+  }
+}
+function run2(src, parser3) {
+  let src$1 = index_fold(
+    src,
+    new_map(),
+    (dict, tok, idx) => {
+      return insert(dict, idx, tok);
+    }
+  );
+  let init4 = new State2(src$1, 0, new Span(1, 1, 1, 1), toList([]));
+  let $ = runwrap(init4, parser3);
+  if ($ instanceof Cont) {
+    let a2 = $[1];
+    return new Ok(a2);
+  } else {
+    let bag = $[1];
+    return new Error(to_deadends(bag, toList([])));
+  }
+}
+function add_bag_to_step(step, left) {
+  if (step instanceof Cont) {
+    let can_backtrack = step[0];
+    let a2 = step[1];
+    let state = step[2];
+    return new Cont(can_backtrack, a2, state);
+  } else {
+    let can_backtrack = step[0];
+    let right = step[1];
+    return new Fail(can_backtrack, new Append(left, right));
+  }
+}
+function one_of(parsers) {
+  return new Parser(
+    (state) => {
+      let init4 = new Fail(new CanBacktrack(false), new Empty2());
+      return fold_until(
+        parsers,
+        init4,
+        (result, next2) => {
+          if (result instanceof Cont) {
+            return new Stop(result);
+          } else if (result instanceof Fail && result[0] instanceof CanBacktrack && result[0][0]) {
+            return new Stop(result);
+          } else {
+            let bag = result[1];
+            let _pipe = runwrap(state, next2);
+            let _pipe$1 = add_bag_to_step(_pipe, bag);
+            return new Continue(_pipe$1);
+          }
+        }
+      );
+    }
+  );
+}
+function optional(parser3) {
+  return one_of(
+    toList([
+      map6(parser3, (var0) => {
+        return new Some(var0);
+      }),
+      return$(new None())
+    ])
+  );
+}
+
+// build/dev/javascript/rada/rada/date/parse.mjs
+var Digit = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var WeekToken = class extends CustomType {
+};
+var Dash = class extends CustomType {
+};
+var TimeToken = class extends CustomType {
+};
+var Other = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+function lexer() {
+  let options = new Options(false, true);
+  let $ = compile_regex("^[0-9]+$", options);
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "rada/date/parse",
+      14,
+      "lexer",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  let digits_regex = $[0];
+  let is_digits = (str) => {
+    return regex_check(digits_regex, str);
+  };
+  return simple(
+    toList([
+      custom2(
+        (mode, lexeme, _) => {
+          if (lexeme === "") {
+            return new Drop(mode);
+          } else if (lexeme === "W") {
+            return new Keep(new WeekToken(), mode);
+          } else if (lexeme === "T") {
+            return new Keep(new TimeToken(), mode);
+          } else if (lexeme === "-") {
+            return new Keep(new Dash(), mode);
+          } else {
+            let $1 = is_digits(lexeme);
+            if ($1) {
+              return new Keep(new Digit(lexeme), mode);
+            } else {
+              return new Keep(new Other(lexeme), mode);
+            }
+          }
+        }
+      )
+    ])
+  );
+}
+
+// build/dev/javascript/rada/rada/date/pattern.mjs
+var Field = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var Literal = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Alpha = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Quote = class extends CustomType {
+};
+var EscapedQuote = class extends CustomType {
+};
+var Text2 = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+function is_alpha(token3) {
+  if (token3 instanceof Alpha) {
+    return true;
+  } else {
+    return false;
+  }
+}
+function is_specific_alpha(char) {
+  return (token3) => {
+    if (token3 instanceof Alpha) {
+      let c = token3[0];
+      return c === char;
+    } else {
+      return false;
+    }
+  };
+}
+function is_text(token3) {
+  if (token3 instanceof Text2) {
+    return true;
+  } else {
+    return false;
+  }
+}
+function is_quote(token3) {
+  if (token3 instanceof Quote) {
+    return true;
+  } else {
+    return false;
+  }
+}
+function extract_content(tokens) {
+  if (tokens.hasLength(0)) {
+    return "";
+  } else {
+    let token3 = tokens.head;
+    let rest = tokens.tail;
+    if (token3 instanceof Alpha) {
+      let str = token3[0];
+      return str + extract_content(rest);
+    } else if (token3 instanceof Quote) {
+      return "'" + extract_content(rest);
+    } else if (token3 instanceof EscapedQuote) {
+      return "'" + extract_content(rest);
+    } else {
+      let str = token3[0];
+      return str + extract_content(rest);
+    }
+  }
+}
+function field2() {
+  return do$(
+    take_if("Expecting an Alpha token", is_alpha),
+    (alpha) => {
+      if (!(alpha instanceof Alpha)) {
+        throw makeError(
+          "let_assert",
+          "rada/date/pattern",
+          170,
+          "",
+          "Pattern match failed, no pattern matched the value.",
+          { value: alpha }
+        );
+      }
+      let char = alpha[0];
+      return do$(
+        take_while(is_specific_alpha(char)),
+        (rest) => {
+          return return$(new Field(char, length(rest) + 1));
+        }
+      );
+    }
+  );
+}
+function escaped_quote() {
+  let _pipe = token2(new EscapedQuote());
+  return then$3(
+    _pipe,
+    (_) => {
+      return succeed(new Literal("'"));
+    }
+  );
+}
+function literal() {
+  return do$(
+    take_if("Expecting an Text token", is_text),
+    (text3) => {
+      return do$(
+        take_while(is_text),
+        (rest) => {
+          let joined = (() => {
+            let _pipe = map2(
+              prepend(text3, rest),
+              (entry) => {
+                if (!(entry instanceof Text2)) {
+                  throw makeError(
+                    "let_assert",
+                    "rada/date/pattern",
+                    216,
+                    "",
+                    "Pattern match failed, no pattern matched the value.",
+                    { value: entry }
+                  );
+                }
+                let text$1 = entry[0];
+                return text$1;
+              }
+            );
+            return concat2(_pipe);
+          })();
+          return return$(new Literal(joined));
+        }
+      );
+    }
+  );
+}
+function quoted_help(result) {
+  return one_of(
+    toList([
+      do$(
+        take_while1(
+          "Expecting a non-Quote",
+          (token3) => {
+            return !is_quote(token3);
+          }
+        ),
+        (tokens) => {
+          let str = extract_content(tokens);
+          return quoted_help(result + str);
+        }
+      ),
+      (() => {
+        let _pipe = token2(new EscapedQuote());
+        return then$3(
+          _pipe,
+          (_) => {
+            return quoted_help(result + "'");
+          }
+        );
+      })(),
+      succeed(result)
+    ])
+  );
+}
+function quoted() {
+  return do$(
+    take_if("Expecting an Quote", is_quote),
+    (_) => {
+      return do$(
+        quoted_help(""),
+        (text3) => {
+          return do$(
+            one_of(
+              toList([
+                (() => {
+                  let _pipe = take_if("Expecting an Quote", is_quote);
+                  return map6(_pipe, (_2) => {
+                    return void 0;
+                  });
+                })(),
+                eof()
+              ])
+            ),
+            (_2) => {
+              return return$(new Literal(text3));
+            }
+          );
+        }
+      );
+    }
+  );
+}
+function finalize(tokens) {
+  return fold(
+    tokens,
+    toList([]),
+    (tokens2, token3) => {
+      if (token3 instanceof Literal && tokens2.atLeastLength(1) && tokens2.head instanceof Literal) {
+        let x = token3[0];
+        let y = tokens2.head[0];
+        let rest = tokens2.tail;
+        return prepend(new Literal(x + y), rest);
+      } else {
+        return prepend(token3, tokens2);
+      }
+    }
+  );
+}
+function parser(tokens) {
+  return one_of(
+    toList([
+      (() => {
+        let _pipe = one_of(
+          toList([field2(), literal(), escaped_quote(), quoted()])
+        );
+        return then$3(
+          _pipe,
+          (token3) => {
+            return parser(prepend(token3, tokens));
+          }
+        );
+      })(),
+      succeed(finalize(tokens))
+    ])
+  );
+}
+function from_string2(str) {
+  let alpha = (() => {
+    let _pipe = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let _pipe$1 = graphemes(_pipe);
+    return from_list2(_pipe$1);
   })();
+  let is_alpha$1 = (char) => {
+    return contains(alpha, char);
+  };
+  let l = simple(
+    toList([
+      keep(
+        (lexeme, _) => {
+          let $ = is_alpha$1(lexeme);
+          if ($) {
+            return new Ok(new Alpha(lexeme));
+          } else {
+            return new Error(void 0);
+          }
+        }
+      ),
+      custom2(
+        (mode, lexeme, next_grapheme) => {
+          if (lexeme === "'") {
+            if (next_grapheme === "'") {
+              return new Skip();
+            } else {
+              return new Keep(new Quote(), mode);
+            }
+          } else if (lexeme === "''") {
+            return new Keep(new EscapedQuote(), mode);
+          } else {
+            return new NoMatch();
+          }
+        }
+      ),
+      keep(
+        (lexeme, _) => {
+          if (lexeme === "") {
+            return new Error(void 0);
+          } else {
+            return new Ok(new Text2(lexeme));
+          }
+        }
+      )
+    ])
+  );
+  let tokens_result = run(str, l);
+  if (tokens_result.isOk()) {
+    let tokens = tokens_result[0];
+    let _pipe = run2(tokens, parser(toList([])));
+    return unwrap2(_pipe, toList([new Literal(str)]));
+  } else {
+    return toList([]);
+  }
+}
+
+// build/dev/javascript/rada/rada_ffi.mjs
+function get_year_month_day() {
+  let date = /* @__PURE__ */ new Date();
+  return [date.getFullYear(), date.getMonth() + 1, date.getDate()];
+}
+
+// build/dev/javascript/rada/rada/date.mjs
+var Jan = class extends CustomType {
+};
+var Feb = class extends CustomType {
+};
+var Mar = class extends CustomType {
+};
+var Apr = class extends CustomType {
+};
+var May = class extends CustomType {
+};
+var Jun = class extends CustomType {
+};
+var Jul = class extends CustomType {
+};
+var Aug = class extends CustomType {
+};
+var Sep = class extends CustomType {
+};
+var Oct = class extends CustomType {
+};
+var Nov = class extends CustomType {
+};
+var Dec = class extends CustomType {
+};
+var Mon = class extends CustomType {
+};
+var Tue = class extends CustomType {
+};
+var Wed = class extends CustomType {
+};
+var Thu = class extends CustomType {
+};
+var Fri = class extends CustomType {
+};
+var Sat = class extends CustomType {
+};
+var Sun = class extends CustomType {
+};
+var RD = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var OrdinalDate = class extends CustomType {
+  constructor(year2, ordinal_day2) {
+    super();
+    this.year = year2;
+    this.ordinal_day = ordinal_day2;
+  }
+};
+var CalendarDate = class extends CustomType {
+  constructor(year2, month2, day2) {
+    super();
+    this.year = year2;
+    this.month = month2;
+    this.day = day2;
+  }
+};
+var WeekDate = class extends CustomType {
+  constructor(week_year2, week_number2, weekday2) {
+    super();
+    this.week_year = week_year2;
+    this.week_number = week_number2;
+    this.weekday = weekday2;
+  }
+};
+var Language = class extends CustomType {
+  constructor(month_name, month_name_short, weekday_name, weekday_name_short, day_with_suffix) {
+    super();
+    this.month_name = month_name;
+    this.month_name_short = month_name_short;
+    this.weekday_name = weekday_name;
+    this.weekday_name_short = weekday_name_short;
+    this.day_with_suffix = day_with_suffix;
+  }
+};
+var MonthAndDay = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var WeekAndWeekday = class extends CustomType {
+  constructor(x0, x1) {
+    super();
+    this[0] = x0;
+    this[1] = x1;
+  }
+};
+var OrdinalDay = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var Years = class extends CustomType {
+};
+var Months = class extends CustomType {
+};
+var Weeks = class extends CustomType {
+};
+function string_take_right(str, count) {
+  return slice(str, -1 * count, count);
+}
+function string_take_left(str, count) {
+  return slice(str, 0, count);
+}
+function month_to_name(month2) {
+  if (month2 instanceof Jan) {
+    return "January";
+  } else if (month2 instanceof Feb) {
+    return "February";
+  } else if (month2 instanceof Mar) {
+    return "March";
+  } else if (month2 instanceof Apr) {
+    return "April";
+  } else if (month2 instanceof May) {
+    return "May";
+  } else if (month2 instanceof Jun) {
+    return "June";
+  } else if (month2 instanceof Jul) {
+    return "July";
+  } else if (month2 instanceof Aug) {
+    return "August";
+  } else if (month2 instanceof Sep) {
+    return "September";
+  } else if (month2 instanceof Oct) {
+    return "October";
+  } else if (month2 instanceof Nov) {
+    return "November";
+  } else {
+    return "December";
+  }
+}
+function weekday_to_name(weekday2) {
+  if (weekday2 instanceof Mon) {
+    return "Monday";
+  } else if (weekday2 instanceof Tue) {
+    return "Tuesday";
+  } else if (weekday2 instanceof Wed) {
+    return "Wednesday";
+  } else if (weekday2 instanceof Thu) {
+    return "Thursday";
+  } else if (weekday2 instanceof Fri) {
+    return "Friday";
+  } else if (weekday2 instanceof Sat) {
+    return "Saturday";
+  } else {
+    return "Sunday";
+  }
+}
+function parse_digit() {
+  return take_if(
+    "Expecting digit",
+    (token3) => {
+      if (token3 instanceof Digit) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  );
+}
+function int_4() {
+  return do$(
+    optional(token2(new Dash())),
+    (negative) => {
+      let negative$1 = (() => {
+        let _pipe = negative;
+        let _pipe$1 = map(_pipe, (_) => {
+          return "-";
+        });
+        return unwrap(_pipe$1, "");
+      })();
+      return do$(
+        (() => {
+          let _pipe = parse_digit();
+          return take_exactly(_pipe, 4);
+        })(),
+        (tokens) => {
+          let str = (() => {
+            let _pipe = map2(
+              tokens,
+              (token3) => {
+                if (!(token3 instanceof Digit)) {
+                  throw makeError(
+                    "let_assert",
+                    "rada/date",
+                    1091,
+                    "",
+                    "Pattern match failed, no pattern matched the value.",
+                    { value: token3 }
+                  );
+                }
+                let str2 = token3[0];
+                return str2;
+              }
+            );
+            return concat2(_pipe);
+          })();
+          let $ = parse_int(negative$1 + str);
+          if (!$.isOk()) {
+            throw makeError(
+              "let_assert",
+              "rada/date",
+              1096,
+              "",
+              "Pattern match failed, no pattern matched the value.",
+              { value: $ }
+            );
+          }
+          let int3 = $[0];
+          return return$(int3);
+        }
+      );
+    }
+  );
+}
+function int_3() {
+  return do$(
+    (() => {
+      let _pipe = parse_digit();
+      return take_exactly(_pipe, 3);
+    })(),
+    (tokens) => {
+      let str = (() => {
+        let _pipe = map2(
+          tokens,
+          (token3) => {
+            if (!(token3 instanceof Digit)) {
+              throw makeError(
+                "let_assert",
+                "rada/date",
+                1109,
+                "",
+                "Pattern match failed, no pattern matched the value.",
+                { value: token3 }
+              );
+            }
+            let str2 = token3[0];
+            return str2;
+          }
+        );
+        return concat2(_pipe);
+      })();
+      let $ = parse_int(str);
+      if (!$.isOk()) {
+        throw makeError(
+          "let_assert",
+          "rada/date",
+          1114,
+          "",
+          "Pattern match failed, no pattern matched the value.",
+          { value: $ }
+        );
+      }
+      let int3 = $[0];
+      return return$(int3);
+    }
+  );
+}
+function parse_ordinal_day() {
+  return do$(
+    int_3(),
+    (day2) => {
+      return return$(new OrdinalDay(day2));
+    }
+  );
+}
+function int_2() {
+  return do$(
+    (() => {
+      let _pipe = parse_digit();
+      return take_exactly(_pipe, 2);
+    })(),
+    (tokens) => {
+      let str = (() => {
+        let _pipe = map2(
+          tokens,
+          (token3) => {
+            if (!(token3 instanceof Digit)) {
+              throw makeError(
+                "let_assert",
+                "rada/date",
+                1127,
+                "",
+                "Pattern match failed, no pattern matched the value.",
+                { value: token3 }
+              );
+            }
+            let str2 = token3[0];
+            return str2;
+          }
+        );
+        return concat2(_pipe);
+      })();
+      let $ = parse_int(str);
+      if (!$.isOk()) {
+        throw makeError(
+          "let_assert",
+          "rada/date",
+          1132,
+          "",
+          "Pattern match failed, no pattern matched the value.",
+          { value: $ }
+        );
+      }
+      let int3 = $[0];
+      return return$(int3);
+    }
+  );
+}
+function parse_month_and_day(extended) {
+  return do$(
+    int_2(),
+    (month2) => {
+      let dash_count = to_int(extended);
+      return do$(
+        one_of(
+          toList([
+            (() => {
+              let _pipe = take_exactly(
+                token2(new Dash()),
+                dash_count
+              );
+              return then$3(_pipe, (_) => {
+                return int_2();
+              });
+            })(),
+            (() => {
+              let _pipe = eof();
+              return then$3(_pipe, (_) => {
+                return succeed(1);
+              });
+            })()
+          ])
+        ),
+        (day2) => {
+          return return$(new MonthAndDay(month2, day2));
+        }
+      );
+    }
+  );
+}
+function int_1() {
+  return do$(
+    (() => {
+      let _pipe = parse_digit();
+      return take_exactly(_pipe, 1);
+    })(),
+    (tokens) => {
+      if (!tokens.hasLength(1) || !(tokens.head instanceof Digit)) {
+        throw makeError(
+          "let_assert",
+          "rada/date",
+          1143,
+          "",
+          "Pattern match failed, no pattern matched the value.",
+          { value: tokens }
+        );
+      }
+      let str = tokens.head[0];
+      let $ = parse_int(str);
+      if (!$.isOk()) {
+        throw makeError(
+          "let_assert",
+          "rada/date",
+          1145,
+          "",
+          "Pattern match failed, no pattern matched the value.",
+          { value: $ }
+        );
+      }
+      let int3 = $[0];
+      return return$(int3);
+    }
+  );
+}
+function parse_week_and_weekday(extended) {
+  return do$(
+    token2(new WeekToken()),
+    (_) => {
+      return do$(
+        int_2(),
+        (week) => {
+          let dash_count = to_int(extended);
+          return do$(
+            one_of(
+              toList([
+                (() => {
+                  let _pipe = take_exactly(
+                    token2(new Dash()),
+                    dash_count
+                  );
+                  return then$3(_pipe, (_2) => {
+                    return int_1();
+                  });
+                })(),
+                succeed(1)
+              ])
+            ),
+            (day2) => {
+              return return$(new WeekAndWeekday(week, day2));
+            }
+          );
+        }
+      );
+    }
+  );
+}
+function parse_day_of_year() {
+  return one_of(
+    toList([
+      (() => {
+        let _pipe = token2(new Dash());
+        return then$3(
+          _pipe,
+          (_) => {
+            return one_of(
+              toList([
+                backtrackable(parse_ordinal_day()),
+                parse_month_and_day(true),
+                parse_week_and_weekday(true)
+              ])
+            );
+          }
+        );
+      })(),
+      backtrackable(parse_month_and_day(false)),
+      parse_ordinal_day(),
+      parse_week_and_weekday(false),
+      succeed(new OrdinalDay(1))
+    ])
+  );
+}
+function month_to_number(month2) {
+  if (month2 instanceof Jan) {
+    return 1;
+  } else if (month2 instanceof Feb) {
+    return 2;
+  } else if (month2 instanceof Mar) {
+    return 3;
+  } else if (month2 instanceof Apr) {
+    return 4;
+  } else if (month2 instanceof May) {
+    return 5;
+  } else if (month2 instanceof Jun) {
+    return 6;
+  } else if (month2 instanceof Jul) {
+    return 7;
+  } else if (month2 instanceof Aug) {
+    return 8;
+  } else if (month2 instanceof Sep) {
+    return 9;
+  } else if (month2 instanceof Oct) {
+    return 10;
+  } else if (month2 instanceof Nov) {
+    return 11;
+  } else {
+    return 12;
+  }
+}
+function month_to_quarter(month2) {
+  return divideInt(month_to_number(month2) + 2, 3);
+}
+function number_to_month(month_number2) {
+  let $ = max(1, month_number2);
+  if ($ === 1) {
+    return new Jan();
+  } else if ($ === 2) {
+    return new Feb();
+  } else if ($ === 3) {
+    return new Mar();
+  } else if ($ === 4) {
+    return new Apr();
+  } else if ($ === 5) {
+    return new May();
+  } else if ($ === 6) {
+    return new Jun();
+  } else if ($ === 7) {
+    return new Jul();
+  } else if ($ === 8) {
+    return new Aug();
+  } else if ($ === 9) {
+    return new Sep();
+  } else if ($ === 10) {
+    return new Oct();
+  } else if ($ === 11) {
+    return new Nov();
+  } else {
+    return new Dec();
+  }
+}
+function number_to_weekday(weekday_number2) {
+  let $ = max(1, weekday_number2);
+  if ($ === 1) {
+    return new Mon();
+  } else if ($ === 2) {
+    return new Tue();
+  } else if ($ === 3) {
+    return new Wed();
+  } else if ($ === 4) {
+    return new Thu();
+  } else if ($ === 5) {
+    return new Fri();
+  } else if ($ === 6) {
+    return new Sat();
+  } else {
+    return new Sun();
+  }
+}
+function pad_signed_int(value3, length4) {
+  let prefix = (() => {
+    let $ = value3 < 0;
+    if ($) {
+      return "-";
+    } else {
+      return "";
+    }
+  })();
+  let suffix = (() => {
+    let _pipe = value3;
+    let _pipe$1 = absolute_value(_pipe);
+    let _pipe$2 = to_string2(_pipe$1);
+    return pad_left(_pipe$2, length4, "0");
+  })();
+  return prefix + suffix;
+}
+function floor_div(dividend, divisor) {
+  let $ = (dividend > 0 && divisor < 0 || dividend < 0 && divisor > 0) && remainderInt(
+    dividend,
+    divisor
+  ) !== 0;
+  if ($) {
+    return divideInt(dividend, divisor) - 1;
+  } else {
+    return divideInt(dividend, divisor);
+  }
+}
+function days_before_year(year1) {
+  let year$1 = year1 - 1;
+  let leap_years = floor_div(year$1, 4) - floor_div(year$1, 100) + floor_div(
+    year$1,
+    400
+  );
+  return 365 * year$1 + leap_years;
+}
+function first_of_year(year2) {
+  return new RD(days_before_year(year2) + 1);
+}
+function modulo_unwrap(dividend, divisor) {
+  let remainder = remainderInt(dividend, divisor);
+  let $ = remainder > 0 && divisor < 0 || remainder < 0 && divisor > 0;
+  if ($) {
+    return remainder + divisor;
+  } else {
+    return remainder;
+  }
+}
+function is_leap_year(year2) {
+  return modulo_unwrap(year2, 4) === 0 && modulo_unwrap(year2, 100) !== 0 || modulo_unwrap(
+    year2,
+    400
+  ) === 0;
+}
+function weekday_number(date) {
+  let rd = date[0];
+  let $ = modulo_unwrap(rd, 7);
+  if ($ === 0) {
+    return 7;
+  } else {
+    let n = $;
+    return n;
+  }
+}
+function days_before_week_year(year2) {
+  let jan4 = days_before_year(year2) + 4;
+  return jan4 - weekday_number(new RD(jan4));
+}
+function is_53_week_year(year2) {
+  let wdn_jan1 = weekday_number(first_of_year(year2));
+  return wdn_jan1 === 4 || wdn_jan1 === 3 && is_leap_year(year2);
+}
+function weekday(date) {
+  let _pipe = date;
+  let _pipe$1 = weekday_number(_pipe);
+  return number_to_weekday(_pipe$1);
+}
+function ordinal_suffix(value3) {
+  let value_mod_100 = modulo_unwrap(value3, 100);
+  let value$1 = (() => {
+    let $2 = value_mod_100 < 20;
+    if ($2) {
+      return value_mod_100;
+    } else {
+      return modulo_unwrap(value_mod_100, 10);
+    }
+  })();
+  let $ = min(value$1, 4);
+  if ($ === 1) {
+    return "st";
+  } else if ($ === 2) {
+    return "nd";
+  } else if ($ === 3) {
+    return "rd";
+  } else {
+    return "th";
+  }
+}
+function with_ordinal_suffix(value3) {
+  return to_string2(value3) + ordinal_suffix(value3);
+}
+function language_en() {
+  return new Language(
+    month_to_name,
+    (val) => {
+      let _pipe = val;
+      let _pipe$1 = month_to_name(_pipe);
+      return string_take_left(_pipe$1, 3);
+    },
+    weekday_to_name,
+    (val) => {
+      let _pipe = val;
+      let _pipe$1 = weekday_to_name(_pipe);
+      return string_take_left(_pipe$1, 3);
+    },
+    with_ordinal_suffix
+  );
+}
+function days_in_month(year2, month2) {
+  if (month2 instanceof Jan) {
+    return 31;
+  } else if (month2 instanceof Feb) {
+    let $ = is_leap_year(year2);
+    if ($) {
+      return 29;
+    } else {
+      return 28;
+    }
+  } else if (month2 instanceof Mar) {
+    return 31;
+  } else if (month2 instanceof Apr) {
+    return 30;
+  } else if (month2 instanceof May) {
+    return 31;
+  } else if (month2 instanceof Jun) {
+    return 30;
+  } else if (month2 instanceof Jul) {
+    return 31;
+  } else if (month2 instanceof Aug) {
+    return 31;
+  } else if (month2 instanceof Sep) {
+    return 30;
+  } else if (month2 instanceof Oct) {
+    return 31;
+  } else if (month2 instanceof Nov) {
+    return 30;
+  } else {
+    return 31;
+  }
+}
+function to_calendar_date_helper(loop$year, loop$month, loop$ordinal_day) {
+  while (true) {
+    let year2 = loop$year;
+    let month2 = loop$month;
+    let ordinal_day2 = loop$ordinal_day;
+    let month_days = days_in_month(year2, month2);
+    let month_number$1 = month_to_number(month2);
+    let $ = month_number$1 < 12 && ordinal_day2 > month_days;
+    if ($) {
+      loop$year = year2;
+      loop$month = number_to_month(month_number$1 + 1);
+      loop$ordinal_day = ordinal_day2 - month_days;
+    } else {
+      return new CalendarDate(year2, month2, ordinal_day2);
+    }
+  }
+}
+function days_before_month(year2, month2) {
+  let leap_days = to_int(is_leap_year(year2));
+  if (month2 instanceof Jan) {
+    return 0;
+  } else if (month2 instanceof Feb) {
+    return 31;
+  } else if (month2 instanceof Mar) {
+    return 59 + leap_days;
+  } else if (month2 instanceof Apr) {
+    return 90 + leap_days;
+  } else if (month2 instanceof May) {
+    return 120 + leap_days;
+  } else if (month2 instanceof Jun) {
+    return 151 + leap_days;
+  } else if (month2 instanceof Jul) {
+    return 181 + leap_days;
+  } else if (month2 instanceof Aug) {
+    return 212 + leap_days;
+  } else if (month2 instanceof Sep) {
+    return 243 + leap_days;
+  } else if (month2 instanceof Oct) {
+    return 273 + leap_days;
+  } else if (month2 instanceof Nov) {
+    return 304 + leap_days;
+  } else {
+    return 334 + leap_days;
+  }
+}
+function from_calendar_date(year2, month2, day2) {
+  return new RD(
+    days_before_year(year2) + days_before_month(year2, month2) + clamp(
+      day2,
+      1,
+      days_in_month(year2, month2)
+    )
+  );
+}
+function today() {
+  let $ = get_year_month_day();
+  let year$1 = $[0];
+  let month_number$1 = $[1];
+  let day$1 = $[2];
+  return from_calendar_date(year$1, number_to_month(month_number$1), day$1);
+}
+function div_with_remainder(a2, b) {
+  return [floor_div(a2, b), modulo_unwrap(a2, b)];
+}
+function year(date) {
+  let rd = date[0];
+  let $ = div_with_remainder(rd, 146097);
+  let n400 = $[0];
+  let r400 = $[1];
+  let $1 = div_with_remainder(r400, 36524);
+  let n100 = $1[0];
+  let r100 = $1[1];
+  let $2 = div_with_remainder(r100, 1461);
+  let n4 = $2[0];
+  let r4 = $2[1];
+  let $3 = div_with_remainder(r4, 365);
+  let n1 = $3[0];
+  let r1 = $3[1];
+  let n = (() => {
+    let $4 = r1 === 0;
+    if ($4) {
+      return 0;
+    } else {
+      return 1;
+    }
+  })();
+  return n400 * 400 + n100 * 100 + n4 * 4 + n1 + n;
+}
+function to_ordinal_date(date) {
+  let rd = date[0];
+  let year_ = year(date);
+  return new OrdinalDate(year_, rd - days_before_year(year_));
+}
+function to_calendar_date(date) {
+  let ordinal_date = to_ordinal_date(date);
+  return to_calendar_date_helper(
+    ordinal_date.year,
+    new Jan(),
+    ordinal_date.ordinal_day
+  );
+}
+function to_week_date(date) {
+  let rd = date[0];
+  let weekday_number_ = weekday_number(date);
+  let week_year$1 = year(new RD(rd + (4 - weekday_number_)));
+  let week_1_day_1 = days_before_week_year(week_year$1) + 1;
+  return new WeekDate(
+    week_year$1,
+    1 + divideInt(rd - week_1_day_1, 7),
+    number_to_weekday(weekday_number_)
+  );
+}
+function ordinal_day(date) {
+  return to_ordinal_date(date).ordinal_day;
+}
+function month(date) {
+  return to_calendar_date(date).month;
+}
+function month_number(date) {
+  let _pipe = date;
+  let _pipe$1 = month(_pipe);
+  return month_to_number(_pipe$1);
+}
+function quarter(date) {
+  let _pipe = date;
+  let _pipe$1 = month(_pipe);
+  return month_to_quarter(_pipe$1);
+}
+function day(date) {
+  return to_calendar_date(date).day;
+}
+function week_year(date) {
+  return to_week_date(date).week_year;
+}
+function week_number(date) {
+  return to_week_date(date).week_number;
+}
+function format_field(loop$date, loop$language, loop$char, loop$length) {
+  while (true) {
+    let date = loop$date;
+    let language = loop$language;
+    let char = loop$char;
+    let length4 = loop$length;
+    if (char === "y") {
+      if (length4 === 2) {
+        let _pipe = date;
+        let _pipe$1 = year(_pipe);
+        let _pipe$2 = to_string2(_pipe$1);
+        let _pipe$3 = pad_left(_pipe$2, 2, "0");
+        return string_take_right(_pipe$3, 2);
+      } else {
+        let _pipe = date;
+        let _pipe$1 = year(_pipe);
+        return pad_signed_int(_pipe$1, length4);
+      }
+    } else if (char === "Y") {
+      if (length4 === 2) {
+        let _pipe = date;
+        let _pipe$1 = week_year(_pipe);
+        let _pipe$2 = to_string2(_pipe$1);
+        let _pipe$3 = pad_left(_pipe$2, 2, "0");
+        return string_take_right(_pipe$3, 2);
+      } else {
+        let _pipe = date;
+        let _pipe$1 = week_year(_pipe);
+        return pad_signed_int(_pipe$1, length4);
+      }
+    } else if (char === "Q") {
+      if (length4 === 1) {
+        let _pipe = date;
+        let _pipe$1 = quarter(_pipe);
+        return to_string2(_pipe$1);
+      } else if (length4 === 2) {
+        let _pipe = date;
+        let _pipe$1 = quarter(_pipe);
+        return to_string2(_pipe$1);
+      } else if (length4 === 3) {
+        let _pipe = date;
+        let _pipe$1 = quarter(_pipe);
+        let _pipe$2 = to_string2(_pipe$1);
+        return ((str) => {
+          return "Q" + str;
+        })(_pipe$2);
+      } else if (length4 === 4) {
+        let _pipe = date;
+        let _pipe$1 = quarter(_pipe);
+        return with_ordinal_suffix(_pipe$1);
+      } else if (length4 === 5) {
+        let _pipe = date;
+        let _pipe$1 = quarter(_pipe);
+        return to_string2(_pipe$1);
+      } else {
+        return "";
+      }
+    } else if (char === "M") {
+      if (length4 === 1) {
+        let _pipe = date;
+        let _pipe$1 = month_number(_pipe);
+        return to_string2(_pipe$1);
+      } else if (length4 === 2) {
+        let _pipe = date;
+        let _pipe$1 = month_number(_pipe);
+        let _pipe$2 = to_string2(_pipe$1);
+        return pad_left(_pipe$2, 2, "0");
+      } else if (length4 === 3) {
+        let _pipe = date;
+        let _pipe$1 = month(_pipe);
+        return language.month_name_short(_pipe$1);
+      } else if (length4 === 4) {
+        let _pipe = date;
+        let _pipe$1 = month(_pipe);
+        return language.month_name(_pipe$1);
+      } else if (length4 === 5) {
+        let _pipe = date;
+        let _pipe$1 = month(_pipe);
+        let _pipe$2 = language.month_name_short(_pipe$1);
+        return string_take_left(_pipe$2, 1);
+      } else {
+        return "";
+      }
+    } else if (char === "w") {
+      if (length4 === 1) {
+        let _pipe = date;
+        let _pipe$1 = week_number(_pipe);
+        return to_string2(_pipe$1);
+      } else if (length4 === 2) {
+        let _pipe = date;
+        let _pipe$1 = week_number(_pipe);
+        let _pipe$2 = to_string2(_pipe$1);
+        return pad_left(_pipe$2, 2, "0");
+      } else {
+        return "";
+      }
+    } else if (char === "d") {
+      if (length4 === 1) {
+        let _pipe = date;
+        let _pipe$1 = day(_pipe);
+        return to_string2(_pipe$1);
+      } else if (length4 === 2) {
+        let _pipe = date;
+        let _pipe$1 = day(_pipe);
+        let _pipe$2 = to_string2(_pipe$1);
+        return pad_left(_pipe$2, 2, "0");
+      } else if (length4 === 3) {
+        let _pipe = date;
+        let _pipe$1 = day(_pipe);
+        return language.day_with_suffix(_pipe$1);
+      } else {
+        return "";
+      }
+    } else if (char === "D") {
+      if (length4 === 1) {
+        let _pipe = date;
+        let _pipe$1 = ordinal_day(_pipe);
+        return to_string2(_pipe$1);
+      } else if (length4 === 2) {
+        let _pipe = date;
+        let _pipe$1 = ordinal_day(_pipe);
+        let _pipe$2 = to_string2(_pipe$1);
+        return pad_left(_pipe$2, 2, "0");
+      } else if (length4 === 3) {
+        let _pipe = date;
+        let _pipe$1 = ordinal_day(_pipe);
+        let _pipe$2 = to_string2(_pipe$1);
+        return pad_left(_pipe$2, 3, "0");
+      } else {
+        return "";
+      }
+    } else if (char === "E") {
+      if (length4 === 1) {
+        let _pipe = date;
+        let _pipe$1 = weekday(_pipe);
+        return language.weekday_name_short(_pipe$1);
+      } else if (length4 === 2) {
+        let _pipe = date;
+        let _pipe$1 = weekday(_pipe);
+        return language.weekday_name_short(_pipe$1);
+      } else if (length4 === 3) {
+        let _pipe = date;
+        let _pipe$1 = weekday(_pipe);
+        return language.weekday_name_short(_pipe$1);
+      } else if (length4 === 4) {
+        let _pipe = date;
+        let _pipe$1 = weekday(_pipe);
+        return language.weekday_name(_pipe$1);
+      } else if (length4 === 5) {
+        let _pipe = date;
+        let _pipe$1 = weekday(_pipe);
+        let _pipe$2 = language.weekday_name_short(_pipe$1);
+        return string_take_left(_pipe$2, 1);
+      } else if (length4 === 6) {
+        let _pipe = date;
+        let _pipe$1 = weekday(_pipe);
+        let _pipe$2 = language.weekday_name_short(_pipe$1);
+        return string_take_left(_pipe$2, 2);
+      } else {
+        return "";
+      }
+    } else if (char === "e") {
+      if (length4 === 1) {
+        let _pipe = date;
+        let _pipe$1 = weekday_number(_pipe);
+        return to_string2(_pipe$1);
+      } else if (length4 === 2) {
+        let _pipe = date;
+        let _pipe$1 = weekday_number(_pipe);
+        return to_string2(_pipe$1);
+      } else {
+        let _pipe = date;
+        loop$date = _pipe;
+        loop$language = language;
+        loop$char = "E";
+        loop$length = length4;
+      }
+    } else {
+      return "";
+    }
+  }
+}
+function format_with_tokens(language, tokens, date) {
+  return fold(
+    tokens,
+    "",
+    (formatted, token3) => {
+      if (token3 instanceof Field) {
+        let char = token3[0];
+        let length4 = token3[1];
+        return format_field(date, language, char, length4) + formatted;
+      } else {
+        let str = token3[0];
+        return str + formatted;
+      }
+    }
+  );
+}
+function format_with_language(date, language, pattern_text) {
+  let tokens = (() => {
+    let _pipe = pattern_text;
+    let _pipe$1 = from_string2(_pipe);
+    return reverse(_pipe$1);
+  })();
+  return format_with_tokens(language, tokens, date);
+}
+function format(date, pattern) {
+  return format_with_language(date, language_en(), pattern);
+}
+function to_months(rd) {
+  let calendar_date = to_calendar_date(new RD(rd));
+  let whole_months = 12 * (calendar_date.year - 1) + (month_to_number(
+    calendar_date.month
+  ) - 1);
+  let fraction = divideFloat(identity(calendar_date.day), 100);
+  return identity(whole_months) + fraction;
+}
+function diff2(unit, date1, date2) {
+  let rd1 = date1[0];
+  let rd2 = date2[0];
+  if (unit instanceof Years) {
+    let _pipe = to_months(rd2) - to_months(rd1);
+    let _pipe$1 = truncate(_pipe);
+    let _pipe$2 = divide(_pipe$1, 12);
+    return unwrap2(_pipe$2, 0);
+  } else if (unit instanceof Months) {
+    let _pipe = to_months(rd2) - to_months(rd1);
+    return truncate(_pipe);
+  } else if (unit instanceof Weeks) {
+    let _pipe = divide(rd2 - rd1, 7);
+    return unwrap2(_pipe, 0);
+  } else {
+    return rd2 - rd1;
+  }
+}
+function is_between_int(value3, lower, upper) {
+  return lower <= value3 && value3 <= upper;
+}
+function from_ordinal_parts(year2, ordinal) {
+  let days_in_year = (() => {
+    let $2 = is_leap_year(year2);
+    if ($2) {
+      return 366;
+    } else {
+      return 365;
+    }
+  })();
+  let $ = !is_between_int(ordinal, 1, days_in_year);
+  if ($) {
+    return new Error(
+      "Invalid ordinal date: " + ("ordinal-day " + to_string2(ordinal) + " is out of range") + (" (1 to " + to_string2(
+        days_in_year
+      ) + ")") + (" for " + to_string2(year2)) + ("; received (year " + to_string2(
+        year2
+      ) + ", ordinal-day " + to_string2(ordinal) + ")")
+    );
+  } else {
+    return new Ok(new RD(days_before_year(year2) + ordinal));
+  }
+}
+function from_calendar_parts(year2, month_number2, day2) {
+  let $ = is_between_int(month_number2, 1, 12);
+  let $1 = is_between_int(
+    day2,
+    1,
+    days_in_month(year2, number_to_month(month_number2))
+  );
+  if (!$) {
+    return new Error(
+      "Invalid date: " + ("month " + to_string2(month_number2) + " is out of range") + " (1 to 12)" + ("; received (year " + to_string2(
+        year2
+      ) + ", month " + to_string2(month_number2) + ", day " + to_string2(
+        day2
+      ) + ")")
+    );
+  } else if ($ && !$1) {
+    return new Error(
+      "Invalid date: " + ("day " + to_string2(day2) + " is out of range") + (" (1 to " + to_string2(
+        days_in_month(year2, number_to_month(month_number2))
+      ) + ")") + (" for " + (() => {
+        let _pipe = month_number2;
+        let _pipe$1 = number_to_month(_pipe);
+        return month_to_name(_pipe$1);
+      })()) + (() => {
+        let $2 = month_number2 === 2 && day2 === 29;
+        if ($2) {
+          return " (" + to_string2(year2) + " is not a leap year)";
+        } else {
+          return "";
+        }
+      })() + ("; received (year " + to_string2(year2) + ", month " + to_string2(
+        month_number2
+      ) + ", day " + to_string2(day2) + ")")
+    );
+  } else {
+    return new Ok(
+      new RD(
+        days_before_year(year2) + days_before_month(
+          year2,
+          number_to_month(month_number2)
+        ) + day2
+      )
+    );
+  }
+}
+function from_week_parts(week_year2, week_number2, weekday_number2) {
+  let weeks_in_year = (() => {
+    let $2 = is_53_week_year(week_year2);
+    if ($2) {
+      return 53;
+    } else {
+      return 52;
+    }
+  })();
+  let $ = is_between_int(week_number2, 1, weeks_in_year);
+  let $1 = is_between_int(weekday_number2, 1, 7);
+  if (!$) {
+    return new Error(
+      "Invalid week date: " + ("week " + to_string2(week_number2) + " is out of range") + (" (1 to " + to_string2(
+        weeks_in_year
+      ) + ")") + (" for " + to_string2(week_year2)) + ("; received (year " + to_string2(
+        week_year2
+      ) + ", week " + to_string2(week_number2) + ", weekday " + to_string2(
+        weekday_number2
+      ) + ")")
+    );
+  } else if ($ && !$1) {
+    return new Error(
+      "Invalid week date: " + ("weekday " + to_string2(weekday_number2) + " is out of range") + " (1 to 7)" + ("; received (year " + to_string2(
+        week_year2
+      ) + ", week " + to_string2(week_number2) + ", weekday " + to_string2(
+        weekday_number2
+      ) + ")")
+    );
+  } else {
+    return new Ok(
+      new RD(
+        days_before_week_year(week_year2) + (week_number2 - 1) * 7 + weekday_number2
+      )
+    );
+  }
+}
+function from_year_and_day_of_year(year2, day_of_year) {
+  if (day_of_year instanceof MonthAndDay) {
+    let month_number$1 = day_of_year[0];
+    let day$1 = day_of_year[1];
+    return from_calendar_parts(year2, month_number$1, day$1);
+  } else if (day_of_year instanceof WeekAndWeekday) {
+    let week_number$1 = day_of_year[0];
+    let weekday_number$1 = day_of_year[1];
+    return from_week_parts(year2, week_number$1, weekday_number$1);
+  } else {
+    let ordinal_day$1 = day_of_year[0];
+    return from_ordinal_parts(year2, ordinal_day$1);
+  }
+}
+function parser2() {
+  return do$(
+    int_4(),
+    (year2) => {
+      return do$(
+        parse_day_of_year(),
+        (day_of_year) => {
+          return return$(from_year_and_day_of_year(year2, day_of_year));
+        }
+      );
+    }
+  );
+}
+function from_iso_string(str) {
+  let $ = run(str, lexer());
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "rada/date",
+      950,
+      "from_iso_string",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  let tokens = $[0];
+  let result = run2(
+    tokens,
+    (() => {
+      let _pipe = parser2();
+      return then$3(
+        _pipe,
+        (val) => {
+          return one_of(
+            toList([
+              (() => {
+                let _pipe$1 = eof();
+                return then$3(
+                  _pipe$1,
+                  (_) => {
+                    return succeed(val);
+                  }
+                );
+              })(),
+              (() => {
+                let _pipe$1 = token2(new TimeToken());
+                return then$3(
+                  _pipe$1,
+                  (_) => {
+                    return succeed(
+                      new Error("Expected a date only, not a date and time")
+                    );
+                  }
+                );
+              })(),
+              succeed(new Error("Expected a date only"))
+            ])
+          );
+        }
+      );
+    })()
+  );
+  if (result.isOk() && result[0].isOk()) {
+    let value3 = result[0][0];
+    return new Ok(value3);
+  } else if (result.isOk() && !result[0].isOk()) {
+    let err = result[0][0];
+    return new Error(err);
+  } else {
+    return new Error("Expected a date in ISO 8601 format");
+  }
+}
+
+// build/dev/javascript/budget_fe/date_utils.mjs
+function to_date_string(value3) {
+  return format(value3, "dd.MMMM.yyyy");
 }
 function from_date_string(date_str) {
-  let $ = (() => {
-    let _pipe = split2(date_str, ".");
-    return map2(
-      _pipe,
-      (s) => {
-        let _pipe$1 = parse_int(s);
-        return unwrap(_pipe$1, 1);
-      }
-    );
-  })();
-  if ($.atLeastLength(3)) {
-    let year2 = $.head;
-    let month2 = $.tail.head;
-    let day2 = $.tail.tail.head;
-    let rest = $.tail.tail.tail;
-    return new Ok(new Day2(year2, month2, day2));
-  } else {
-    return new Error("error parsing");
-  }
-}
-function time_to_day(time) {
-  let $ = (() => {
-    let _pipe = to_date_string(time);
-    let _pipe$1 = split2(_pipe, "-");
-    return map2(
-      _pipe$1,
-      (s) => {
-        let _pipe$2 = parse_int(s);
-        return unwrap(_pipe$2, 1);
-      }
-    );
-  })();
-  if ($.atLeastLength(3)) {
-    let year2 = $.head;
-    let month2 = $.tail.head;
-    let day2 = $.tail.tail.head;
-    let rest = $.tail.tail.tail;
-    return new Day2(year2, month2, day2);
-  } else {
-    let rest = $;
-    return new Day2(2024, 12, 12);
-  }
+  return from_iso_string(date_str);
 }
 
 // build/dev/javascript/budget_fe/budget_fe.mjs
@@ -4068,6 +5637,18 @@ var Transaction = class extends CustomType {
     this.is_inflow = is_inflow;
   }
 };
+function date_to_month(d) {
+  return new MonthInYear(
+    (() => {
+      let _pipe = d;
+      return month_number(_pipe);
+    })(),
+    (() => {
+      let _pipe = d;
+      return year(_pipe);
+    })()
+  );
+}
 function save_target_eff(category, target_edit) {
   return from(
     (dispatch) => {
@@ -4137,13 +5718,7 @@ function init3(_) {
       toList([]),
       toList([]),
       toList([]),
-      new Some(
-        new Category(
-          "4",
-          "Vacation",
-          new Some(new Monthly(new Money(100, 0)))
-        )
-      ),
+      new Some("4"),
       false,
       "",
       new TransactionForm("", "", new None(), new None()),
@@ -4166,7 +5741,7 @@ function add_transaction_eff(transaction_form) {
               new Ok(
                 new Transaction(
                   guidv4(),
-                  new Day2(2024, 12, 20),
+                  from_calendar_date(2024, new Dec(), 20),
                   transaction_form.payee,
                   cat.id,
                   amount,
@@ -4206,37 +5781,37 @@ function get_allocations() {
                 "1",
                 new Money(80, 0),
                 "1",
-                new Day2(2024, 12, 2)
+                from_calendar_date(2024, new Dec(), 2)
               ),
               new Allocation(
                 "2",
                 new Money(120, 0),
                 "2",
-                new Day2(2024, 12, 2)
+                from_calendar_date(2024, new Dec(), 2)
               ),
               new Allocation(
                 "3",
                 new Money(150, 0),
                 "3",
-                new Day2(2024, 12, 2)
+                from_calendar_date(2024, new Dec(), 2)
               ),
               new Allocation(
                 "4",
                 new Money(100, 2),
                 "4",
-                new Day2(2024, 12, 2)
+                from_calendar_date(2024, new Dec(), 2)
               ),
               new Allocation(
                 "5",
                 new Money(200, 2),
                 "5",
-                new Day2(2024, 12, 2)
+                from_calendar_date(2024, new Dec(), 2)
               ),
               new Allocation(
                 "6",
                 new Money(500, 2),
                 "6",
-                new Day2(2024, 12, 2)
+                from_calendar_date(2024, new Dec(), 2)
               )
             ])
           )
@@ -4298,7 +5873,7 @@ function get_transactions() {
             toList([
               new Transaction(
                 "1",
-                new Day2(2024, 12, 1),
+                from_calendar_date(2024, new Dec(), 2),
                 "Amazon",
                 "5",
                 new Money(50, 0),
@@ -4306,7 +5881,7 @@ function get_transactions() {
               ),
               new Transaction(
                 "2",
-                new Day2(2024, 12, 2),
+                from_calendar_date(2024, new Dec(), 2),
                 "Bauhaus",
                 "5",
                 new Money(50, 0),
@@ -4314,7 +5889,7 @@ function get_transactions() {
               ),
               new Transaction(
                 "3",
-                new Day2(2024, 12, 3),
+                from_calendar_date(2024, new Dec(), 2),
                 "Rewe",
                 "6",
                 new Money(50, 0),
@@ -4322,7 +5897,7 @@ function get_transactions() {
               ),
               new Transaction(
                 "4",
-                new Day2(2024, 12, 4),
+                from_calendar_date(2024, new Dec(), 2),
                 "Vodafone",
                 "1",
                 new Money(50, 0),
@@ -4330,7 +5905,7 @@ function get_transactions() {
               ),
               new Transaction(
                 "5",
-                new Day2(2024, 12, 5),
+                from_calendar_date(2024, new Dec(), 2),
                 "Steam",
                 "5",
                 new Money(50, 0),
@@ -4338,7 +5913,7 @@ function get_transactions() {
               ),
               new Transaction(
                 "6",
-                new Day2(2024, 12, 6),
+                from_calendar_date(2024, new Dec(), 2),
                 "Duo",
                 "1",
                 new Money(50, 60),
@@ -4346,7 +5921,7 @@ function get_transactions() {
               ),
               new Transaction(
                 "7",
-                new Day2(2024, 12, 7),
+                from_calendar_date(2024, new Dec(), 2),
                 "O2",
                 "1",
                 new Money(50, 0),
@@ -4354,7 +5929,7 @@ function get_transactions() {
               ),
               new Transaction(
                 "8",
-                new Day2(2024, 12, 10),
+                from_calendar_date(2024, new Dec(), 2),
                 "Trade Republic",
                 "0",
                 new Money(1e3, 0),
@@ -4362,7 +5937,7 @@ function get_transactions() {
               ),
               new Transaction(
                 "8",
-                new Day2(2024, 12, 7),
+                from_calendar_date(2024, new Dec(), 2),
                 "O2",
                 "1",
                 new Money(100, 50),
@@ -4408,7 +5983,7 @@ function update(model, msg) {
   } else if (msg instanceof SelectCategory) {
     let c = msg.c;
     return [
-      model.withFields({ selected_category: new Some(c) }),
+      model.withFields({ selected_category: new Some(c.id) }),
       none()
     ];
   } else if (msg instanceof SelectUser) {
@@ -4442,7 +6017,7 @@ function update(model, msg) {
     throw makeError(
       "todo",
       "budget_fe",
-      170,
+      180,
       "update",
       "`todo` expression evaluated. This code has not yet been implemented.",
       {}
@@ -4471,7 +6046,7 @@ function update(model, msg) {
     throw makeError(
       "todo",
       "budget_fe",
-      187,
+      197,
       "update",
       "`todo` expression evaluated. This code has not yet been implemented.",
       {}
@@ -4563,7 +6138,7 @@ function update(model, msg) {
     let amount$1 = (() => {
       let _pipe = amount;
       let _pipe$1 = parse_int(_pipe);
-      return unwrap(_pipe$1, 0);
+      return unwrap2(_pipe$1, 0);
     })();
     let target = (() => {
       let $ = model.target_edit.target;
@@ -4582,10 +6157,6 @@ function update(model, msg) {
     ];
   } else if (msg instanceof EditTargetCadence) {
     let is_monthly = msg.is_monthly;
-    let now3 = (() => {
-      let _pipe = now2();
-      return time_to_day(_pipe);
-    })();
     let target = (() => {
       let $ = model.target_edit.target;
       if ($ instanceof Custom && is_monthly) {
@@ -4593,7 +6164,7 @@ function update(model, msg) {
         return new Monthly(money);
       } else if ($ instanceof Monthly && !is_monthly) {
         let money = $.target;
-        return new Custom(money, new MonthInYear(now3.month, now3.year));
+        return new Custom(money, date_to_month(today()));
       } else {
         let target2 = $;
         return target2;
@@ -4609,22 +6180,15 @@ function update(model, msg) {
     let date = msg.date;
     let parsed_date = (() => {
       let _pipe = from_date_string(date);
-      return lazy_unwrap(
-        _pipe,
-        () => {
-          let _pipe$1 = now2();
-          return time_to_day(_pipe$1);
-        }
-      );
+      return lazy_unwrap(_pipe, () => {
+        return today();
+      });
     })();
     let target = (() => {
       let $ = model.target_edit.target;
       if ($ instanceof Custom) {
         let money = $.target;
-        return new Custom(
-          money,
-          new MonthInYear(parsed_date.month, parsed_date.year)
-        );
+        return new Custom(money, date_to_month(parsed_date));
       } else {
         let money = $.target;
         return new Monthly(money);
@@ -4709,7 +6273,7 @@ function target_switcher_ui(et) {
     }
   })();
   let monthly = $[0];
-  let custom2 = $[1];
+  let custom3 = $[1];
   return div(
     toList([
       attribute("aria-label", "Basic example"),
@@ -4728,13 +6292,29 @@ function target_switcher_ui(et) {
       button(
         toList([
           on_click(new EditTargetCadence(false)),
-          class$("btn btn-primary" + custom2),
+          class$("btn btn-primary" + custom3),
           type_("button")
         ]),
         toList([text2("Custom")])
       )
     ])
   );
+}
+function custom_target_money_in_month(m, date) {
+  let today2 = today();
+  let final_date = from_calendar_date(
+    date.year,
+    number_to_month(date.month),
+    28
+  );
+  let months_count = diff2(new Months(), today2, final_date) + 1;
+  return "\u20AC" + (() => {
+    let _pipe = divideInt(m.s, months_count);
+    return to_string2(_pipe);
+  })() + "." + (() => {
+    let _pipe = divideInt(m.b, months_count);
+    return to_string2(_pipe);
+  })();
 }
 function add_transaction_ui(transactions, categories) {
   return tr(
@@ -4883,7 +6463,7 @@ function budget_transactions(transactions, categories) {
                   toList([
                     td(
                       toList([]),
-                      toList([text2(to_date_string2(t.date))])
+                      toList([text2(to_date_string(t.date))])
                     ),
                     td(toList([]), toList([text2(t.payee)])),
                     td(
@@ -4923,10 +6503,10 @@ function budget_transactions(transactions, categories) {
                           return text2(
                             sign + (() => {
                               let _pipe = t.value.s;
-                              return to_string(_pipe);
+                              return to_string2(_pipe);
                             })() + "." + (() => {
                               let _pipe = t.value.b;
-                              return to_string(_pipe);
+                              return to_string2(_pipe);
                             })()
                           );
                         })()
@@ -4942,16 +6522,16 @@ function budget_transactions(transactions, categories) {
     ])
   );
 }
-function prepend3(body, prefix) {
+function prepend4(body, prefix) {
   return prefix + body;
 }
 function money_to_string_no_sign(m) {
   return (() => {
     let _pipe = m.s;
-    return to_string(_pipe);
+    return to_string2(_pipe);
   })() + "." + (() => {
     let _pipe = m.b;
-    return to_string(_pipe);
+    return to_string2(_pipe);
   })();
 }
 function money_to_string(m) {
@@ -4965,7 +6545,9 @@ function category_target(cat) {
       let value3 = v.target;
       return money_to_string(value3);
     } else {
-      return "";
+      let money = v.target;
+      let date = v.date;
+      return custom_target_money_in_month(money, date);
     }
   } else {
     return "";
@@ -5025,8 +6607,8 @@ function budget_categories(model) {
                 if ($ instanceof None) {
                   return "";
                 } else {
-                  let selected_c = $[0];
-                  let $1 = selected_c.id === c.id;
+                  let selected_cat_id = $[0];
+                  let $1 = selected_cat_id === c.id;
                   if ($1) {
                     return "table-active";
                   } else {
@@ -5148,16 +6730,16 @@ function category_activity(cat, transactions) {
     }
   );
   let _pipe$3 = money_to_string(_pipe$2);
-  return prepend3(_pipe$3, "-");
+  return prepend4(_pipe$3, "-");
 }
 function month_to_string(value3) {
   return (() => {
     let _pipe = value3.month;
-    let _pipe$1 = to_string(_pipe);
+    let _pipe$1 = to_string2(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })() + "." + (() => {
     let _pipe = value3.year;
-    let _pipe$1 = to_string(_pipe);
+    let _pipe$1 = to_string2(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })();
 }
@@ -5166,8 +6748,11 @@ function target_string(category) {
   if ($ instanceof None) {
     return "";
   } else if ($ instanceof Some && $[0] instanceof Custom) {
+    let amount = $[0].target;
     let date_till = $[0].date;
-    return "To date:" + month_to_string(date_till);
+    return "Monthly: " + custom_target_money_in_month(amount, date_till) + "\n till date: " + month_to_string(
+      date_till
+    ) + " Total amount: " + money_to_string(amount);
   } else {
     let amount = $[0].target;
     return "Monthly: " + money_to_string(amount);
@@ -5175,10 +6760,17 @@ function target_string(category) {
 }
 function category_target_ui(c, et) {
   let cat_id = c.id;
+  debug("category_target_ui:" + target_string(c));
   let $ = et.cat_id;
   let $1 = et.enabled;
   if ($1) {
     let cat_id$1 = $;
+    debug(
+      "enabled:" + (() => {
+        let _pipe = et.enabled;
+        return to_string(_pipe);
+      })() + " id:" + cat_id$1
+    );
     return div(
       toList([class$("col")]),
       toList([
@@ -5259,6 +6851,13 @@ function category_target_ui(c, et) {
       ])
     );
   } else {
+    debug(
+      "enabled:" + (() => {
+        let _pipe = et.enabled;
+        return to_string(_pipe);
+      })() + " id:" + cat_id
+    );
+    debug(c.target);
     return div(
       toList([class$("col")]),
       toList([
@@ -5394,10 +6993,26 @@ function view(model) {
                 toList([]),
                 toList([
                   (() => {
-                    let $ = model.selected_category;
-                    let $1 = model.route;
-                    if ($ instanceof Some && $1 instanceof Home) {
-                      let c = $[0];
+                    let selected_cat = (() => {
+                      let _pipe = model.selected_category;
+                      let _pipe$1 = map(
+                        _pipe,
+                        (id2) => {
+                          let _pipe$12 = model.categories;
+                          let _pipe$2 = find(
+                            _pipe$12,
+                            (cat) => {
+                              return cat.id === id2;
+                            }
+                          );
+                          return from_result(_pipe$2);
+                        }
+                      );
+                      return flatten(_pipe$1);
+                    })();
+                    let $ = model.route;
+                    if (selected_cat instanceof Some && $ instanceof Home) {
+                      let c = selected_cat[0];
                       return category_details(c, model);
                     } else {
                       return text2("");
@@ -5413,13 +7028,21 @@ function view(model) {
   );
 }
 function main() {
+  let today2 = from_calendar_date(2024, new Nov(), 1);
+  let feb = from_calendar_date(2024, new Dec(), 1);
+  debug(
+    (() => {
+      let _pipe = diff2(new Months(), today2, feb);
+      return to_string2(_pipe);
+    })()
+  );
   let app = application(init3, update, view);
   let $ = start2(app, "#app", void 0);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
       "budget_fe",
-      125,
+      135,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

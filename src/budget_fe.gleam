@@ -1,5 +1,6 @@
-import birl
+// import birl
 import date_utils
+import gleam/bool
 import gleam/int
 import gleam/io
 import gleam/list
@@ -16,6 +17,7 @@ import lustre/element/html
 import lustre/event
 import lustre_http
 import modem.{initial_uri}
+import rada/date as d
 
 type Route {
   Home
@@ -58,7 +60,7 @@ type Model {
     categories: List(Category),
     transactions: List(Transaction),
     allocations: List(Allocation),
-    selected_category: option.Option(Category),
+    selected_category: option.Option(String),
     show_add_category_ui: Bool,
     user_category_name_input: String,
     user_transaction_input: TransactionForm,
@@ -80,7 +82,7 @@ type TargetEdit {
 }
 
 pub type Cycle {
-  Cycle(year: Int, month: birl.Month)
+  Cycle(year: Int, month: d.Month)
 }
 
 pub type User {
@@ -106,13 +108,13 @@ pub type MonthInYear {
 }
 
 pub type Allocation {
-  Allocation(id: String, amount: Money, category_id: String, date: birl.Day)
+  Allocation(id: String, amount: Money, category_id: String, date: d.Date)
 }
 
 pub type Transaction {
   Transaction(
     id: String,
-    date: birl.Day,
+    date: d.Date,
     payee: String,
     category_id: String,
     value: Money,
@@ -121,6 +123,14 @@ pub type Transaction {
 }
 
 pub fn main() {
+  let today = d.from_calendar_date(2024, d.Nov, 1)
+  let feb = d.from_calendar_date(2024, d.Dec, 1)
+
+  // let dates = date.range(date.Month, 1, today, feb)
+  // io.debug(dates |> list.count(fn(d) { True }) |> int.to_string)
+  // dates
+  // |> list.each(fn(entry) { date.format(entry, "EEEE, d MMMM y") |> io.println })
+  io.debug(d.diff(d.Months, today, feb) |> int.to_string)
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", Nil)
 
@@ -147,7 +157,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     Allocations(Ok(a)) -> #(Model(..model, allocations: a), effect.none())
     Allocations(Error(_)) -> #(model, effect.none())
     SelectCategory(c) -> #(
-      Model(..model, selected_category: option.Some(c)),
+      Model(..model, selected_category: option.Some(c.id)),
       effect.none(),
     )
     SelectUser(user) -> #(Model(..model, user: user), effect.none())
@@ -269,10 +279,9 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       )
     }
     EditTargetCadence(is_monthly) -> {
-      let now = birl.now() |> date_utils.time_to_day()
       let target = case model.target_edit.target, is_monthly {
         Custom(money, _), True -> Monthly(money)
-        Monthly(money), False -> Custom(money, MonthInYear(now.month, now.year))
+        Monthly(money), False -> Custom(money, date_to_month(d.today()))
         target, _ -> target
       }
       #(
@@ -286,10 +295,9 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     UserTargetUpdateCustomDate(date) -> {
       let parsed_date =
         date_utils.from_date_string(date)
-        |> result.lazy_unwrap(fn() { birl.now() |> date_utils.time_to_day() })
+        |> result.lazy_unwrap(fn() { d.today() })
       let target = case model.target_edit.target {
-        Custom(money, _) ->
-          Custom(money, MonthInYear(parsed_date.month, parsed_date.year))
+        Custom(money, _) -> Custom(money, date_to_month(parsed_date))
         Monthly(money) -> Monthly(money)
       }
       #(
@@ -317,6 +325,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   }
 }
 
+fn date_to_month(d: d.Date) -> MonthInYear {
+  MonthInYear(d |> d.month_number, d |> d.year)
+}
+
 fn save_target_eff(
   category: Category,
   target_edit: Target,
@@ -341,16 +353,12 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
   #(
     Model(
       user: User(id: "id1", name: "Sergey"),
-      cycle: Cycle(2024, birl.Dec),
+      cycle: Cycle(2024, d.Dec),
       route: Home,
       categories: [],
       transactions: [],
       allocations: [],
-      selected_category: option.Some(Category(
-        id: "4",
-        name: "Vacation",
-        target: option.Some(Monthly(Money(100, 0))),
-      )),
+      selected_category: option.Some("4"),
       show_add_category_ui: False,
       user_category_name_input: "",
       user_transaction_input: TransactionForm("", "", option.None, option.None),
@@ -382,11 +390,7 @@ fn initial_eff() -> effect.Effect(Msg) {
     _ -> Home
   }
   effect.from(fn(dispatch) {
-    dispatch(Initial(
-      User(id: "id2", name: "Sergey"),
-      Cycle(2024, birl.Dec),
-      path,
-    ))
+    dispatch(Initial(User(id: "id2", name: "Sergey"), Cycle(2024, d.Dec), path))
   })
 }
 
@@ -398,7 +402,7 @@ fn add_transaction_eff(transaction_form: TransactionForm) -> effect.Effect(Msg) 
           Ok(Transaction(
             id: gluid.guidv4(),
             // date: transaction_form.date,
-            date: birl.Day(2024, 12, 20),
+            date: d.from_calendar_date(2024, d.Dec, 20),
             payee: transaction_form.payee,
             category_id: cat.id,
             value: amount,
@@ -432,37 +436,37 @@ fn get_allocations() -> effect.Effect(Msg) {
             id: "1",
             amount: Money(80, 0),
             category_id: "1",
-            date: birl.Day(2024, 12, 2),
+            date: d.from_calendar_date(2024, d.Dec, 2),
           ),
           Allocation(
             id: "2",
             amount: Money(120, 0),
             category_id: "2",
-            date: birl.Day(2024, 12, 2),
+            date: d.from_calendar_date(2024, d.Dec, 2),
           ),
           Allocation(
             id: "3",
             amount: Money(150, 0),
             category_id: "3",
-            date: birl.Day(2024, 12, 2),
+            date: d.from_calendar_date(2024, d.Dec, 2),
           ),
           Allocation(
             id: "4",
             amount: Money(100, 2),
             category_id: "4",
-            date: birl.Day(2024, 12, 2),
+            date: d.from_calendar_date(2024, d.Dec, 2),
           ),
           Allocation(
             id: "5",
             amount: Money(200, 2),
             category_id: "5",
-            date: birl.Day(2024, 12, 2),
+            date: d.from_calendar_date(2024, d.Dec, 2),
           ),
           Allocation(
             id: "6",
             amount: Money(500, 2),
             category_id: "6",
-            date: birl.Day(2024, 12, 2),
+            date: d.from_calendar_date(2024, d.Dec, 2),
           ),
         ]),
       ),
@@ -518,7 +522,7 @@ fn get_transactions() -> effect.Effect(Msg) {
         Ok([
           Transaction(
             id: "1",
-            date: birl.Day(2024, 12, 1),
+            date: d.from_calendar_date(2024, d.Dec, 2),
             payee: "Amazon",
             category_id: "5",
             value: Money(50, 0),
@@ -526,7 +530,7 @@ fn get_transactions() -> effect.Effect(Msg) {
           ),
           Transaction(
             id: "2",
-            date: birl.Day(2024, 12, 2),
+            date: d.from_calendar_date(2024, d.Dec, 2),
             payee: "Bauhaus",
             category_id: "5",
             value: Money(50, 0),
@@ -534,7 +538,7 @@ fn get_transactions() -> effect.Effect(Msg) {
           ),
           Transaction(
             id: "3",
-            date: birl.Day(2024, 12, 3),
+            date: d.from_calendar_date(2024, d.Dec, 2),
             payee: "Rewe",
             category_id: "6",
             value: Money(50, 0),
@@ -542,7 +546,7 @@ fn get_transactions() -> effect.Effect(Msg) {
           ),
           Transaction(
             id: "4",
-            date: birl.Day(2024, 12, 4),
+            date: d.from_calendar_date(2024, d.Dec, 2),
             payee: "Vodafone",
             category_id: "1",
             value: Money(50, 0),
@@ -550,7 +554,7 @@ fn get_transactions() -> effect.Effect(Msg) {
           ),
           Transaction(
             id: "5",
-            date: birl.Day(2024, 12, 5),
+            date: d.from_calendar_date(2024, d.Dec, 2),
             payee: "Steam",
             category_id: "5",
             value: Money(50, 0),
@@ -558,7 +562,7 @@ fn get_transactions() -> effect.Effect(Msg) {
           ),
           Transaction(
             id: "6",
-            date: birl.Day(2024, 12, 6),
+            date: d.from_calendar_date(2024, d.Dec, 2),
             payee: "Duo",
             category_id: "1",
             value: Money(50, 60),
@@ -566,7 +570,7 @@ fn get_transactions() -> effect.Effect(Msg) {
           ),
           Transaction(
             id: "7",
-            date: birl.Day(2024, 12, 7),
+            date: d.from_calendar_date(2024, d.Dec, 2),
             payee: "O2",
             category_id: "1",
             value: Money(50, 0),
@@ -574,7 +578,7 @@ fn get_transactions() -> effect.Effect(Msg) {
           ),
           Transaction(
             id: "8",
-            date: birl.Day(2024, 12, 10),
+            date: d.from_calendar_date(2024, d.Dec, 2),
             payee: "Trade Republic",
             category_id: "0",
             value: Money(1000, 0),
@@ -582,7 +586,7 @@ fn get_transactions() -> effect.Effect(Msg) {
           ),
           Transaction(
             id: "8",
-            date: birl.Day(2024, 12, 7),
+            date: d.from_calendar_date(2024, d.Dec, 2),
             payee: "O2",
             category_id: "1",
             value: Money(100, 50),
@@ -677,9 +681,20 @@ fn view(model: Model) -> element.Element(Msg) {
           UserRoute -> user_selection(model)
         },
         html.div([], [
-          case model.selected_category, model.route {
-            option.Some(c), Home -> category_details(c, model)
-            _, _ -> html.text("")
+          {
+            let selected_cat =
+              model.selected_category
+              |> option.map(fn(id) {
+                model.categories
+                |> list.find(fn(cat) { cat.id == id })
+                |> option.from_result
+              })
+              |> option.flatten
+
+            case selected_cat, model.route {
+              option.Some(c), Home -> category_details(c, model)
+              _, _ -> html.text("")
+            }
           },
         ]),
       ]),
@@ -735,8 +750,10 @@ fn category_details(category: Category, model: Model) -> element.Element(Msg) {
 
 fn category_target_ui(c: Category, et: TargetEdit) -> element.Element(Msg) {
   let cat_id = c.id
+  io.debug("category_target_ui:" <> target_string(c))
   case et.cat_id, et.enabled {
-    cat_id, True ->
+    cat_id, True -> {
+      io.debug("enabled:" <> et.enabled |> bool.to_string <> " id:" <> cat_id)
       html.div([attribute.class("col")], [
         html.div([], [
           html.text("Target"),
@@ -778,8 +795,10 @@ fn category_target_ui(c: Category, et: TargetEdit) -> element.Element(Msg) {
             ])
         },
       ])
-
-    _, _ ->
+    }
+    _, _ -> {
+      io.debug("enabled:" <> et.enabled |> bool.to_string <> " id:" <> cat_id)
+      io.debug(c.target)
       html.div([attribute.class("col")], [
         html.div([], [
           html.text("Target"),
@@ -787,6 +806,7 @@ fn category_target_ui(c: Category, et: TargetEdit) -> element.Element(Msg) {
         ]),
         html.div([], [html.text(target_string(c))]),
       ])
+    }
   }
 }
 
@@ -825,10 +845,26 @@ fn target_switcher_ui(et: TargetEdit) -> element.Element(Msg) {
 fn target_string(category: Category) -> String {
   case category.target {
     option.None -> ""
-    option.Some(Custom(_, date_till)) ->
-      "To date:" <> month_to_string(date_till)
+    option.Some(Custom(amount, date_till)) ->
+      "Monthly: "
+      <> custom_target_money_in_month(amount, date_till)
+      <> "\n till date: "
+      <> month_to_string(date_till)
+      <> " Total amount: "
+      <> money_to_string(amount)
     option.Some(Monthly(amount)) -> "Monthly: " <> money_to_string(amount)
   }
+}
+
+fn custom_target_money_in_month(m: Money, date: MonthInYear) -> String {
+  let today = d.today()
+  let final_date =
+    d.from_calendar_date(date.year, d.number_to_month(date.month), 28)
+  let months_count = d.diff(d.Months, today, final_date) + 1
+  "€"
+  <> m.s / months_count |> int.to_string
+  <> "."
+  <> m.b / months_count |> int.to_string
 }
 
 fn ready_to_assign(transactions: List(Transaction)) -> String {
@@ -979,8 +1015,8 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
         list.map(model.categories, fn(c) {
           let active_class = case model.selected_category {
             option.None -> ""
-            option.Some(selected_c) ->
-              case selected_c.id == c.id {
+            option.Some(selected_cat_id) ->
+              case selected_cat_id == c.id {
                 True -> "table-active"
                 False -> ""
               }
@@ -1030,7 +1066,7 @@ fn category_target(cat: Category) -> String {
     option.Some(v) ->
       case v {
         Monthly(value) -> money_to_string(value)
-        Custom(_, _) -> ""
+        Custom(money, date) -> custom_target_money_in_month(money, date)
       }
     option.None -> ""
   }
