@@ -51,12 +51,15 @@ type Msg {
   UserTargetUpdateCustomDate(date: String)
   CategorySaveTarget(a: Result(Category, lustre_http.HttpError))
   SelectTransaction(t: Transaction)
-  EditTransaction(t: Transaction)
+  EditTransaction(t: Transaction, category_name: String)
+  UpdateTransaction
   DeleteTransaction(t_id: String)
   TransactionDeleteResult(a: Result(String, lustre_http.HttpError))
   TransactionEditResult(a: Result(Transaction, lustre_http.HttpError))
   UserTransactionEditPayee(p: String)
   UserTransactionEditDate(d: String)
+  UserTransactionEditCategory(c: String)
+  UserTransactionEditAmount(a: String)
 }
 
 type Model {
@@ -70,7 +73,7 @@ type Model {
     selected_category: option.Option(String),
     show_add_category_ui: Bool,
     user_category_name_input: String,
-    user_transaction_input: TransactionForm,
+    transaction_add_input: TransactionForm,
     target_edit: TargetEdit,
     selected_transaction: option.Option(String),
     transaction_edit_form: option.Option(TransactionEditForm),
@@ -149,7 +152,7 @@ pub fn main() {
   // io.debug(dates |> list.count(fn(d) { True }) |> int.to_string)
   // dates
   // |> list.each(fn(entry) { date.format(entry, "EEEE, d MMMM y") |> io.println })
-  io.debug(d.diff(d.Months, today, feb) |> int.to_string)
+  // io.debug(d.diff(d.Months, today, feb) |> int.to_string)
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", Nil)
 
@@ -157,7 +160,6 @@ pub fn main() {
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
-  io.debug(msg)
   case msg {
     OnRouteChange(route) -> {
       #(Model(..model, route: route), effect.none())
@@ -200,14 +202,14 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     AddTransaction -> #(
       Model(
         ..model,
-        user_transaction_input: TransactionForm(
+        transaction_add_input: TransactionForm(
           date: "",
           payee: "",
           category: option.None,
           amount: option.None,
         ),
       ),
-      add_transaction_eff(model.user_transaction_input),
+      add_transaction_eff(model.transaction_add_input),
     )
     AddTransactionResult(Ok(t)) -> #(
       Model(..model, transactions: list.flatten([model.transactions, [t]])),
@@ -218,8 +220,8 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       #(
         Model(
           ..model,
-          user_transaction_input: TransactionForm(
-            ..model.user_transaction_input,
+          transaction_add_input: TransactionForm(
+            ..model.transaction_add_input,
             category: model.categories
               |> list.find(fn(c) { c.name == category_name })
               |> option.from_result,
@@ -231,8 +233,8 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     UserUpdatedTransactionDate(date) -> #(
       Model(
         ..model,
-        user_transaction_input: TransactionForm(
-          ..model.user_transaction_input,
+        transaction_add_input: TransactionForm(
+          ..model.transaction_add_input,
           date: date,
         ),
       ),
@@ -241,8 +243,8 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     UserUpdatedTransactionPayee(payee) -> #(
       Model(
         ..model,
-        user_transaction_input: TransactionForm(
-          ..model.user_transaction_input,
+        transaction_add_input: TransactionForm(
+          ..model.transaction_add_input,
           payee: payee,
         ),
       ),
@@ -251,8 +253,8 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     UserUpdatedTransactionAmount(amount) -> #(
       Model(
         ..model,
-        user_transaction_input: TransactionForm(
-          ..model.user_transaction_input,
+        transaction_add_input: TransactionForm(
+          ..model.transaction_add_input,
           amount: int.parse(amount)
             |> result.map(fn(amount) { Money(amount, 0) })
             |> option.from_result,
@@ -349,17 +351,15 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, selected_transaction: option.None),
       delete_transaction_eff(id),
     )
-    EditTransaction(t) -> #(
+    EditTransaction(t, category_name) -> #(
       Model(
         ..model,
         transaction_edit_form: option.Some(TransactionEditForm(
           id: t.id,
           date: t.date |> date_utils.to_date_string(),
           payee: t.payee,
-          category: "",
-          amount: "",
-          // category: t.category,
-        // amount: t.amount,
+          category: category_name,
+          amount: t.value |> money_to_string_no_sign,
         )),
       ),
       effect.none(),
@@ -372,7 +372,20 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
     TransactionDeleteResult(Error(_)) -> #(model, effect.none())
-    TransactionEditResult(_) -> #(model, effect.none())
+    TransactionEditResult(Ok(transaction)) -> #(
+      Model(
+        ..model,
+        transactions: model.transactions
+          |> list.map(fn(t) {
+            case t.id == transaction.id {
+              True -> transaction
+              False -> t
+            }
+          }),
+      ),
+      effect.none(),
+    )
+    TransactionEditResult(Error(_)) -> #(model, effect.none())
     UserTransactionEditPayee(payee) -> #(
       Model(
         ..model,
@@ -389,7 +402,53 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
+    UserTransactionEditAmount(a) -> #(
+      Model(
+        ..model,
+        transaction_edit_form: model.transaction_edit_form
+          |> option.map(fn(tef) { TransactionEditForm(..tef, amount: a) }),
+      ),
+      effect.none(),
+    )
+    UserTransactionEditCategory(c) -> #(
+      Model(
+        ..model,
+        transaction_edit_form: model.transaction_edit_form
+          |> option.map(fn(tef) { TransactionEditForm(..tef, category: c) }),
+      ),
+      effect.none(),
+    )
+    UpdateTransaction -> #(
+      Model(
+        ..model,
+        selected_transaction: option.None,
+        transaction_edit_form: option.None,
+      ),
+      case model.transaction_edit_form {
+        option.None -> effect.none()
+        option.Some(tef) -> update_transaction_eff(tef)
+      },
+    )
   }
+}
+
+fn update_transaction_eff(tef: TransactionEditForm) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    dispatch(
+      TransactionEditResult(
+        Ok(Transaction(
+          id: tef.id,
+          date: tef.date
+            |> date_utils.from_date_string
+            |> result.unwrap(d.today()),
+          payee: tef.payee,
+          category_id: tef.category,
+          value: Money(tef.amount |> int.parse |> result.unwrap(0), 0),
+          is_inflow: False,
+        )),
+      ),
+    )
+  })
 }
 
 fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {
@@ -420,7 +479,6 @@ fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
 }
 
 fn init(_flags) -> #(Model, effect.Effect(Msg)) {
-  io.debug("init")
   #(
     Model(
       user: User(id: "id1", name: "Sergey"),
@@ -432,7 +490,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       selected_category: option.Some("4"),
       show_add_category_ui: False,
       user_category_name_input: "",
-      user_transaction_input: TransactionForm("", "", option.None, option.None),
+      transaction_add_input: TransactionForm("", "", option.None, option.None),
       target_edit: TargetEdit("", False, Monthly(Money(0, 0))),
       selected_transaction: option.None,
       transaction_edit_form: option.None,
@@ -442,7 +500,6 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
 }
 
 fn on_route_change(uri: Uri) -> Msg {
-  io.debug("on_route_change")
   let route = uri_to_route(uri)
   OnRouteChange(route)
 }
@@ -822,8 +879,7 @@ fn category_details(category: Category, model: Model) -> element.Element(Msg) {
 
 fn category_target_ui(c: Category, et: TargetEdit) -> element.Element(Msg) {
   case et.cat_id, et.enabled {
-    cat_id, True -> {
-      io.debug("enabled:" <> et.enabled |> bool.to_string <> " id:" <> cat_id)
+    _, True -> {
       html.div([attribute.class("col")], [
         html.div([], [
           html.text("Target"),
@@ -963,10 +1019,7 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
 }
 
 fn transaction_list_item(t: Transaction, model: Model) -> element.Element(Msg) {
-  io.debug(model.selected_transaction)
-  io.debug(model.transaction_edit_form)
   let selected_id = model.selected_transaction |> option.unwrap("")
-  // let selected_id = t.id
   let active_class = case selected_id == t.id {
     True -> "table-active"
     False -> ""
@@ -976,6 +1029,7 @@ fn transaction_list_item(t: Transaction, model: Model) -> element.Element(Msg) {
     |> option.map(fn(tef) { tef.id })
     |> option.unwrap("-1")
   let is_edit_mode = transaction_edit_id == t.id
+  let category_name = transaction_category_name(t, model.categories)
   case is_edit_mode, model.transaction_edit_form {
     True, option.Some(tef) ->
       html.tr([attribute.class(active_class)], [
@@ -983,7 +1037,7 @@ fn transaction_list_item(t: Transaction, model: Model) -> element.Element(Msg) {
           html.input([
             event.on_input(UserTransactionEditDate),
             attribute.placeholder("date"),
-            attribute.value(tef.date),
+            attribute.value(date_utils.to_date_string_input(t.date)),
             attribute.class("form-control"),
             attribute.type_("date"),
             attribute.style([#("width", "140px")]),
@@ -997,12 +1051,42 @@ fn transaction_list_item(t: Transaction, model: Model) -> element.Element(Msg) {
             attribute.class("form-control"),
             attribute.type_("text"),
             attribute.style([#("width", "160px")]),
+            attribute.attribute("list", "payees_list"),
           ]),
+          html.datalist(
+            [attribute.id("payees_list")],
+            model.transactions
+              |> list.map(fn(t) { t.payee })
+              |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
+          ),
         ]),
-        html.td([], [html.text(transaction_category_name(t, model.categories))]),
         html.td([], [
-          html.text(transaction_amount(t)),
-          manage_transaction_buttons(t, selected_id),
+          html.input([
+            event.on_input(UserTransactionEditCategory),
+            attribute.placeholder("category"),
+            attribute.value(tef.category),
+            attribute.class("form-control"),
+            attribute.type_("text"),
+            attribute.style([#("width", "160px")]),
+            attribute.attribute("list", "categories_list"),
+          ]),
+          html.datalist(
+            [attribute.id("categories_list")],
+            model.categories
+              |> list.map(fn(c) { c.name })
+              |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
+          ),
+        ]),
+        html.td([], [
+          html.input([
+            event.on_input(UserTransactionEditAmount),
+            attribute.placeholder("amount"),
+            attribute.value(tef.amount),
+            attribute.class("form-control"),
+            attribute.type_("text"),
+            attribute.style([#("width", "160px")]),
+          ]),
+          manage_transaction_buttons(t, selected_id, category_name, True),
         ]),
       ])
     _, _ ->
@@ -1011,12 +1095,10 @@ fn transaction_list_item(t: Transaction, model: Model) -> element.Element(Msg) {
         [
           html.td([], [html.text(date_utils.to_date_string(t.date))]),
           html.td([], [html.text(t.payee)]),
-          html.td([], [
-            html.text(transaction_category_name(t, model.categories)),
-          ]),
+          html.td([], [html.text(category_name)]),
           html.td([], [
             html.text(transaction_amount(t)),
-            manage_transaction_buttons(t, selected_id),
+            manage_transaction_buttons(t, selected_id, category_name, False),
           ]),
         ],
       )
@@ -1026,12 +1108,23 @@ fn transaction_list_item(t: Transaction, model: Model) -> element.Element(Msg) {
 fn manage_transaction_buttons(
   t: Transaction,
   selected_id: String,
+  category_name: String,
+  is_edit: Bool,
 ) -> element.Element(Msg) {
   case selected_id == t.id {
     False -> html.text("")
     True ->
       html.div([], [
-        html.button([event.on_click(EditTransaction(t))], [element.text("Edit")]),
+        case is_edit {
+          True ->
+            html.button([event.on_click(UpdateTransaction)], [
+              element.text("Save"),
+            ])
+          False ->
+            html.button([event.on_click(EditTransaction(t, category_name))], [
+              element.text("Edit"),
+            ])
+        },
         html.button([event.on_click(DeleteTransaction(t.id))], [
           element.text("Delete"),
         ]),
