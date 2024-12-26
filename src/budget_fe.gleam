@@ -1,6 +1,5 @@
 // import birl
 import date_utils
-import gleam/bool
 import gleam/int
 import gleam/io
 import gleam/list
@@ -140,13 +139,12 @@ pub type Transaction {
     payee: String,
     category_id: String,
     value: Money,
-    is_inflow: Bool,
   )
 }
 
 pub fn main() {
-  let today = d.from_calendar_date(2024, d.Nov, 1)
-  let feb = d.from_calendar_date(2024, d.Dec, 1)
+  // let today = d.from_calendar_date(2024, d.Nov, 1)
+  // let feb = d.from_calendar_date(2024, d.Dec, 1)
 
   // let dates = date.range(date.Month, 1, today, feb)
   // io.debug(dates |> list.count(fn(d) { True }) |> int.to_string)
@@ -160,6 +158,7 @@ pub fn main() {
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
+  io.debug(msg)
   case msg {
     OnRouteChange(route) -> {
       #(Model(..model, route: route), effect.none())
@@ -356,7 +355,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         ..model,
         transaction_edit_form: option.Some(TransactionEditForm(
           id: t.id,
-          date: t.date |> date_utils.to_date_string(),
+          date: t.date |> date_utils.to_date_string_input,
           payee: t.payee,
           category: category_name,
           amount: t.value |> money_to_string_no_sign,
@@ -426,13 +425,27 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       case model.transaction_edit_form {
         option.None -> effect.none()
-        option.Some(tef) -> update_transaction_eff(tef)
+        option.Some(tef) -> update_transaction_eff(tef, model.categories)
       },
     )
   }
 }
 
-fn update_transaction_eff(tef: TransactionEditForm) -> effect.Effect(Msg) {
+fn string_to_money(s: String) -> Money {
+  case
+    string.split(s, ".")
+    |> list.map(fn(s) { int.parse(s) |> result.unwrap(0) })
+  {
+    [s, b, ..rest] -> Money(s, b)
+    _ -> Money(0, 0)
+  }
+}
+
+fn update_transaction_eff(
+  tef: TransactionEditForm,
+  categories: List(Category),
+) -> effect.Effect(Msg) {
+  let money = string_to_money(tef.amount)
   effect.from(fn(dispatch) {
     dispatch(
       TransactionEditResult(
@@ -442,9 +455,15 @@ fn update_transaction_eff(tef: TransactionEditForm) -> effect.Effect(Msg) {
             |> date_utils.from_date_string
             |> result.unwrap(d.today()),
           payee: tef.payee,
-          category_id: tef.category,
-          value: Money(tef.amount |> int.parse |> result.unwrap(0), 0),
-          is_inflow: False,
+          category_id: categories
+            |> list.find_map(fn(c) {
+              case c.name == tef.category {
+                True -> Ok(c.id)
+                False -> Error("")
+              }
+            })
+            |> result.unwrap(""),
+          value: money,
         )),
       ),
     )
@@ -536,7 +555,6 @@ fn add_transaction_eff(transaction_form: TransactionForm) -> effect.Effect(Msg) 
             payee: transaction_form.payee,
             category_id: cat.id,
             value: amount,
-            is_inflow: False,
           )),
         )
       _, _ ->
@@ -558,174 +576,15 @@ fn add_category(name: String) -> effect.Effect(Msg) {
 }
 
 fn get_allocations() -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(
-      Allocations(
-        a: Ok([
-          Allocation(
-            id: "1",
-            amount: Money(80, 0),
-            category_id: "1",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-          ),
-          Allocation(
-            id: "2",
-            amount: Money(120, 0),
-            category_id: "2",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-          ),
-          Allocation(
-            id: "3",
-            amount: Money(150, 0),
-            category_id: "3",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-          ),
-          Allocation(
-            id: "4",
-            amount: Money(100, 2),
-            category_id: "4",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-          ),
-          Allocation(
-            id: "5",
-            amount: Money(200, 2),
-            category_id: "5",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-          ),
-          Allocation(
-            id: "6",
-            amount: Money(500, 2),
-            category_id: "6",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-          ),
-        ]),
-      ),
-    )
-  })
+  effect.from(fn(dispatch) { dispatch(Allocations(a: Ok(allocations()))) })
 }
 
 fn get_categories() -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(
-      Categories(
-        cats: Ok([
-          Category(
-            id: "1",
-            name: "Subscriptions",
-            target: option.Some(Monthly(Money(60, 0))),
-          ),
-          Category(
-            id: "2",
-            name: "Shopping",
-            target: option.Some(Monthly(Money(40, 0))),
-          ),
-          Category(
-            id: "3",
-            name: "Goals",
-            target: option.Some(Custom(Money(150, 0), MonthInYear(2, 2025))),
-          ),
-          Category(
-            id: "4",
-            name: "Vacation",
-            target: option.Some(Monthly(Money(100, 0))),
-          ),
-          Category(
-            id: "5",
-            name: "Entertainment",
-            target: option.Some(Monthly(Money(200, 0))),
-          ),
-          Category(
-            id: "6",
-            name: "Groceries",
-            target: option.Some(Monthly(Money(500, 0))),
-          ),
-        ]),
-      ),
-    )
-  })
+  effect.from(fn(dispatch) { dispatch(Categories(cats: Ok(categories()))) })
 }
 
 fn get_transactions() -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(
-      Transactions(
-        Ok([
-          Transaction(
-            id: "1",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-            payee: "Amazon",
-            category_id: "5",
-            value: Money(50, 0),
-            is_inflow: False,
-          ),
-          Transaction(
-            id: "2",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-            payee: "Bauhaus",
-            category_id: "5",
-            value: Money(50, 0),
-            is_inflow: False,
-          ),
-          Transaction(
-            id: "3",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-            payee: "Rewe",
-            category_id: "6",
-            value: Money(50, 0),
-            is_inflow: False,
-          ),
-          Transaction(
-            id: "4",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-            payee: "Vodafone",
-            category_id: "1",
-            value: Money(50, 0),
-            is_inflow: False,
-          ),
-          Transaction(
-            id: "5",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-            payee: "Steam",
-            category_id: "5",
-            value: Money(50, 0),
-            is_inflow: False,
-          ),
-          Transaction(
-            id: "6",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-            payee: "Duo",
-            category_id: "1",
-            value: Money(50, 60),
-            is_inflow: False,
-          ),
-          Transaction(
-            id: "7",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-            payee: "O2",
-            category_id: "1",
-            value: Money(50, 0),
-            is_inflow: False,
-          ),
-          Transaction(
-            id: "8",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-            payee: "Trade Republic",
-            category_id: "0",
-            value: Money(1000, 0),
-            is_inflow: True,
-          ),
-          Transaction(
-            id: "8",
-            date: d.from_calendar_date(2024, d.Dec, 2),
-            payee: "O2",
-            category_id: "1",
-            value: Money(100, 50),
-            is_inflow: False,
-          ),
-        ]),
-      ),
-    )
-  })
+  effect.from(fn(dispatch) { dispatch(Transactions(Ok(transactions()))) })
 }
 
 fn view(model: Model) -> element.Element(Msg) {
@@ -1037,7 +896,7 @@ fn transaction_list_item(t: Transaction, model: Model) -> element.Element(Msg) {
           html.input([
             event.on_input(UserTransactionEditDate),
             attribute.placeholder("date"),
-            attribute.value(date_utils.to_date_string_input(t.date)),
+            attribute.value(tef.date),
             attribute.class("form-control"),
             attribute.type_("date"),
             attribute.style([#("width", "140px")]),
@@ -1141,12 +1000,7 @@ fn transaction_category_name(t: Transaction, cats: List(Category)) -> String {
 }
 
 fn transaction_amount(t: Transaction) -> String {
-  let sign = case t.is_inflow {
-    True -> ""
-    _ -> "-"
-  }
-
-  sign <> t.value.s |> int.to_string <> "." <> t.value.b |> int.to_string
+  t.value.s |> int.to_string <> "." <> t.value.b |> int.to_string
 }
 
 fn add_transaction_ui(
@@ -1333,4 +1187,149 @@ pub fn month_to_string(value: MonthInYear) -> String {
     |> int.to_string
     |> string.pad_start(2, "0")
   }
+}
+
+//FACTORIES
+fn allocations() -> List(Allocation) {
+  [
+    Allocation(
+      id: "1",
+      amount: Money(80, 0),
+      category_id: "1",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+    ),
+    Allocation(
+      id: "2",
+      amount: Money(120, 0),
+      category_id: "2",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+    ),
+    Allocation(
+      id: "3",
+      amount: Money(150, 0),
+      category_id: "3",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+    ),
+    Allocation(
+      id: "4",
+      amount: Money(100, 2),
+      category_id: "4",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+    ),
+    Allocation(
+      id: "5",
+      amount: Money(200, 2),
+      category_id: "5",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+    ),
+    Allocation(
+      id: "6",
+      amount: Money(500, 2),
+      category_id: "6",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+    ),
+  ]
+}
+
+fn categories() -> List(Category) {
+  [
+    Category(
+      id: "1",
+      name: "Subscriptions",
+      target: option.Some(Monthly(Money(60, 0))),
+    ),
+    Category(
+      id: "2",
+      name: "Shopping",
+      target: option.Some(Monthly(Money(40, 0))),
+    ),
+    Category(
+      id: "3",
+      name: "Goals",
+      target: option.Some(Custom(Money(150, 0), MonthInYear(2, 2025))),
+    ),
+    Category(
+      id: "4",
+      name: "Vacation",
+      target: option.Some(Monthly(Money(100, 0))),
+    ),
+    Category(
+      id: "5",
+      name: "Entertainment",
+      target: option.Some(Monthly(Money(200, 0))),
+    ),
+    Category(
+      id: "6",
+      name: "Groceries",
+      target: option.Some(Monthly(Money(500, 0))),
+    ),
+  ]
+}
+
+fn transactions() -> List(Transaction) {
+  [
+    Transaction(
+      id: "1",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+      payee: "Amazon",
+      category_id: "5",
+      value: Money(-50, 0),
+    ),
+    Transaction(
+      id: "2",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+      payee: "Bauhaus",
+      category_id: "5",
+      value: Money(-50, 0),
+    ),
+    Transaction(
+      id: "3",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+      payee: "Rewe",
+      category_id: "6",
+      value: Money(-50, 0),
+    ),
+    Transaction(
+      id: "4",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+      payee: "Vodafone",
+      category_id: "1",
+      value: Money(-50, 0),
+    ),
+    Transaction(
+      id: "5",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+      payee: "Steam",
+      category_id: "5",
+      value: Money(-50, 0),
+    ),
+    Transaction(
+      id: "6",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+      payee: "Duo",
+      category_id: "1",
+      value: Money(-50, 60),
+    ),
+    Transaction(
+      id: "7",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+      payee: "O2",
+      category_id: "1",
+      value: Money(-50, 0),
+    ),
+    Transaction(
+      id: "8",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+      payee: "Trade Republic",
+      category_id: "0",
+      value: Money(1000, 0),
+    ),
+    Transaction(
+      id: "8",
+      date: d.from_calendar_date(2024, d.Dec, 2),
+      payee: "O2",
+      category_id: "1",
+      value: Money(-100, 50),
+    ),
+  ]
 }

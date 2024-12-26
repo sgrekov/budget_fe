@@ -287,22 +287,6 @@ function makeError(variant, module, line, fn, message, extra) {
   return error;
 }
 
-// build/dev/javascript/gleam_stdlib/gleam/bool.mjs
-function to_int(bool3) {
-  if (!bool3) {
-    return 0;
-  } else {
-    return 1;
-  }
-}
-function guard(requirement, consequence, alternative) {
-  if (requirement) {
-    return consequence;
-  } else {
-    return alternative();
-  }
-}
-
 // build/dev/javascript/gleam_stdlib/gleam/option.mjs
 var Some = class extends CustomType {
   constructor(x0) {
@@ -621,6 +605,26 @@ function find(loop$list, loop$is_desired) {
       } else {
         loop$list = rest$1;
         loop$is_desired = is_desired;
+      }
+    }
+  }
+}
+function find_map(loop$list, loop$fun) {
+  while (true) {
+    let list = loop$list;
+    let fun = loop$fun;
+    if (list.hasLength(0)) {
+      return new Error(void 0);
+    } else {
+      let x = list.head;
+      let rest$1 = list.tail;
+      let $ = fun(x);
+      if ($.isOk()) {
+        let x$1 = $[0];
+        return new Ok(x$1);
+      } else {
+        loop$list = rest$1;
+        loop$fun = fun;
       }
     }
   }
@@ -1692,6 +1696,15 @@ var unicode_whitespaces = [
 ].join("");
 var trim_start_regex = new RegExp(`^[${unicode_whitespaces}]*`);
 var trim_end_regex = new RegExp(`[${unicode_whitespaces}]*$`);
+function print_debug(string3) {
+  if (typeof process === "object" && process.stderr?.write) {
+    process.stderr.write(string3 + "\n");
+  } else if (typeof Deno === "object") {
+    Deno.stderr.writeSync(new TextEncoder().encode(string3 + "\n"));
+  } else {
+    console.log(string3);
+  }
+}
 function floor(float3) {
   return Math.floor(float3);
 }
@@ -1989,6 +2002,14 @@ function divide(dividend, divisor) {
   }
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/io.mjs
+function debug(term) {
+  let _pipe = term;
+  let _pipe$1 = inspect2(_pipe);
+  print_debug(_pipe$1);
+  return term;
+}
+
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
 var Uri = class extends CustomType {
   constructor(scheme, userinfo, host, port, path, query, fragment) {
@@ -2081,6 +2102,22 @@ function guidv4() {
   })();
   let concatened = a2 + b + c + d;
   return format_uuid(concatened);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/bool.mjs
+function to_int(bool3) {
+  if (!bool3) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+function guard(requirement, consequence, alternative) {
+  if (requirement) {
+    return consequence;
+  } else {
+    return alternative();
+  }
 }
 
 // build/dev/javascript/lustre/lustre/effect.mjs
@@ -5572,14 +5609,14 @@ var UserTransactionEditAmount = class extends CustomType {
   }
 };
 var Model2 = class extends CustomType {
-  constructor(user, cycle, route, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form) {
+  constructor(user, cycle, route, categories2, transactions2, allocations2, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form) {
     super();
     this.user = user;
     this.cycle = cycle;
     this.route = route;
-    this.categories = categories;
-    this.transactions = transactions;
-    this.allocations = allocations;
+    this.categories = categories2;
+    this.transactions = transactions2;
+    this.allocations = allocations2;
     this.selected_category = selected_category;
     this.show_add_category_ui = show_add_category_ui;
     this.user_category_name_input = user_category_name_input;
@@ -5675,17 +5712,37 @@ var Allocation = class extends CustomType {
   }
 };
 var Transaction = class extends CustomType {
-  constructor(id2, date, payee, category_id, value3, is_inflow) {
+  constructor(id2, date, payee, category_id, value3) {
     super();
     this.id = id2;
     this.date = date;
     this.payee = payee;
     this.category_id = category_id;
     this.value = value3;
-    this.is_inflow = is_inflow;
   }
 };
-function update_transaction_eff(tef) {
+function string_to_money(s) {
+  let $ = (() => {
+    let _pipe = split2(s, ".");
+    return map2(
+      _pipe,
+      (s2) => {
+        let _pipe$1 = parse_int(s2);
+        return unwrap2(_pipe$1, 0);
+      }
+    );
+  })();
+  if ($.atLeastLength(2)) {
+    let s$1 = $.head;
+    let b = $.tail.head;
+    let rest = $.tail.tail;
+    return new Money(s$1, b);
+  } else {
+    return new Money(0, 0);
+  }
+}
+function update_transaction_eff(tef, categories2) {
+  let money = string_to_money(tef.amount);
   return from(
     (dispatch) => {
       return dispatch(
@@ -5699,16 +5756,22 @@ function update_transaction_eff(tef) {
                 return unwrap2(_pipe$1, today());
               })(),
               tef.payee,
-              tef.category,
-              new Money(
-                (() => {
-                  let _pipe = tef.amount;
-                  let _pipe$1 = parse_int(_pipe);
-                  return unwrap2(_pipe$1, 0);
-                })(),
-                0
-              ),
-              false
+              (() => {
+                let _pipe = categories2;
+                let _pipe$1 = find_map(
+                  _pipe,
+                  (c) => {
+                    let $ = c.name === tef.category;
+                    if ($) {
+                      return new Ok(c.id);
+                    } else {
+                      return new Error("");
+                    }
+                  }
+                );
+                return unwrap2(_pipe$1, "");
+              })(),
+              money
             )
           )
         )
@@ -5830,8 +5893,7 @@ function add_transaction_eff(transaction_form) {
                   from_calendar_date(2024, new Dec(), 20),
                   transaction_form.payee,
                   cat.id,
-                  amount,
-                  false
+                  amount
                 )
               )
             );
@@ -5851,188 +5913,6 @@ function add_category(name) {
       return dispatch(
         new AddCategoryResult(
           new Ok(new Category(guidv4(), name, new None()))
-        )
-      );
-    }
-  );
-}
-function get_allocations() {
-  return from(
-    (dispatch) => {
-      return dispatch(
-        new Allocations(
-          new Ok(
-            toList([
-              new Allocation(
-                "1",
-                new Money(80, 0),
-                "1",
-                from_calendar_date(2024, new Dec(), 2)
-              ),
-              new Allocation(
-                "2",
-                new Money(120, 0),
-                "2",
-                from_calendar_date(2024, new Dec(), 2)
-              ),
-              new Allocation(
-                "3",
-                new Money(150, 0),
-                "3",
-                from_calendar_date(2024, new Dec(), 2)
-              ),
-              new Allocation(
-                "4",
-                new Money(100, 2),
-                "4",
-                from_calendar_date(2024, new Dec(), 2)
-              ),
-              new Allocation(
-                "5",
-                new Money(200, 2),
-                "5",
-                from_calendar_date(2024, new Dec(), 2)
-              ),
-              new Allocation(
-                "6",
-                new Money(500, 2),
-                "6",
-                from_calendar_date(2024, new Dec(), 2)
-              )
-            ])
-          )
-        )
-      );
-    }
-  );
-}
-function get_categories() {
-  return from(
-    (dispatch) => {
-      return dispatch(
-        new Categories(
-          new Ok(
-            toList([
-              new Category(
-                "1",
-                "Subscriptions",
-                new Some(new Monthly(new Money(60, 0)))
-              ),
-              new Category(
-                "2",
-                "Shopping",
-                new Some(new Monthly(new Money(40, 0)))
-              ),
-              new Category(
-                "3",
-                "Goals",
-                new Some(
-                  new Custom(new Money(150, 0), new MonthInYear(2, 2025))
-                )
-              ),
-              new Category(
-                "4",
-                "Vacation",
-                new Some(new Monthly(new Money(100, 0)))
-              ),
-              new Category(
-                "5",
-                "Entertainment",
-                new Some(new Monthly(new Money(200, 0)))
-              ),
-              new Category(
-                "6",
-                "Groceries",
-                new Some(new Monthly(new Money(500, 0)))
-              )
-            ])
-          )
-        )
-      );
-    }
-  );
-}
-function get_transactions() {
-  return from(
-    (dispatch) => {
-      return dispatch(
-        new Transactions(
-          new Ok(
-            toList([
-              new Transaction(
-                "1",
-                from_calendar_date(2024, new Dec(), 2),
-                "Amazon",
-                "5",
-                new Money(50, 0),
-                false
-              ),
-              new Transaction(
-                "2",
-                from_calendar_date(2024, new Dec(), 2),
-                "Bauhaus",
-                "5",
-                new Money(50, 0),
-                false
-              ),
-              new Transaction(
-                "3",
-                from_calendar_date(2024, new Dec(), 2),
-                "Rewe",
-                "6",
-                new Money(50, 0),
-                false
-              ),
-              new Transaction(
-                "4",
-                from_calendar_date(2024, new Dec(), 2),
-                "Vodafone",
-                "1",
-                new Money(50, 0),
-                false
-              ),
-              new Transaction(
-                "5",
-                from_calendar_date(2024, new Dec(), 2),
-                "Steam",
-                "5",
-                new Money(50, 0),
-                false
-              ),
-              new Transaction(
-                "6",
-                from_calendar_date(2024, new Dec(), 2),
-                "Duo",
-                "1",
-                new Money(50, 60),
-                false
-              ),
-              new Transaction(
-                "7",
-                from_calendar_date(2024, new Dec(), 2),
-                "O2",
-                "1",
-                new Money(50, 0),
-                false
-              ),
-              new Transaction(
-                "8",
-                from_calendar_date(2024, new Dec(), 2),
-                "Trade Republic",
-                "0",
-                new Money(1e3, 0),
-                true
-              ),
-              new Transaction(
-                "8",
-                from_calendar_date(2024, new Dec(), 2),
-                "O2",
-                "1",
-                new Money(100, 50),
-                false
-              )
-            ])
-          )
         )
       );
     }
@@ -6173,15 +6053,7 @@ function transaction_category_name(t, cats) {
   return category_name;
 }
 function transaction_amount(t) {
-  let sign = (() => {
-    let $ = t.is_inflow;
-    if ($) {
-      return "";
-    } else {
-      return "-";
-    }
-  })();
-  return sign + (() => {
+  return (() => {
     let _pipe = t.value.s;
     return to_string(_pipe);
   })() + "." + (() => {
@@ -6228,7 +6100,7 @@ function transaction_list_item(t, model) {
                   }
                 ),
                 placeholder("date"),
-                value(to_date_string_input(t.date)),
+                value(tef.date),
                 class$("form-control"),
                 type_("date"),
                 style(toList([["width", "140px"]]))
@@ -6352,7 +6224,7 @@ function transaction_list_item(t, model) {
     );
   }
 }
-function add_transaction_ui(transactions, categories) {
+function add_transaction_ui(transactions2, categories2) {
   return tr(
     toList([]),
     toList([
@@ -6394,7 +6266,7 @@ function add_transaction_ui(transactions, categories) {
           datalist(
             toList([id("payees_list")]),
             (() => {
-              let _pipe = transactions;
+              let _pipe = transactions2;
               let _pipe$1 = map2(_pipe, (t) => {
                 return t.payee;
               });
@@ -6428,7 +6300,7 @@ function add_transaction_ui(transactions, categories) {
           datalist(
             toList([id("categories_list")]),
             (() => {
-              let _pipe = categories;
+              let _pipe = categories2;
               let _pipe$1 = map2(_pipe, (c) => {
                 return c.name;
               });
@@ -6514,418 +6386,6 @@ function money_to_string_no_sign(m) {
     let _pipe = m.b;
     return to_string(_pipe);
   })();
-}
-function update(model, msg) {
-  if (msg instanceof OnRouteChange) {
-    let route = msg.route;
-    return [model.withFields({ route }), none()];
-  } else if (msg instanceof Initial) {
-    let user = msg.user;
-    let cycle = msg.cycle;
-    let initial_path = msg.initial_route;
-    return [
-      model.withFields({ user, cycle, route: initial_path }),
-      batch(
-        toList([get_categories(), get_transactions(), get_allocations()])
-      )
-    ];
-  } else if (msg instanceof Categories && msg.cats.isOk()) {
-    let cats = msg.cats[0];
-    return [model.withFields({ categories: cats }), get_transactions()];
-  } else if (msg instanceof Categories && !msg.cats.isOk()) {
-    return [model, none()];
-  } else if (msg instanceof Transactions && msg.trans.isOk()) {
-    let t = msg.trans[0];
-    return [model.withFields({ transactions: t }), none()];
-  } else if (msg instanceof Transactions && !msg.trans.isOk()) {
-    return [model, none()];
-  } else if (msg instanceof Allocations && msg.a.isOk()) {
-    let a2 = msg.a[0];
-    return [model.withFields({ allocations: a2 }), none()];
-  } else if (msg instanceof Allocations && !msg.a.isOk()) {
-    return [model, none()];
-  } else if (msg instanceof SelectCategory) {
-    let c = msg.c;
-    return [
-      model.withFields({ selected_category: new Some(c.id) }),
-      none()
-    ];
-  } else if (msg instanceof SelectUser) {
-    let user = msg.u;
-    return [model.withFields({ user }), none()];
-  } else if (msg instanceof ShowAddCategoryUI) {
-    return [
-      model.withFields({ show_add_category_ui: !model.show_add_category_ui }),
-      none()
-    ];
-  } else if (msg instanceof AddCategory) {
-    return [
-      model.withFields({ user_category_name_input: "" }),
-      add_category(model.user_category_name_input)
-    ];
-  } else if (msg instanceof UserUpdatedCategoryName) {
-    let name = msg.cat_name;
-    return [
-      model.withFields({ user_category_name_input: name }),
-      none()
-    ];
-  } else if (msg instanceof AddCategoryResult && msg.c.isOk()) {
-    let c = msg.c[0];
-    return [
-      model.withFields({
-        categories: flatten2(toList([model.categories, toList([c])]))
-      }),
-      none()
-    ];
-  } else if (msg instanceof AddCategoryResult && !msg.c.isOk()) {
-    return [model, none()];
-  } else if (msg instanceof AddTransaction) {
-    return [
-      model.withFields({
-        transaction_add_input: new TransactionForm(
-          "",
-          "",
-          new None(),
-          new None()
-        )
-      }),
-      add_transaction_eff(model.transaction_add_input)
-    ];
-  } else if (msg instanceof AddTransactionResult && msg.c.isOk()) {
-    let t = msg.c[0];
-    return [
-      model.withFields({
-        transactions: flatten2(toList([model.transactions, toList([t])]))
-      }),
-      none()
-    ];
-  } else if (msg instanceof AddTransactionResult && !msg.c.isOk()) {
-    return [model, none()];
-  } else if (msg instanceof UserUpdatedTransactionCategory) {
-    let category_name = msg.cat;
-    return [
-      model.withFields({
-        transaction_add_input: model.transaction_add_input.withFields({
-          category: (() => {
-            let _pipe = model.categories;
-            let _pipe$1 = find(
-              _pipe,
-              (c) => {
-                return c.name === category_name;
-              }
-            );
-            return from_result(_pipe$1);
-          })()
-        })
-      }),
-      none()
-    ];
-  } else if (msg instanceof UserUpdatedTransactionDate) {
-    let date = msg.date;
-    return [
-      model.withFields({
-        transaction_add_input: model.transaction_add_input.withFields({
-          date
-        })
-      }),
-      none()
-    ];
-  } else if (msg instanceof UserUpdatedTransactionPayee) {
-    let payee = msg.payee;
-    return [
-      model.withFields({
-        transaction_add_input: model.transaction_add_input.withFields({
-          payee
-        })
-      }),
-      none()
-    ];
-  } else if (msg instanceof UserUpdatedTransactionAmount) {
-    let amount = msg.amount;
-    return [
-      model.withFields({
-        transaction_add_input: model.transaction_add_input.withFields({
-          amount: (() => {
-            let _pipe = parse_int(amount);
-            let _pipe$1 = map3(
-              _pipe,
-              (amount2) => {
-                return new Money(amount2, 0);
-              }
-            );
-            return from_result(_pipe$1);
-          })()
-        })
-      }),
-      none()
-    ];
-  } else if (msg instanceof EditTarget) {
-    return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ enabled: true })
-      }),
-      none()
-    ];
-  } else if (msg instanceof SaveTarget) {
-    let c = msg.c;
-    return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ enabled: false })
-      }),
-      save_target_eff(c, model.target_edit.target)
-    ];
-  } else if (msg instanceof DeleteTarget) {
-    let c = msg.c;
-    return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ enabled: false })
-      }),
-      delete_target_eff(c)
-    ];
-  } else if (msg instanceof UserTargetUpdateAmount) {
-    let amount = msg.amount;
-    let amount$1 = (() => {
-      let _pipe = amount;
-      let _pipe$1 = parse_int(_pipe);
-      return unwrap2(_pipe$1, 0);
-    })();
-    let target = (() => {
-      let $ = model.target_edit.target;
-      if ($ instanceof Custom) {
-        let date = $.date;
-        return new Custom(new Money(amount$1, 0), date);
-      } else {
-        return new Monthly(new Money(amount$1, 0));
-      }
-    })();
-    return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ target })
-      }),
-      none()
-    ];
-  } else if (msg instanceof EditTargetCadence) {
-    let is_monthly = msg.is_monthly;
-    let target = (() => {
-      let $ = model.target_edit.target;
-      if ($ instanceof Custom && is_monthly) {
-        let money = $.target;
-        return new Monthly(money);
-      } else if ($ instanceof Monthly && !is_monthly) {
-        let money = $.target;
-        return new Custom(money, date_to_month(today()));
-      } else {
-        let target2 = $;
-        return target2;
-      }
-    })();
-    return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ target })
-      }),
-      none()
-    ];
-  } else if (msg instanceof UserTargetUpdateCustomDate) {
-    let date = msg.date;
-    let parsed_date = (() => {
-      let _pipe = from_date_string(date);
-      return lazy_unwrap(_pipe, () => {
-        return today();
-      });
-    })();
-    let target = (() => {
-      let $ = model.target_edit.target;
-      if ($ instanceof Custom) {
-        let money = $.target;
-        return new Custom(money, date_to_month(parsed_date));
-      } else {
-        let money = $.target;
-        return new Monthly(money);
-      }
-    })();
-    return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ target })
-      }),
-      none()
-    ];
-  } else if (msg instanceof CategorySaveTarget && msg.a.isOk()) {
-    let cat = msg.a[0];
-    return [
-      model.withFields({
-        categories: (() => {
-          let _pipe = model.categories;
-          return map2(
-            _pipe,
-            (c) => {
-              let $ = c.id === cat.id;
-              if (!$) {
-                return c;
-              } else {
-                return cat;
-              }
-            }
-          );
-        })()
-      }),
-      none()
-    ];
-  } else if (msg instanceof CategorySaveTarget && !msg.a.isOk()) {
-    return [model, none()];
-  } else if (msg instanceof SelectTransaction) {
-    let t = msg.t;
-    return [
-      model.withFields({ selected_transaction: new Some(t.id) }),
-      none()
-    ];
-  } else if (msg instanceof DeleteTransaction) {
-    let id2 = msg.t_id;
-    return [
-      model.withFields({ selected_transaction: new None() }),
-      delete_transaction_eff(id2)
-    ];
-  } else if (msg instanceof EditTransaction) {
-    let t = msg.t;
-    let category_name = msg.category_name;
-    return [
-      model.withFields({
-        transaction_edit_form: new Some(
-          new TransactionEditForm(
-            t.id,
-            (() => {
-              let _pipe = t.date;
-              return to_date_string(_pipe);
-            })(),
-            t.payee,
-            category_name,
-            (() => {
-              let _pipe = t.value;
-              return money_to_string_no_sign(_pipe);
-            })()
-          )
-        )
-      }),
-      none()
-    ];
-  } else if (msg instanceof TransactionDeleteResult && msg.a.isOk()) {
-    let id2 = msg.a[0];
-    return [
-      model.withFields({
-        transactions: (() => {
-          let _pipe = model.transactions;
-          return filter(_pipe, (t) => {
-            return t.id !== id2;
-          });
-        })()
-      }),
-      none()
-    ];
-  } else if (msg instanceof TransactionDeleteResult && !msg.a.isOk()) {
-    return [model, none()];
-  } else if (msg instanceof TransactionEditResult && msg.a.isOk()) {
-    let transaction = msg.a[0];
-    return [
-      model.withFields({
-        transactions: (() => {
-          let _pipe = model.transactions;
-          return map2(
-            _pipe,
-            (t) => {
-              let $ = t.id === transaction.id;
-              if ($) {
-                return transaction;
-              } else {
-                return t;
-              }
-            }
-          );
-        })()
-      }),
-      none()
-    ];
-  } else if (msg instanceof TransactionEditResult && !msg.a.isOk()) {
-    return [model, none()];
-  } else if (msg instanceof UserTransactionEditPayee) {
-    let payee = msg.p;
-    return [
-      model.withFields({
-        transaction_edit_form: (() => {
-          let _pipe = model.transaction_edit_form;
-          return map(
-            _pipe,
-            (tef) => {
-              return tef.withFields({ payee });
-            }
-          );
-        })()
-      }),
-      none()
-    ];
-  } else if (msg instanceof UserTransactionEditDate) {
-    let d = msg.d;
-    return [
-      model.withFields({
-        transaction_edit_form: (() => {
-          let _pipe = model.transaction_edit_form;
-          return map(
-            _pipe,
-            (tef) => {
-              return tef.withFields({ date: d });
-            }
-          );
-        })()
-      }),
-      none()
-    ];
-  } else if (msg instanceof UserTransactionEditAmount) {
-    let a2 = msg.a;
-    return [
-      model.withFields({
-        transaction_edit_form: (() => {
-          let _pipe = model.transaction_edit_form;
-          return map(
-            _pipe,
-            (tef) => {
-              return tef.withFields({ amount: a2 });
-            }
-          );
-        })()
-      }),
-      none()
-    ];
-  } else if (msg instanceof UserTransactionEditCategory) {
-    let c = msg.c;
-    return [
-      model.withFields({
-        transaction_edit_form: (() => {
-          let _pipe = model.transaction_edit_form;
-          return map(
-            _pipe,
-            (tef) => {
-              return tef.withFields({ category: c });
-            }
-          );
-        })()
-      }),
-      none()
-    ];
-  } else {
-    return [
-      model.withFields({
-        selected_transaction: new None(),
-        transaction_edit_form: new None()
-      }),
-      (() => {
-        let $ = model.transaction_edit_form;
-        if ($ instanceof None) {
-          return none();
-        } else {
-          let tef = $[0];
-          return update_transaction_eff(tef);
-        }
-      })()
-    ];
-  }
 }
 function money_to_string(m) {
   return "\u20AC" + money_to_string_no_sign(m);
@@ -7082,8 +6542,8 @@ function money_sum(a2, b) {
   let base = $[1];
   return new Money(a2.s + b.s + euro, base);
 }
-function ready_to_assign(transactions) {
-  let _pipe = transactions;
+function ready_to_assign(transactions2) {
+  let _pipe = transactions2;
   let _pipe$1 = filter(_pipe, (t) => {
     return t.category_id === "0";
   });
@@ -7096,8 +6556,8 @@ function ready_to_assign(transactions) {
   );
   return money_to_string(_pipe$2);
 }
-function category_assigned(c, allocations) {
-  let _pipe = allocations;
+function category_assigned(c, allocations2) {
+  let _pipe = allocations2;
   let _pipe$1 = filter(_pipe, (a2) => {
     return a2.category_id === c.id;
   });
@@ -7110,8 +6570,8 @@ function category_assigned(c, allocations) {
   );
   return money_to_string(_pipe$2);
 }
-function category_activity(cat, transactions) {
-  let _pipe = transactions;
+function category_activity(cat, transactions2) {
+  let _pipe = transactions2;
   let _pipe$1 = filter(_pipe, (t) => {
     return t.category_id === cat.id;
   });
@@ -7398,16 +6858,589 @@ function view(model) {
     ])
   );
 }
+function allocations() {
+  return toList([
+    new Allocation(
+      "1",
+      new Money(80, 0),
+      "1",
+      from_calendar_date(2024, new Dec(), 2)
+    ),
+    new Allocation(
+      "2",
+      new Money(120, 0),
+      "2",
+      from_calendar_date(2024, new Dec(), 2)
+    ),
+    new Allocation(
+      "3",
+      new Money(150, 0),
+      "3",
+      from_calendar_date(2024, new Dec(), 2)
+    ),
+    new Allocation(
+      "4",
+      new Money(100, 2),
+      "4",
+      from_calendar_date(2024, new Dec(), 2)
+    ),
+    new Allocation(
+      "5",
+      new Money(200, 2),
+      "5",
+      from_calendar_date(2024, new Dec(), 2)
+    ),
+    new Allocation(
+      "6",
+      new Money(500, 2),
+      "6",
+      from_calendar_date(2024, new Dec(), 2)
+    )
+  ]);
+}
+function get_allocations() {
+  return from(
+    (dispatch) => {
+      return dispatch(new Allocations(new Ok(allocations())));
+    }
+  );
+}
+function categories() {
+  return toList([
+    new Category(
+      "1",
+      "Subscriptions",
+      new Some(new Monthly(new Money(60, 0)))
+    ),
+    new Category(
+      "2",
+      "Shopping",
+      new Some(new Monthly(new Money(40, 0)))
+    ),
+    new Category(
+      "3",
+      "Goals",
+      new Some(new Custom(new Money(150, 0), new MonthInYear(2, 2025)))
+    ),
+    new Category(
+      "4",
+      "Vacation",
+      new Some(new Monthly(new Money(100, 0)))
+    ),
+    new Category(
+      "5",
+      "Entertainment",
+      new Some(new Monthly(new Money(200, 0)))
+    ),
+    new Category(
+      "6",
+      "Groceries",
+      new Some(new Monthly(new Money(500, 0)))
+    )
+  ]);
+}
+function get_categories() {
+  return from(
+    (dispatch) => {
+      return dispatch(new Categories(new Ok(categories())));
+    }
+  );
+}
+function transactions() {
+  return toList([
+    new Transaction(
+      "1",
+      from_calendar_date(2024, new Dec(), 2),
+      "Amazon",
+      "5",
+      new Money(-50, 0)
+    ),
+    new Transaction(
+      "2",
+      from_calendar_date(2024, new Dec(), 2),
+      "Bauhaus",
+      "5",
+      new Money(-50, 0)
+    ),
+    new Transaction(
+      "3",
+      from_calendar_date(2024, new Dec(), 2),
+      "Rewe",
+      "6",
+      new Money(-50, 0)
+    ),
+    new Transaction(
+      "4",
+      from_calendar_date(2024, new Dec(), 2),
+      "Vodafone",
+      "1",
+      new Money(-50, 0)
+    ),
+    new Transaction(
+      "5",
+      from_calendar_date(2024, new Dec(), 2),
+      "Steam",
+      "5",
+      new Money(-50, 0)
+    ),
+    new Transaction(
+      "6",
+      from_calendar_date(2024, new Dec(), 2),
+      "Duo",
+      "1",
+      new Money(-50, 60)
+    ),
+    new Transaction(
+      "7",
+      from_calendar_date(2024, new Dec(), 2),
+      "O2",
+      "1",
+      new Money(-50, 0)
+    ),
+    new Transaction(
+      "8",
+      from_calendar_date(2024, new Dec(), 2),
+      "Trade Republic",
+      "0",
+      new Money(1e3, 0)
+    ),
+    new Transaction(
+      "8",
+      from_calendar_date(2024, new Dec(), 2),
+      "O2",
+      "1",
+      new Money(-100, 50)
+    )
+  ]);
+}
+function get_transactions() {
+  return from(
+    (dispatch) => {
+      return dispatch(new Transactions(new Ok(transactions())));
+    }
+  );
+}
+function update(model, msg) {
+  debug(msg);
+  if (msg instanceof OnRouteChange) {
+    let route = msg.route;
+    return [model.withFields({ route }), none()];
+  } else if (msg instanceof Initial) {
+    let user = msg.user;
+    let cycle = msg.cycle;
+    let initial_path = msg.initial_route;
+    return [
+      model.withFields({ user, cycle, route: initial_path }),
+      batch(
+        toList([get_categories(), get_transactions(), get_allocations()])
+      )
+    ];
+  } else if (msg instanceof Categories && msg.cats.isOk()) {
+    let cats = msg.cats[0];
+    return [model.withFields({ categories: cats }), get_transactions()];
+  } else if (msg instanceof Categories && !msg.cats.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof Transactions && msg.trans.isOk()) {
+    let t = msg.trans[0];
+    return [model.withFields({ transactions: t }), none()];
+  } else if (msg instanceof Transactions && !msg.trans.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof Allocations && msg.a.isOk()) {
+    let a2 = msg.a[0];
+    return [model.withFields({ allocations: a2 }), none()];
+  } else if (msg instanceof Allocations && !msg.a.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof SelectCategory) {
+    let c = msg.c;
+    return [
+      model.withFields({ selected_category: new Some(c.id) }),
+      none()
+    ];
+  } else if (msg instanceof SelectUser) {
+    let user = msg.u;
+    return [model.withFields({ user }), none()];
+  } else if (msg instanceof ShowAddCategoryUI) {
+    return [
+      model.withFields({ show_add_category_ui: !model.show_add_category_ui }),
+      none()
+    ];
+  } else if (msg instanceof AddCategory) {
+    return [
+      model.withFields({ user_category_name_input: "" }),
+      add_category(model.user_category_name_input)
+    ];
+  } else if (msg instanceof UserUpdatedCategoryName) {
+    let name = msg.cat_name;
+    return [
+      model.withFields({ user_category_name_input: name }),
+      none()
+    ];
+  } else if (msg instanceof AddCategoryResult && msg.c.isOk()) {
+    let c = msg.c[0];
+    return [
+      model.withFields({
+        categories: flatten2(toList([model.categories, toList([c])]))
+      }),
+      none()
+    ];
+  } else if (msg instanceof AddCategoryResult && !msg.c.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof AddTransaction) {
+    return [
+      model.withFields({
+        transaction_add_input: new TransactionForm(
+          "",
+          "",
+          new None(),
+          new None()
+        )
+      }),
+      add_transaction_eff(model.transaction_add_input)
+    ];
+  } else if (msg instanceof AddTransactionResult && msg.c.isOk()) {
+    let t = msg.c[0];
+    return [
+      model.withFields({
+        transactions: flatten2(toList([model.transactions, toList([t])]))
+      }),
+      none()
+    ];
+  } else if (msg instanceof AddTransactionResult && !msg.c.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof UserUpdatedTransactionCategory) {
+    let category_name = msg.cat;
+    return [
+      model.withFields({
+        transaction_add_input: model.transaction_add_input.withFields({
+          category: (() => {
+            let _pipe = model.categories;
+            let _pipe$1 = find(
+              _pipe,
+              (c) => {
+                return c.name === category_name;
+              }
+            );
+            return from_result(_pipe$1);
+          })()
+        })
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserUpdatedTransactionDate) {
+    let date = msg.date;
+    return [
+      model.withFields({
+        transaction_add_input: model.transaction_add_input.withFields({
+          date
+        })
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserUpdatedTransactionPayee) {
+    let payee = msg.payee;
+    return [
+      model.withFields({
+        transaction_add_input: model.transaction_add_input.withFields({
+          payee
+        })
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserUpdatedTransactionAmount) {
+    let amount = msg.amount;
+    return [
+      model.withFields({
+        transaction_add_input: model.transaction_add_input.withFields({
+          amount: (() => {
+            let _pipe = parse_int(amount);
+            let _pipe$1 = map3(
+              _pipe,
+              (amount2) => {
+                return new Money(amount2, 0);
+              }
+            );
+            return from_result(_pipe$1);
+          })()
+        })
+      }),
+      none()
+    ];
+  } else if (msg instanceof EditTarget) {
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ enabled: true })
+      }),
+      none()
+    ];
+  } else if (msg instanceof SaveTarget) {
+    let c = msg.c;
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ enabled: false })
+      }),
+      save_target_eff(c, model.target_edit.target)
+    ];
+  } else if (msg instanceof DeleteTarget) {
+    let c = msg.c;
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ enabled: false })
+      }),
+      delete_target_eff(c)
+    ];
+  } else if (msg instanceof UserTargetUpdateAmount) {
+    let amount = msg.amount;
+    let amount$1 = (() => {
+      let _pipe = amount;
+      let _pipe$1 = parse_int(_pipe);
+      return unwrap2(_pipe$1, 0);
+    })();
+    let target = (() => {
+      let $ = model.target_edit.target;
+      if ($ instanceof Custom) {
+        let date = $.date;
+        return new Custom(new Money(amount$1, 0), date);
+      } else {
+        return new Monthly(new Money(amount$1, 0));
+      }
+    })();
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ target })
+      }),
+      none()
+    ];
+  } else if (msg instanceof EditTargetCadence) {
+    let is_monthly = msg.is_monthly;
+    let target = (() => {
+      let $ = model.target_edit.target;
+      if ($ instanceof Custom && is_monthly) {
+        let money = $.target;
+        return new Monthly(money);
+      } else if ($ instanceof Monthly && !is_monthly) {
+        let money = $.target;
+        return new Custom(money, date_to_month(today()));
+      } else {
+        let target2 = $;
+        return target2;
+      }
+    })();
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ target })
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserTargetUpdateCustomDate) {
+    let date = msg.date;
+    let parsed_date = (() => {
+      let _pipe = from_date_string(date);
+      return lazy_unwrap(_pipe, () => {
+        return today();
+      });
+    })();
+    let target = (() => {
+      let $ = model.target_edit.target;
+      if ($ instanceof Custom) {
+        let money = $.target;
+        return new Custom(money, date_to_month(parsed_date));
+      } else {
+        let money = $.target;
+        return new Monthly(money);
+      }
+    })();
+    return [
+      model.withFields({
+        target_edit: model.target_edit.withFields({ target })
+      }),
+      none()
+    ];
+  } else if (msg instanceof CategorySaveTarget && msg.a.isOk()) {
+    let cat = msg.a[0];
+    return [
+      model.withFields({
+        categories: (() => {
+          let _pipe = model.categories;
+          return map2(
+            _pipe,
+            (c) => {
+              let $ = c.id === cat.id;
+              if (!$) {
+                return c;
+              } else {
+                return cat;
+              }
+            }
+          );
+        })()
+      }),
+      none()
+    ];
+  } else if (msg instanceof CategorySaveTarget && !msg.a.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof SelectTransaction) {
+    let t = msg.t;
+    return [
+      model.withFields({ selected_transaction: new Some(t.id) }),
+      none()
+    ];
+  } else if (msg instanceof DeleteTransaction) {
+    let id2 = msg.t_id;
+    return [
+      model.withFields({ selected_transaction: new None() }),
+      delete_transaction_eff(id2)
+    ];
+  } else if (msg instanceof EditTransaction) {
+    let t = msg.t;
+    let category_name = msg.category_name;
+    return [
+      model.withFields({
+        transaction_edit_form: new Some(
+          new TransactionEditForm(
+            t.id,
+            (() => {
+              let _pipe = t.date;
+              return to_date_string_input(_pipe);
+            })(),
+            t.payee,
+            category_name,
+            (() => {
+              let _pipe = t.value;
+              return money_to_string_no_sign(_pipe);
+            })()
+          )
+        )
+      }),
+      none()
+    ];
+  } else if (msg instanceof TransactionDeleteResult && msg.a.isOk()) {
+    let id2 = msg.a[0];
+    return [
+      model.withFields({
+        transactions: (() => {
+          let _pipe = model.transactions;
+          return filter(_pipe, (t) => {
+            return t.id !== id2;
+          });
+        })()
+      }),
+      none()
+    ];
+  } else if (msg instanceof TransactionDeleteResult && !msg.a.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof TransactionEditResult && msg.a.isOk()) {
+    let transaction = msg.a[0];
+    return [
+      model.withFields({
+        transactions: (() => {
+          let _pipe = model.transactions;
+          return map2(
+            _pipe,
+            (t) => {
+              let $ = t.id === transaction.id;
+              if ($) {
+                return transaction;
+              } else {
+                return t;
+              }
+            }
+          );
+        })()
+      }),
+      none()
+    ];
+  } else if (msg instanceof TransactionEditResult && !msg.a.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof UserTransactionEditPayee) {
+    let payee = msg.p;
+    return [
+      model.withFields({
+        transaction_edit_form: (() => {
+          let _pipe = model.transaction_edit_form;
+          return map(
+            _pipe,
+            (tef) => {
+              return tef.withFields({ payee });
+            }
+          );
+        })()
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserTransactionEditDate) {
+    let d = msg.d;
+    return [
+      model.withFields({
+        transaction_edit_form: (() => {
+          let _pipe = model.transaction_edit_form;
+          return map(
+            _pipe,
+            (tef) => {
+              return tef.withFields({ date: d });
+            }
+          );
+        })()
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserTransactionEditAmount) {
+    let a2 = msg.a;
+    return [
+      model.withFields({
+        transaction_edit_form: (() => {
+          let _pipe = model.transaction_edit_form;
+          return map(
+            _pipe,
+            (tef) => {
+              return tef.withFields({ amount: a2 });
+            }
+          );
+        })()
+      }),
+      none()
+    ];
+  } else if (msg instanceof UserTransactionEditCategory) {
+    let c = msg.c;
+    return [
+      model.withFields({
+        transaction_edit_form: (() => {
+          let _pipe = model.transaction_edit_form;
+          return map(
+            _pipe,
+            (tef) => {
+              return tef.withFields({ category: c });
+            }
+          );
+        })()
+      }),
+      none()
+    ];
+  } else {
+    return [
+      model.withFields({
+        selected_transaction: new None(),
+        transaction_edit_form: new None()
+      }),
+      (() => {
+        let $ = model.transaction_edit_form;
+        if ($ instanceof None) {
+          return none();
+        } else {
+          let tef = $[0];
+          return update_transaction_eff(tef, model.categories);
+        }
+      })()
+    ];
+  }
+}
 function main() {
-  let today2 = from_calendar_date(2024, new Nov(), 1);
-  let feb = from_calendar_date(2024, new Dec(), 1);
   let app = application(init3, update, view);
   let $ = start2(app, "#app", void 0);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
       "budget_fe",
-      157,
+      155,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
