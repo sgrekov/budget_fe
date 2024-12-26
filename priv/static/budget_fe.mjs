@@ -5608,6 +5608,26 @@ var UserTransactionEditAmount = class extends CustomType {
     this.a = a2;
   }
 };
+var UserInputCategoryUpdateName = class extends CustomType {
+  constructor(n) {
+    super();
+    this.n = n;
+  }
+};
+var UpdateCategoryName = class extends CustomType {
+  constructor(cat) {
+    super();
+    this.cat = cat;
+  }
+};
+var DeleteCategory = class extends CustomType {
+};
+var CategoryDeleteResult = class extends CustomType {
+  constructor(a2) {
+    super();
+    this.a = a2;
+  }
+};
 var Model2 = class extends CustomType {
   constructor(user, cycle, route, categories2, transactions2, allocations2, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form) {
     super();
@@ -5624,6 +5644,13 @@ var Model2 = class extends CustomType {
     this.target_edit = target_edit;
     this.selected_transaction = selected_transaction;
     this.transaction_edit_form = transaction_edit_form;
+  }
+};
+var SelectedCategory = class extends CustomType {
+  constructor(id2, input_name) {
+    super();
+    this.id = id2;
+    this.input_name = input_name;
   }
 };
 var TransactionForm = class extends CustomType {
@@ -5721,6 +5748,13 @@ var Transaction = class extends CustomType {
     this.value = value3;
   }
 };
+function delete_category_eff(c_id) {
+  return from(
+    (dispatch) => {
+      return dispatch(new CategoryDeleteResult(new Ok(c_id)));
+    }
+  );
+}
 function string_to_money(s) {
   let $ = (() => {
     let _pipe = split2(s, ".");
@@ -5735,7 +5769,6 @@ function string_to_money(s) {
   if ($.atLeastLength(2)) {
     let s$1 = $.head;
     let b = $.tail.head;
-    let rest = $.tail.tail;
     return new Money(s$1, b);
   } else {
     return new Money(0, 0);
@@ -5803,7 +5836,7 @@ function save_target_eff(category, target_edit) {
     (dispatch) => {
       return dispatch(
         new CategorySaveTarget(
-          new Ok(category.withFields({ target: new Some(target_edit) }))
+          new Ok(category.withFields({ target: target_edit }))
         )
       );
     }
@@ -5865,7 +5898,7 @@ function init3(_) {
       toList([]),
       toList([]),
       toList([]),
-      new Some("4"),
+      new None(),
       false,
       "",
       new TransactionForm("", "", new None(), new None()),
@@ -6460,8 +6493,8 @@ function budget_categories(model) {
                 if ($ instanceof None) {
                   return "";
                 } else {
-                  let selected_cat_id = $[0];
-                  let $1 = selected_cat_id === c.id;
+                  let selected_cat = $[0];
+                  let $1 = selected_cat.id === c.id;
                   if ($1) {
                     return "table-active";
                   } else {
@@ -6710,10 +6743,37 @@ function category_target_ui(c, et) {
     );
   }
 }
-function category_details(category, model) {
+function category_details(category, model, sc) {
   return div(
     toList([class$("col")]),
     toList([
+      div(
+        toList([]),
+        toList([
+          input(
+            toList([
+              on_input(
+                (var0) => {
+                  return new UserInputCategoryUpdateName(var0);
+                }
+              ),
+              placeholder("category name"),
+              class$("form-control"),
+              type_("text"),
+              style(toList([["width", "90px"]])),
+              value(sc.input_name)
+            ])
+          ),
+          button(
+            toList([on_click(new UpdateCategoryName(category))]),
+            toList([text("Update")])
+          ),
+          button(
+            toList([on_click(new DeleteCategory())]),
+            toList([text("Delete")])
+          )
+        ])
+      ),
       div(
         toList([class$("row")]),
         toList([
@@ -6828,12 +6888,12 @@ function view(model) {
                       let _pipe = model.selected_category;
                       let _pipe$1 = map(
                         _pipe,
-                        (id2) => {
+                        (selected_cat2) => {
                           let _pipe$12 = model.categories;
                           let _pipe$2 = find(
                             _pipe$12,
                             (cat) => {
-                              return cat.id === id2;
+                              return cat.id === selected_cat2.id;
                             }
                           );
                           return from_result(_pipe$2);
@@ -6842,9 +6902,11 @@ function view(model) {
                       return flatten(_pipe$1);
                     })();
                     let $ = model.route;
-                    if (selected_cat instanceof Some && $ instanceof Home) {
+                    let $1 = model.selected_category;
+                    if (selected_cat instanceof Some && $ instanceof Home && $1 instanceof Some) {
                       let c = selected_cat[0];
-                      return category_details(c, model);
+                      let sc = $1[0];
+                      return category_details(c, model, sc);
                     } else {
                       return text2("");
                     }
@@ -7053,7 +7115,9 @@ function update(model, msg) {
   } else if (msg instanceof SelectCategory) {
     let c = msg.c;
     return [
-      model.withFields({ selected_category: new Some(c.id) }),
+      model.withFields({
+        selected_category: new Some(new SelectedCategory(c.id, c.name))
+      }),
       none()
     ];
   } else if (msg instanceof SelectUser) {
@@ -7178,7 +7242,13 @@ function update(model, msg) {
       model.withFields({
         target_edit: model.target_edit.withFields({ enabled: false })
       }),
-      save_target_eff(c, model.target_edit.target)
+      save_target_eff(
+        c,
+        (() => {
+          let _pipe = model.target_edit.target;
+          return new Some(_pipe);
+        })()
+      )
     ];
   } else if (msg instanceof DeleteTarget) {
     let c = msg.c;
@@ -7415,7 +7485,7 @@ function update(model, msg) {
       }),
       none()
     ];
-  } else {
+  } else if (msg instanceof UpdateTransaction) {
     return [
       model.withFields({
         selected_transaction: new None(),
@@ -7431,6 +7501,67 @@ function update(model, msg) {
         }
       })()
     ];
+  } else if (msg instanceof DeleteCategory) {
+    return [
+      model.withFields({ selected_category: new None() }),
+      (() => {
+        let $ = model.selected_category;
+        if ($ instanceof None) {
+          return none();
+        } else {
+          let sc = $[0];
+          return delete_category_eff(sc.id);
+        }
+      })()
+    ];
+  } else if (msg instanceof UpdateCategoryName) {
+    let cat = msg.cat;
+    return [
+      model.withFields({ selected_category: new None() }),
+      (() => {
+        let $ = model.selected_category;
+        if ($ instanceof Some) {
+          let sc = $[0];
+          return save_target_eff(
+            cat.withFields({ name: sc.input_name }),
+            cat.target
+          );
+        } else {
+          return none();
+        }
+      })()
+    ];
+  } else if (msg instanceof UserInputCategoryUpdateName) {
+    let name = msg.n;
+    return [
+      model.withFields({
+        selected_category: (() => {
+          let _pipe = model.selected_category;
+          return map(
+            _pipe,
+            (sc) => {
+              return sc.withFields({ input_name: name });
+            }
+          );
+        })()
+      }),
+      none()
+    ];
+  } else if (msg instanceof CategoryDeleteResult && msg.a.isOk()) {
+    let id2 = msg.a[0];
+    return [
+      model.withFields({
+        categories: (() => {
+          let _pipe = model.categories;
+          return filter(_pipe, (c) => {
+            return c.id !== id2;
+          });
+        })()
+      }),
+      none()
+    ];
+  } else {
+    return [model, none()];
   }
 }
 function main() {
@@ -7440,7 +7571,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      155,
+      163,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

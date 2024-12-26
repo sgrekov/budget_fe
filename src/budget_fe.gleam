@@ -59,6 +59,10 @@ type Msg {
   UserTransactionEditDate(d: String)
   UserTransactionEditCategory(c: String)
   UserTransactionEditAmount(a: String)
+  UserInputCategoryUpdateName(n: String)
+  UpdateCategoryName(cat: Category)
+  DeleteCategory
+  CategoryDeleteResult(a: Result(String, lustre_http.HttpError))
 }
 
 type Model {
@@ -69,7 +73,7 @@ type Model {
     categories: List(Category),
     transactions: List(Transaction),
     allocations: List(Allocation),
-    selected_category: option.Option(String),
+    selected_category: option.Option(SelectedCategory),
     show_add_category_ui: Bool,
     user_category_name_input: String,
     transaction_add_input: TransactionForm,
@@ -77,6 +81,10 @@ type Model {
     selected_transaction: option.Option(String),
     transaction_edit_form: option.Option(TransactionEditForm),
   )
+}
+
+type SelectedCategory {
+  SelectedCategory(id: String, input_name: String)
 }
 
 type TransactionForm {
@@ -177,7 +185,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     Allocations(Ok(a)) -> #(Model(..model, allocations: a), effect.none())
     Allocations(Error(_)) -> #(model, effect.none())
     SelectCategory(c) -> #(
-      Model(..model, selected_category: option.Some(c.id)),
+      Model(
+        ..model,
+        selected_category: option.Some(SelectedCategory(c.id, c.name)),
+      ),
       effect.none(),
     )
     SelectUser(user) -> #(Model(..model, user: user), effect.none())
@@ -274,7 +285,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           ..model,
           target_edit: TargetEdit(..model.target_edit, enabled: False),
         ),
-        save_target_eff(c, model.target_edit.target),
+        save_target_eff(c, model.target_edit.target |> option.Some),
       )
     }
     DeleteTarget(c) -> #(
@@ -428,7 +439,42 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         option.Some(tef) -> update_transaction_eff(tef, model.categories)
       },
     )
+    DeleteCategory -> #(Model(..model, selected_category: option.None), case
+      model.selected_category
+    {
+      option.None -> effect.none()
+      option.Some(sc) -> delete_category_eff(sc.id)
+    })
+    UpdateCategoryName(cat) -> #(
+      Model(..model, selected_category: option.None),
+      case model.selected_category {
+        option.Some(sc) ->
+          save_target_eff(Category(..cat, name: sc.input_name), cat.target)
+        option.None -> effect.none()
+      },
+    )
+    UserInputCategoryUpdateName(name) -> #(
+      Model(
+        ..model,
+        selected_category: model.selected_category
+          |> option.map(fn(sc) { SelectedCategory(..sc, input_name: name) }),
+      ),
+      effect.none(),
+    )
+    CategoryDeleteResult(Ok(id)) -> #(
+      Model(
+        ..model,
+        categories: model.categories
+          |> list.filter(fn(c) { c.id != id }),
+      ),
+      effect.none(),
+    )
+    CategoryDeleteResult(Error(_)) -> #(model, effect.none())
   }
+}
+
+fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) { dispatch(CategoryDeleteResult(Ok(c_id))) })
 }
 
 fn string_to_money(s: String) -> Money {
@@ -436,7 +482,7 @@ fn string_to_money(s: String) -> Money {
     string.split(s, ".")
     |> list.map(fn(s) { int.parse(s) |> result.unwrap(0) })
   {
-    [s, b, ..rest] -> Money(s, b)
+    [s, b, ..] -> Money(s, b)
     _ -> Money(0, 0)
   }
 }
@@ -480,14 +526,10 @@ fn date_to_month(d: d.Date) -> MonthInYear {
 
 fn save_target_eff(
   category: Category,
-  target_edit: Target,
+  target_edit: option.Option(Target),
 ) -> effect.Effect(Msg) {
   effect.from(fn(dispatch) {
-    dispatch(
-      CategorySaveTarget(Ok(
-        Category(..category, target: option.Some(target_edit)),
-      )),
-    )
+    dispatch(CategorySaveTarget(Ok(Category(..category, target: target_edit))))
   })
 }
 
@@ -506,7 +548,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       categories: [],
       transactions: [],
       allocations: [],
-      selected_category: option.Some("4"),
+      selected_category: option.None,
       show_add_category_ui: False,
       user_category_name_input: "",
       transaction_add_input: TransactionForm("", "", option.None, option.None),
@@ -672,16 +714,17 @@ fn view(model: Model) -> element.Element(Msg) {
           {
             let selected_cat =
               model.selected_category
-              |> option.map(fn(id) {
+              |> option.map(fn(selected_cat) {
                 model.categories
-                |> list.find(fn(cat) { cat.id == id })
+                |> list.find(fn(cat) { cat.id == selected_cat.id })
                 |> option.from_result
               })
               |> option.flatten
 
-            case selected_cat, model.route {
-              option.Some(c), Home -> category_details(c, model)
-              _, _ -> html.text("")
+            case selected_cat, model.route, model.selected_category {
+              option.Some(c), Home, option.Some(sc) ->
+                category_details(c, model, sc)
+              _, _, _ -> html.text("")
             }
           },
         ]),
@@ -718,8 +761,26 @@ fn user_selection(m: Model) -> element.Element(Msg) {
   ])
 }
 
-fn category_details(category: Category, model: Model) -> element.Element(Msg) {
+fn category_details(
+  category: Category,
+  model: Model,
+  sc: SelectedCategory,
+) -> element.Element(Msg) {
   html.div([attribute.class("col")], [
+    html.div([], [
+      html.input([
+        event.on_input(UserInputCategoryUpdateName),
+        attribute.placeholder("category name"),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+        attribute.style([#("width", "90px")]),
+        attribute.value(sc.input_name),
+      ]),
+      html.button([event.on_click(UpdateCategoryName(category))], [
+        element.text("Update"),
+      ]),
+      html.button([event.on_click(DeleteCategory)], [element.text("Delete")]),
+    ]),
     html.div([attribute.class("row")], [
       html.div([attribute.class("col")], [
         html.div([], [html.text("Assigned")]),
@@ -1091,8 +1152,8 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
         list.map(model.categories, fn(c) {
           let active_class = case model.selected_category {
             option.None -> ""
-            option.Some(selected_cat_id) ->
-              case selected_cat_id == c.id {
+            option.Some(selected_cat) ->
+              case selected_cat.id == c.id {
                 True -> "table-active"
                 False -> ""
               }
