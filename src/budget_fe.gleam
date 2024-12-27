@@ -690,8 +690,7 @@ fn add_transaction_eff(transaction_form: TransactionForm) -> effect.Effect(Msg) 
         AddTransactionResult(
           Ok(Transaction(
             id: gluid.guidv4(),
-            // date: transaction_form.date,
-            date: d.from_calendar_date(2024, d.Dec, 20),
+            date: d.today(),
             payee: transaction_form.payee,
             category_id: cat.id,
             value: amount,
