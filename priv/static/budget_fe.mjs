@@ -463,6 +463,34 @@ function filter_loop(loop$list, loop$fun, loop$acc) {
 function filter(list, predicate) {
   return filter_loop(list, predicate, toList([]));
 }
+function filter_map_loop(loop$list, loop$fun, loop$acc) {
+  while (true) {
+    let list = loop$list;
+    let fun = loop$fun;
+    let acc = loop$acc;
+    if (list.hasLength(0)) {
+      return reverse(acc);
+    } else {
+      let first$1 = list.head;
+      let rest$1 = list.tail;
+      let new_acc = (() => {
+        let $ = fun(first$1);
+        if ($.isOk()) {
+          let first$2 = $[0];
+          return prepend(first$2, acc);
+        } else {
+          return acc;
+        }
+      })();
+      loop$list = rest$1;
+      loop$fun = fun;
+      loop$acc = new_acc;
+    }
+  }
+}
+function filter_map(list, fun) {
+  return filter_map_loop(list, fun, toList([]));
+}
 function map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
     let list = loop$list;
@@ -3116,6 +3144,8 @@ var InternalServerError = class extends CustomType {
     this[0] = x0;
   }
 };
+var NotFound = class extends CustomType {
+};
 
 // build/dev/javascript/modem/modem.ffi.mjs
 var defaults = {
@@ -5628,6 +5658,24 @@ var CategoryDeleteResult = class extends CustomType {
     this.a = a2;
   }
 };
+var SaveAllocation = class extends CustomType {
+  constructor(alloc_id) {
+    super();
+    this.alloc_id = alloc_id;
+  }
+};
+var SaveAllocationResult = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UserAllocationUpdate = class extends CustomType {
+  constructor(amount) {
+    super();
+    this.amount = amount;
+  }
+};
 var Model2 = class extends CustomType {
   constructor(user, cycle, route, categories2, transactions2, allocations2, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form) {
     super();
@@ -5647,10 +5695,11 @@ var Model2 = class extends CustomType {
   }
 };
 var SelectedCategory = class extends CustomType {
-  constructor(id2, input_name) {
+  constructor(id2, input_name, allocation) {
     super();
     this.id = id2;
     this.input_name = input_name;
+    this.allocation = allocation;
   }
 };
 var TransactionForm = class extends CustomType {
@@ -5746,6 +5795,13 @@ var Transaction = class extends CustomType {
     this.payee = payee;
     this.category_id = category_id;
     this.value = value3;
+  }
+};
+var AllocationEffectResult = class extends CustomType {
+  constructor(alloc, is_created) {
+    super();
+    this.alloc = alloc;
+    this.is_created = is_created;
   }
 };
 function delete_category_eff(c_id) {
@@ -6575,20 +6631,6 @@ function money_sum(a2, b) {
   let base = $[1];
   return new Money(a2.s + b.s + euro, base);
 }
-function ready_to_assign(transactions2) {
-  let _pipe = transactions2;
-  let _pipe$1 = filter(_pipe, (t) => {
-    return t.category_id === "0";
-  });
-  let _pipe$2 = fold(
-    _pipe$1,
-    new Money(0, 0),
-    (m, t) => {
-      return money_sum(m, t.value);
-    }
-  );
-  return money_to_string(_pipe$2);
-}
 function category_assigned(c, allocations2) {
   let _pipe = allocations2;
   let _pipe$1 = filter(_pipe, (a2) => {
@@ -6617,6 +6659,58 @@ function category_activity(cat, transactions2) {
   );
   let _pipe$3 = money_to_string(_pipe$2);
   return prepend4(_pipe$3, "-");
+}
+function money_minus(a2, b) {
+  let base_sum = a2.b - b.b;
+  let $ = (() => {
+    let $1 = base_sum < 0;
+    if ($1) {
+      return [1, 100 + base_sum];
+    } else {
+      return [0, base_sum];
+    }
+  })();
+  let euro = $[0];
+  let base = $[1];
+  return new Money(a2.s - b.s - euro, base);
+}
+function ready_to_assign(transactions2, allocations2, cur_mon) {
+  let income = (() => {
+    let _pipe2 = transactions2;
+    let _pipe$1 = filter(_pipe2, (t) => {
+      return t.category_id === "0";
+    });
+    return fold(
+      _pipe$1,
+      new Money(0, 0),
+      (m, t) => {
+        return money_sum(m, t.value);
+      }
+    );
+  })();
+  let outcome = (() => {
+    let _pipe2 = allocations2;
+    let _pipe$1 = filter_map(
+      _pipe2,
+      (a2) => {
+        let $ = isEqual(a2.date, cur_mon);
+        if ($) {
+          return new Ok(a2.amount);
+        } else {
+          return new Error("");
+        }
+      }
+    );
+    return fold(
+      _pipe$1,
+      new Money(0, 0),
+      (m, t) => {
+        return money_sum(m, t);
+      }
+    );
+  })();
+  let _pipe = money_minus(income, outcome);
+  return money_to_string_no_sign(_pipe);
 }
 function month_to_string(value3) {
   return (() => {
@@ -6743,7 +6837,7 @@ function category_target_ui(c, et) {
     );
   }
 }
-function category_details(category, model, sc) {
+function category_details(category, model, sc, allocation) {
   return div(
     toList([class$("col")]),
     toList([
@@ -6803,7 +6897,42 @@ function category_details(category, model, sc) {
           )
         ])
       ),
-      category_target_ui(category, model.target_edit)
+      category_target_ui(category, model.target_edit),
+      div(
+        toList([]),
+        toList([
+          text2("Allocated: "),
+          input(
+            toList([
+              on_input(
+                (var0) => {
+                  return new UserAllocationUpdate(var0);
+                }
+              ),
+              placeholder("amount"),
+              class$("form-control"),
+              type_("text"),
+              style(toList([["width", "120px"]])),
+              value(sc.allocation)
+            ])
+          ),
+          button(
+            toList([
+              on_click(
+                new SaveAllocation(
+                  (() => {
+                    let _pipe = allocation;
+                    return map(_pipe, (a2) => {
+                      return a2.id;
+                    });
+                  })()
+                )
+              )
+            ]),
+            toList([text("Save")])
+          )
+        ])
+      )
     ])
   );
 }
@@ -6845,7 +6974,15 @@ function view(model) {
                 toList([
                   p(
                     toList([class$("text-start fs-4")]),
-                    toList([text(ready_to_assign(model.transactions))])
+                    toList([
+                      text(
+                        ready_to_assign(
+                          model.transactions,
+                          model.allocations,
+                          model.cycle.month
+                        )
+                      )
+                    ])
                   ),
                   p(
                     toList([class$("text-start")]),
@@ -6906,7 +7043,21 @@ function view(model) {
                     if (selected_cat instanceof Some && $ instanceof Home && $1 instanceof Some) {
                       let c = selected_cat[0];
                       let sc = $1[0];
-                      return category_details(c, model, sc);
+                      return category_details(
+                        c,
+                        model,
+                        sc,
+                        (() => {
+                          let _pipe = model.allocations;
+                          let _pipe$1 = find(
+                            _pipe,
+                            (a2) => {
+                              return a2.id === c.id;
+                            }
+                          );
+                          return from_result(_pipe$1);
+                        })()
+                      );
                     } else {
                       return text2("");
                     }
@@ -6922,43 +7073,76 @@ function view(model) {
 }
 function allocations() {
   return toList([
-    new Allocation(
-      "1",
-      new Money(80, 0),
-      "1",
-      from_calendar_date(2024, new Dec(), 2)
-    ),
-    new Allocation(
-      "2",
-      new Money(120, 0),
-      "2",
-      from_calendar_date(2024, new Dec(), 2)
-    ),
-    new Allocation(
-      "3",
-      new Money(150, 0),
-      "3",
-      from_calendar_date(2024, new Dec(), 2)
-    ),
-    new Allocation(
-      "4",
-      new Money(100, 2),
-      "4",
-      from_calendar_date(2024, new Dec(), 2)
-    ),
-    new Allocation(
-      "5",
-      new Money(200, 2),
-      "5",
-      from_calendar_date(2024, new Dec(), 2)
-    ),
-    new Allocation(
-      "6",
-      new Money(500, 2),
-      "6",
-      from_calendar_date(2024, new Dec(), 2)
-    )
+    new Allocation("1", new Money(80, 0), "1", new Dec()),
+    new Allocation("2", new Money(120, 0), "2", new Dec()),
+    new Allocation("3", new Money(150, 0), "3", new Dec()),
+    new Allocation("4", new Money(100, 2), "4", new Dec()),
+    new Allocation("5", new Money(200, 2), "5", new Dec()),
+    new Allocation("6", new Money(500, 2), "6", new Dec())
   ]);
+}
+function find_alloc_by_id(id2) {
+  let _pipe = allocations();
+  return find(_pipe, (a2) => {
+    return a2.id === id2;
+  });
+}
+function save_allocation_eff(alloc_id, allocation, category_id, cycle) {
+  let money = (() => {
+    let _pipe = allocation;
+    return string_to_money(_pipe);
+  })();
+  if (alloc_id instanceof Some) {
+    let id2 = alloc_id[0];
+    let alloc = find_alloc_by_id(id2);
+    return from(
+      (dispatch) => {
+        return dispatch(
+          (() => {
+            if (alloc.isOk()) {
+              let alloc_entity = alloc[0];
+              return new SaveAllocationResult(
+                new Ok(
+                  new AllocationEffectResult(
+                    alloc_entity.withFields({ amount: money }),
+                    false
+                  )
+                )
+              );
+            } else {
+              return new SaveAllocationResult(
+                new Error(new NotFound())
+              );
+            }
+          })()
+        );
+      }
+    );
+  } else {
+    return from(
+      (dispatch) => {
+        return dispatch(
+          new SaveAllocationResult(
+            new Ok(
+              new AllocationEffectResult(
+                new Allocation(guidv4(), money, category_id, cycle.month),
+                true
+              )
+            )
+          )
+        );
+      }
+    );
+  }
+}
+function find_alloc_by_cat_id(cat_id, month2) {
+  let _pipe = allocations();
+  return find(
+    _pipe,
+    (a2) => {
+      return a2.category_id === cat_id && isEqual(a2.date, month2);
+    }
+  );
 }
 function get_allocations() {
   return from(
@@ -7116,7 +7300,23 @@ function update(model, msg) {
     let c = msg.c;
     return [
       model.withFields({
-        selected_category: new Some(new SelectedCategory(c.id, c.name))
+        selected_category: new Some(
+          new SelectedCategory(
+            c.id,
+            c.name,
+            (() => {
+              let _pipe = find_alloc_by_cat_id(c.id, model.cycle.month);
+              let _pipe$1 = map3(
+                _pipe,
+                (a2) => {
+                  let _pipe$12 = a2.amount;
+                  return money_to_string_no_sign(_pipe$12);
+                }
+              );
+              return unwrap2(_pipe$1, "");
+            })()
+          )
+        )
       }),
       none()
     ];
@@ -7560,8 +7760,66 @@ function update(model, msg) {
       }),
       none()
     ];
-  } else {
+  } else if (msg instanceof CategoryDeleteResult && !msg.a.isOk()) {
     return [model, none()];
+  } else if (msg instanceof SaveAllocation) {
+    let a2 = msg.alloc_id;
+    return [
+      model,
+      (() => {
+        let $ = model.selected_category;
+        if ($ instanceof Some) {
+          let sc = $[0];
+          return save_allocation_eff(a2, sc.allocation, sc.id, model.cycle);
+        } else {
+          return none();
+        }
+      })()
+    ];
+  } else if (msg instanceof SaveAllocationResult && msg[0].isOk()) {
+    let aer = msg[0][0];
+    return [
+      model.withFields({
+        allocations: (() => {
+          let $ = aer.is_created;
+          if ($) {
+            return append(model.allocations, toList([aer.alloc]));
+          } else {
+            let _pipe = model.allocations;
+            return map2(
+              _pipe,
+              (a2) => {
+                let $1 = a2.id === aer.alloc.id;
+                if (!$1) {
+                  return a2;
+                } else {
+                  return aer.alloc;
+                }
+              }
+            );
+          }
+        })()
+      }),
+      none()
+    ];
+  } else if (msg instanceof SaveAllocationResult && !msg[0].isOk()) {
+    return [model, none()];
+  } else {
+    let a2 = msg.amount;
+    return [
+      model.withFields({
+        selected_category: (() => {
+          let _pipe = model.selected_category;
+          return map(
+            _pipe,
+            (sc) => {
+              return sc.withFields({ allocation: a2 });
+            }
+          );
+        })()
+      }),
+      none()
+    ];
   }
 }
 function main() {
@@ -7571,7 +7829,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      163,
+      166,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

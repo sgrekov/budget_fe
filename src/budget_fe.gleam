@@ -63,6 +63,9 @@ type Msg {
   UpdateCategoryName(cat: Category)
   DeleteCategory
   CategoryDeleteResult(a: Result(String, lustre_http.HttpError))
+  SaveAllocation(alloc_id: option.Option(String))
+  SaveAllocationResult(Result(AllocationEffectResult, lustre_http.HttpError))
+  UserAllocationUpdate(amount: String)
 }
 
 type Model {
@@ -84,7 +87,7 @@ type Model {
 }
 
 type SelectedCategory {
-  SelectedCategory(id: String, input_name: String)
+  SelectedCategory(id: String, input_name: String, allocation: String)
 }
 
 type TransactionForm {
@@ -137,7 +140,7 @@ pub type MonthInYear {
 }
 
 pub type Allocation {
-  Allocation(id: String, amount: Money, category_id: String, date: d.Date)
+  Allocation(id: String, amount: Money, category_id: String, date: d.Month)
 }
 
 pub type Transaction {
@@ -187,7 +190,13 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     SelectCategory(c) -> #(
       Model(
         ..model,
-        selected_category: option.Some(SelectedCategory(c.id, c.name)),
+        selected_category: option.Some(SelectedCategory(
+          c.id,
+          c.name,
+          find_alloc_by_cat_id(c.id, model.cycle.month)
+            |> result.map(fn(a) { a.amount |> money_to_string_no_sign })
+            |> result.unwrap(""),
+        )),
       ),
       effect.none(),
     )
@@ -470,7 +479,96 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
     CategoryDeleteResult(Error(_)) -> #(model, effect.none())
+    SaveAllocation(a) -> #(model, case model.selected_category {
+      option.Some(sc) ->
+        save_allocation_eff(a, sc.allocation, sc.id, model.cycle)
+      option.None -> effect.none()
+    })
+    SaveAllocationResult(Ok(aer)) -> #(
+      Model(
+        ..model,
+        allocations: case aer.is_created {
+          True -> list.append(model.allocations, [aer.alloc])
+          False ->
+            model.allocations
+            |> list.map(fn(a) {
+              case a.id == aer.alloc.id {
+                False -> a
+                True -> aer.alloc
+              }
+            })
+        },
+      ),
+      effect.none(),
+    )
+    SaveAllocationResult(Error(_)) -> #(model, effect.none())
+    UserAllocationUpdate(a) -> #(
+      Model(
+        ..model,
+        selected_category: model.selected_category
+          |> option.map(fn(sc) { SelectedCategory(..sc, allocation: a) }),
+      ),
+      effect.none(),
+    )
   }
+}
+
+type AllocationEffectResult {
+  AllocationEffectResult(alloc: Allocation, is_created: Bool)
+}
+
+fn save_allocation_eff(
+  alloc_id: option.Option(String),
+  allocation: String,
+  category_id: String,
+  cycle: Cycle,
+) -> effect.Effect(Msg) {
+  let money = allocation |> string_to_money
+  case alloc_id {
+    option.Some(id) -> {
+      let alloc = find_alloc_by_id(id)
+      effect.from(fn(dispatch) {
+        dispatch(case alloc {
+          Ok(alloc_entity) ->
+            SaveAllocationResult(
+              Ok(AllocationEffectResult(
+                Allocation(..alloc_entity, amount: money),
+                False,
+              )),
+            )
+          _ -> SaveAllocationResult(Error(lustre_http.NotFound))
+        })
+      })
+    }
+    option.None ->
+      effect.from(fn(dispatch) {
+        dispatch(
+          SaveAllocationResult(
+            Ok(AllocationEffectResult(
+              Allocation(
+                id: gluid.guidv4(),
+                amount: money,
+                category_id: category_id,
+                date: cycle.month,
+              ),
+              True,
+            )),
+          ),
+        )
+      })
+  }
+}
+
+fn find_alloc_by_id(id: String) -> Result(Allocation, Nil) {
+  allocations() |> list.find(fn(a) { a.id == id })
+}
+
+fn find_alloc_by_cat_id(
+  cat_id: String,
+  month: d.Month,
+) -> Result(Allocation, Nil) {
+  allocations()
+  |> list.find(fn(a) { a.category_id == cat_id && a.date == month })
 }
 
 fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
@@ -683,7 +781,11 @@ fn view(model: Model) -> element.Element(Msg) {
           ],
           [
             html.p([attribute.class("text-start fs-4")], [
-              element.text(ready_to_assign(model.transactions)),
+              element.text(ready_to_assign(
+                model.transactions,
+                model.allocations,
+                model.cycle.month,
+              )),
             ]),
             html.p([attribute.class("text-start")], [
               element.text("Ready to Assign"),
@@ -723,7 +825,14 @@ fn view(model: Model) -> element.Element(Msg) {
 
             case selected_cat, model.route, model.selected_category {
               option.Some(c), Home, option.Some(sc) ->
-                category_details(c, model, sc)
+                category_details(
+                  c,
+                  model,
+                  sc,
+                  model.allocations
+                    |> list.find(fn(a) { a.id == c.id })
+                    |> option.from_result,
+                )
               _, _, _ -> html.text("")
             }
           },
@@ -765,6 +874,7 @@ fn category_details(
   category: Category,
   model: Model,
   sc: SelectedCategory,
+  allocation: option.Option(Allocation),
 ) -> element.Element(Msg) {
   html.div([attribute.class("col")], [
     html.div([], [
@@ -794,6 +904,25 @@ fn category_details(
       ]),
     ]),
     category_target_ui(category, model.target_edit),
+    html.div([], [
+      html.text("Allocated: "),
+      html.input([
+        event.on_input(UserAllocationUpdate),
+        attribute.placeholder("amount"),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+        attribute.style([#("width", "120px")]),
+        attribute.value(sc.allocation),
+      ]),
+      html.button(
+        [
+          event.on_click(SaveAllocation(
+            alloc_id: allocation |> option.map(fn(a) { a.id }),
+          )),
+        ],
+        [element.text("Save")],
+      ),
+    ]),
   ])
 }
 
@@ -911,11 +1040,26 @@ fn custom_target_money_in_month(m: Money, date: MonthInYear) -> String {
   <> m.b / months_count |> int.to_string
 }
 
-fn ready_to_assign(transactions: List(Transaction)) -> String {
-  transactions
-  |> list.filter(fn(t) { t.category_id == "0" })
-  |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.value) })
-  |> money_to_string
+fn ready_to_assign(
+  transactions: List(Transaction),
+  allocations: List(Allocation),
+  cur_mon: d.Month,
+) -> String {
+  let income =
+    transactions
+    |> list.filter(fn(t) { t.category_id == "0" })
+    |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.value) })
+  let outcome =
+    allocations
+    |> list.filter_map(fn(a) {
+      case a.date == cur_mon {
+        True -> Ok(a.amount)
+        False -> Error("")
+      }
+    })
+    |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t) })
+
+  money_minus(income, outcome) |> money_to_string_no_sign
 }
 
 fn budget_transactions(model: Model) -> element.Element(Msg) {
@@ -1238,6 +1382,15 @@ fn money_sum(a: Money, b: Money) -> Money {
   Money(a.s + b.s + euro, base)
 }
 
+fn money_minus(a: Money, b: Money) -> Money {
+  let base_sum = a.b - b.b
+  let #(euro, base) = case base_sum < 0 {
+    True -> #(1, 100 + base_sum)
+    False -> #(0, base_sum)
+  }
+  Money(a.s - b.s - euro, base)
+}
+
 pub fn month_to_string(value: MonthInYear) -> String {
   value.month
   |> int.to_string
@@ -1253,42 +1406,12 @@ pub fn month_to_string(value: MonthInYear) -> String {
 //FACTORIES
 fn allocations() -> List(Allocation) {
   [
-    Allocation(
-      id: "1",
-      amount: Money(80, 0),
-      category_id: "1",
-      date: d.from_calendar_date(2024, d.Dec, 2),
-    ),
-    Allocation(
-      id: "2",
-      amount: Money(120, 0),
-      category_id: "2",
-      date: d.from_calendar_date(2024, d.Dec, 2),
-    ),
-    Allocation(
-      id: "3",
-      amount: Money(150, 0),
-      category_id: "3",
-      date: d.from_calendar_date(2024, d.Dec, 2),
-    ),
-    Allocation(
-      id: "4",
-      amount: Money(100, 2),
-      category_id: "4",
-      date: d.from_calendar_date(2024, d.Dec, 2),
-    ),
-    Allocation(
-      id: "5",
-      amount: Money(200, 2),
-      category_id: "5",
-      date: d.from_calendar_date(2024, d.Dec, 2),
-    ),
-    Allocation(
-      id: "6",
-      amount: Money(500, 2),
-      category_id: "6",
-      date: d.from_calendar_date(2024, d.Dec, 2),
-    ),
+    Allocation(id: "1", amount: Money(80, 0), category_id: "1", date: d.Dec),
+    Allocation(id: "2", amount: Money(120, 0), category_id: "2", date: d.Dec),
+    Allocation(id: "3", amount: Money(150, 0), category_id: "3", date: d.Dec),
+    Allocation(id: "4", amount: Money(100, 2), category_id: "4", date: d.Dec),
+    Allocation(id: "5", amount: Money(200, 2), category_id: "5", date: d.Dec),
+    Allocation(id: "6", amount: Money(500, 2), category_id: "6", date: d.Dec),
   ]
 }
 
