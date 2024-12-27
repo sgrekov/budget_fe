@@ -5439,6 +5439,33 @@ function to_date_string_input(value3) {
 function from_date_string(date_str) {
   return from_iso_string(date_str);
 }
+function month_to_name2(month2) {
+  if (month2 instanceof Jan) {
+    return "January";
+  } else if (month2 instanceof Feb) {
+    return "February";
+  } else if (month2 instanceof Mar) {
+    return "March";
+  } else if (month2 instanceof Apr) {
+    return "April";
+  } else if (month2 instanceof May) {
+    return "May";
+  } else if (month2 instanceof Jun) {
+    return "June";
+  } else if (month2 instanceof Jul) {
+    return "July";
+  } else if (month2 instanceof Aug) {
+    return "August";
+  } else if (month2 instanceof Sep) {
+    return "September";
+  } else if (month2 instanceof Oct) {
+    return "October";
+  } else if (month2 instanceof Nov) {
+    return "November";
+  } else {
+    return "December";
+  }
+}
 
 // build/dev/javascript/budget_fe/budget_fe.mjs
 var Home = class extends CustomType {
@@ -5676,6 +5703,12 @@ var UserAllocationUpdate = class extends CustomType {
     this.amount = amount;
   }
 };
+var CycleShift = class extends CustomType {
+  constructor(shift) {
+    super();
+    this.shift = shift;
+  }
+};
 var Model2 = class extends CustomType {
   constructor(user, cycle, route, categories2, transactions2, allocations2, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form) {
     super();
@@ -5710,6 +5743,10 @@ var TransactionForm = class extends CustomType {
     this.category = category;
     this.amount = amount;
   }
+};
+var ShiftLeft = class extends CustomType {
+};
+var ShiftRight = class extends CustomType {
 };
 var TransactionEditForm = class extends CustomType {
   constructor(id2, date, payee, category, amount) {
@@ -5804,6 +5841,22 @@ var AllocationEffectResult = class extends CustomType {
     this.is_created = is_created;
   }
 };
+function cycle_decrease(c) {
+  let mon_num = month_to_number(c.month);
+  if (mon_num === 1) {
+    return new Cycle(c.year - 1, new Dec());
+  } else {
+    return new Cycle(c.year, number_to_month(mon_num - 1));
+  }
+}
+function cycle_increase(c) {
+  let mon_num = month_to_number(c.month);
+  if (mon_num === 12) {
+    return new Cycle(c.year + 1, new Jan());
+  } else {
+    return new Cycle(c.year, number_to_month(mon_num + 1));
+  }
+}
 function delete_category_eff(c_id) {
   return from(
     (dispatch) => {
@@ -5924,6 +5977,14 @@ function on_route_change(uri) {
   return new OnRouteChange(route);
 }
 function initial_eff() {
+  let today2 = today();
+  let cycle = new Cycle(
+    year(today2),
+    (() => {
+      let _pipe = today2;
+      return month(_pipe);
+    })()
+  );
   let path = (() => {
     let $ = do_initial_uri();
     if ($.isOk()) {
@@ -5935,21 +5996,23 @@ function initial_eff() {
   })();
   return from(
     (dispatch) => {
-      return dispatch(
-        new Initial(
-          new User("id2", "Sergey"),
-          new Cycle(2024, new Dec()),
-          path
-        )
-      );
+      return dispatch(new Initial(new User("id2", "Sergey"), cycle, path));
     }
   );
 }
 function init3(_) {
+  let today2 = today();
+  let cycle = new Cycle(
+    year(today2),
+    (() => {
+      let _pipe = today2;
+      return month(_pipe);
+    })()
+  );
   return [
     new Model2(
       new User("id1", "Sergey"),
-      new Cycle(2024, new Dec()),
+      cycle,
       new Home(),
       toList([]),
       toList([]),
@@ -5979,7 +6042,11 @@ function add_transaction_eff(transaction_form) {
               new Ok(
                 new Transaction(
                   guidv4(),
-                  from_calendar_date(2024, new Dec(), 20),
+                  (() => {
+                    let _pipe = transaction_form.date;
+                    let _pipe$1 = from_date_string(_pipe);
+                    return unwrap2(_pipe$1, today());
+                  })(),
                   transaction_form.payee,
                   cat.id,
                   amount
@@ -6006,6 +6073,30 @@ function add_category(name) {
       );
     }
   );
+}
+function is_equal(date, c) {
+  let d_mon = (() => {
+    let _pipe = date;
+    let _pipe$1 = month(_pipe);
+    return month_to_number(_pipe$1);
+  })();
+  let d_year = (() => {
+    let _pipe = date;
+    return year(_pipe);
+  })();
+  return d_mon === (() => {
+    let _pipe = c.month;
+    return month_to_number(_pipe);
+  })() && d_year === c.year;
+}
+function cycle_to_text(c) {
+  return (() => {
+    let _pipe = c.month;
+    return month_to_name2(_pipe);
+  })() + " " + (() => {
+    let _pipe = c.year;
+    return to_string(_pipe);
+  })();
 }
 function user_selection(m) {
   let $ = (() => {
@@ -6631,20 +6722,6 @@ function money_sum(a2, b) {
   let base = $[1];
   return new Money(a2.s + b.s + euro, base);
 }
-function category_assigned(c, allocations2) {
-  let _pipe = allocations2;
-  let _pipe$1 = filter(_pipe, (a2) => {
-    return a2.category_id === c.id;
-  });
-  let _pipe$2 = fold(
-    _pipe$1,
-    new Money(0, 0),
-    (m, t) => {
-      return money_sum(m, t.amount);
-    }
-  );
-  return money_to_string(_pipe$2);
-}
 function category_activity(cat, transactions2) {
   let _pipe = transactions2;
   let _pipe$1 = filter(_pipe, (t) => {
@@ -6674,7 +6751,7 @@ function money_minus(a2, b) {
   let base = $[1];
   return new Money(a2.s - b.s - euro, base);
 }
-function ready_to_assign(transactions2, allocations2, cur_mon) {
+function ready_to_assign(transactions2, allocations2, cycle) {
   let income = (() => {
     let _pipe2 = transactions2;
     let _pipe$1 = filter(_pipe2, (t) => {
@@ -6693,7 +6770,7 @@ function ready_to_assign(transactions2, allocations2, cur_mon) {
     let _pipe$1 = filter_map(
       _pipe2,
       (a2) => {
-        let $ = isEqual(a2.date, cur_mon);
+        let $ = isEqual(a2.date, cycle);
         if ($) {
           return new Ok(a2.amount);
         } else {
@@ -6874,18 +6951,6 @@ function category_details(category, model, sc, allocation) {
           div(
             toList([class$("col")]),
             toList([
-              div(toList([]), toList([text2("Assigned")])),
-              div(
-                toList([]),
-                toList([
-                  text2(category_assigned(category, model.allocations))
-                ])
-              )
-            ])
-          ),
-          div(
-            toList([class$("col")]),
-            toList([
               div(toList([]), toList([text2("Activity")])),
               div(
                 toList([]),
@@ -6967,6 +7032,30 @@ function view(model) {
                 ])
               ),
               div(
+                toList([]),
+                toList([
+                  button(
+                    toList([on_click(new CycleShift(new ShiftLeft()))]),
+                    toList([text("<")])
+                  ),
+                  p(
+                    toList([class$("text-start fs-4")]),
+                    toList([
+                      text(
+                        (() => {
+                          let _pipe = model.cycle;
+                          return cycle_to_text(_pipe);
+                        })()
+                      )
+                    ])
+                  ),
+                  button(
+                    toList([on_click(new CycleShift(new ShiftRight()))]),
+                    toList([text(">")])
+                  )
+                ])
+              ),
+              div(
                 toList([
                   class$("bg-success text-white"),
                   style(toList([["width", "120px"]]))
@@ -6979,7 +7068,7 @@ function view(model) {
                         ready_to_assign(
                           model.transactions,
                           model.allocations,
-                          model.cycle.month
+                          model.cycle
                         )
                       )
                     ])
@@ -7071,18 +7160,21 @@ function view(model) {
     ])
   );
 }
-function allocations() {
-  return toList([
-    new Allocation("1", new Money(80, 0), "1", new Dec()),
-    new Allocation("2", new Money(120, 0), "2", new Dec()),
-    new Allocation("3", new Money(150, 0), "3", new Dec()),
-    new Allocation("4", new Money(100, 2), "4", new Dec()),
-    new Allocation("5", new Money(200, 2), "5", new Dec()),
-    new Allocation("6", new Money(500, 2), "6", new Dec())
+function allocations(cycle) {
+  let _pipe = toList([
+    new Allocation("1", new Money(80, 0), "1", new Cycle(2024, new Dec())),
+    new Allocation("2", new Money(120, 0), "2", new Cycle(2024, new Dec())),
+    new Allocation("3", new Money(150, 0), "3", new Cycle(2024, new Dec())),
+    new Allocation("4", new Money(100, 2), "4", new Cycle(2024, new Dec())),
+    new Allocation("5", new Money(200, 2), "5", new Cycle(2024, new Dec())),
+    new Allocation("6", new Money(500, 2), "6", new Cycle(2024, new Dec()))
   ]);
+  return filter(_pipe, (a2) => {
+    return isEqual(a2.date, cycle);
+  });
 }
-function find_alloc_by_id(id2) {
-  let _pipe = allocations();
+function find_alloc_by_id(id2, cycle) {
+  let _pipe = allocations(cycle);
   return find(_pipe, (a2) => {
     return a2.id === id2;
   });
@@ -7094,7 +7186,7 @@ function save_allocation_eff(alloc_id, allocation, category_id, cycle) {
   })();
   if (alloc_id instanceof Some) {
     let id2 = alloc_id[0];
-    let alloc = find_alloc_by_id(id2);
+    let alloc = find_alloc_by_id(id2, cycle);
     return from(
       (dispatch) => {
         return dispatch(
@@ -7125,7 +7217,7 @@ function save_allocation_eff(alloc_id, allocation, category_id, cycle) {
           new SaveAllocationResult(
             new Ok(
               new AllocationEffectResult(
-                new Allocation(guidv4(), money, category_id, cycle.month),
+                new Allocation(guidv4(), money, category_id, cycle),
                 true
               )
             )
@@ -7135,19 +7227,19 @@ function save_allocation_eff(alloc_id, allocation, category_id, cycle) {
     );
   }
 }
-function find_alloc_by_cat_id(cat_id, month2) {
-  let _pipe = allocations();
+function find_alloc_by_cat_id(cat_id, cycle) {
+  let _pipe = allocations(cycle);
   return find(
     _pipe,
     (a2) => {
-      return a2.category_id === cat_id && isEqual(a2.date, month2);
+      return a2.category_id === cat_id && isEqual(a2.date, cycle);
     }
   );
 }
-function get_allocations() {
+function get_allocations(cycle) {
   return from(
     (dispatch) => {
-      return dispatch(new Allocations(new Ok(allocations())));
+      return dispatch(new Allocations(new Ok(allocations(cycle))));
     }
   );
 }
@@ -7259,10 +7351,24 @@ function transactions() {
     )
   ]);
 }
-function get_transactions() {
+function get_transactions(cycle) {
   return from(
     (dispatch) => {
-      return dispatch(new Transactions(new Ok(transactions())));
+      return dispatch(
+        new Transactions(
+          new Ok(
+            (() => {
+              let _pipe = transactions();
+              return filter(
+                _pipe,
+                (t) => {
+                  return is_equal(t.date, cycle);
+                }
+              );
+            })()
+          )
+        )
+      );
     }
   );
 }
@@ -7278,12 +7384,19 @@ function update(model, msg) {
     return [
       model.withFields({ user, cycle, route: initial_path }),
       batch(
-        toList([get_categories(), get_transactions(), get_allocations()])
+        toList([
+          get_categories(),
+          get_transactions(cycle),
+          get_allocations(cycle)
+        ])
       )
     ];
   } else if (msg instanceof Categories && msg.cats.isOk()) {
     let cats = msg.cats[0];
-    return [model.withFields({ categories: cats }), get_transactions()];
+    return [
+      model.withFields({ categories: cats }),
+      get_transactions(model.cycle)
+    ];
   } else if (msg instanceof Categories && !msg.cats.isOk()) {
     return [model, none()];
   } else if (msg instanceof Transactions && msg.trans.isOk()) {
@@ -7305,7 +7418,7 @@ function update(model, msg) {
             c.id,
             c.name,
             (() => {
-              let _pipe = find_alloc_by_cat_id(c.id, model.cycle.month);
+              let _pipe = find_alloc_by_cat_id(c.id, model.cycle);
               let _pipe$1 = map3(
                 _pipe,
                 (a2) => {
@@ -7804,7 +7917,7 @@ function update(model, msg) {
     ];
   } else if (msg instanceof SaveAllocationResult && !msg[0].isOk()) {
     return [model, none()];
-  } else {
+  } else if (msg instanceof UserAllocationUpdate) {
     let a2 = msg.amount;
     return [
       model.withFields({
@@ -7820,6 +7933,21 @@ function update(model, msg) {
       }),
       none()
     ];
+  } else {
+    let shift = msg.shift;
+    let new_cycle = (() => {
+      if (shift instanceof ShiftLeft) {
+        return cycle_decrease(model.cycle);
+      } else {
+        return cycle_increase(model.cycle);
+      }
+    })();
+    return [
+      model.withFields({ cycle: new_cycle }),
+      batch(
+        toList([get_transactions(new_cycle), get_allocations(new_cycle)])
+      )
+    ];
   }
 }
 function main() {
@@ -7829,7 +7957,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      166,
+      172,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

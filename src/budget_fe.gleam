@@ -66,6 +66,7 @@ type Msg {
   SaveAllocation(alloc_id: option.Option(String))
   SaveAllocationResult(Result(AllocationEffectResult, lustre_http.HttpError))
   UserAllocationUpdate(amount: String)
+  CycleShift(shift: CycleShift)
 }
 
 type Model {
@@ -97,6 +98,11 @@ type TransactionForm {
     category: option.Option(Category),
     amount: option.Option(Money),
   )
+}
+
+type CycleShift {
+  ShiftLeft
+  ShiftRight
 }
 
 type TransactionEditForm {
@@ -140,7 +146,7 @@ pub type MonthInYear {
 }
 
 pub type Allocation {
-  Allocation(id: String, amount: Money, category_id: String, date: d.Month)
+  Allocation(id: String, amount: Money, category_id: String, date: Cycle)
 }
 
 pub type Transaction {
@@ -176,11 +182,15 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     }
     Initial(user, cycle, initial_path) -> #(
       Model(..model, user: user, cycle: cycle, route: initial_path),
-      effect.batch([get_categories(), get_transactions(), get_allocations()]),
+      effect.batch([
+        get_categories(),
+        get_transactions(cycle),
+        get_allocations(cycle),
+      ]),
     )
     Categories(Ok(cats)) -> #(
       Model(..model, categories: cats),
-      get_transactions(),
+      get_transactions(model.cycle),
     )
     Categories(Error(_)) -> #(model, effect.none())
     Transactions(Ok(t)) -> #(Model(..model, transactions: t), effect.none())
@@ -193,7 +203,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         selected_category: option.Some(SelectedCategory(
           c.id,
           c.name,
-          find_alloc_by_cat_id(c.id, model.cycle.month)
+          find_alloc_by_cat_id(c.id, model.cycle)
             |> result.map(fn(a) { a.amount |> money_to_string_no_sign })
             |> result.unwrap(""),
         )),
@@ -510,11 +520,37 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
+    CycleShift(shift) -> {
+      let new_cycle = case shift {
+        ShiftLeft -> cycle_decrease(model.cycle)
+        ShiftRight -> cycle_increase(model.cycle)
+      }
+      #(
+        Model(..model, cycle: new_cycle),
+        effect.batch([get_transactions(new_cycle), get_allocations(new_cycle)]),
+      )
+    }
   }
 }
 
 type AllocationEffectResult {
   AllocationEffectResult(alloc: Allocation, is_created: Bool)
+}
+
+fn cycle_decrease(c: Cycle) -> Cycle {
+  let mon_num = d.month_to_number(c.month)
+  case mon_num {
+    1 -> Cycle(c.year - 1, d.Dec)
+    _ -> Cycle(c.year, d.number_to_month(mon_num - 1))
+  }
+}
+
+fn cycle_increase(c: Cycle) -> Cycle {
+  let mon_num = d.month_to_number(c.month)
+  case mon_num {
+    12 -> Cycle(c.year + 1, d.Jan)
+    _ -> Cycle(c.year, d.number_to_month(mon_num + 1))
+  }
 }
 
 fn save_allocation_eff(
@@ -526,7 +562,7 @@ fn save_allocation_eff(
   let money = allocation |> string_to_money
   case alloc_id {
     option.Some(id) -> {
-      let alloc = find_alloc_by_id(id)
+      let alloc = find_alloc_by_id(id, cycle)
       effect.from(fn(dispatch) {
         dispatch(case alloc {
           Ok(alloc_entity) ->
@@ -549,7 +585,7 @@ fn save_allocation_eff(
                 id: gluid.guidv4(),
                 amount: money,
                 category_id: category_id,
-                date: cycle.month,
+                date: cycle,
               ),
               True,
             )),
@@ -559,16 +595,13 @@ fn save_allocation_eff(
   }
 }
 
-fn find_alloc_by_id(id: String) -> Result(Allocation, Nil) {
-  allocations() |> list.find(fn(a) { a.id == id })
+fn find_alloc_by_id(id: String, cycle: Cycle) -> Result(Allocation, Nil) {
+  allocations(cycle) |> list.find(fn(a) { a.id == id })
 }
 
-fn find_alloc_by_cat_id(
-  cat_id: String,
-  month: d.Month,
-) -> Result(Allocation, Nil) {
-  allocations()
-  |> list.find(fn(a) { a.category_id == cat_id && a.date == month })
+fn find_alloc_by_cat_id(cat_id: String, cycle: Cycle) -> Result(Allocation, Nil) {
+  allocations(cycle)
+  |> list.find(fn(a) { a.category_id == cat_id && a.date == cycle })
 }
 
 fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
@@ -638,10 +671,12 @@ fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
 }
 
 fn init(_flags) -> #(Model, effect.Effect(Msg)) {
+  let today = d.today()
+  let cycle = Cycle(d.year(today), today |> d.month)
   #(
     Model(
       user: User(id: "id1", name: "Sergey"),
-      cycle: Cycle(2024, d.Dec),
+      cycle: cycle,
       route: Home,
       categories: [],
       transactions: [],
@@ -674,12 +709,14 @@ fn uri_to_route(uri: Uri) -> Route {
 //<!---- Effects ----!>
 
 fn initial_eff() -> effect.Effect(Msg) {
+  let today = d.today()
+  let cycle = Cycle(d.year(today), today |> d.month)
   let path = case initial_uri() {
     Ok(uri) -> uri_to_route(uri)
     _ -> Home
   }
   effect.from(fn(dispatch) {
-    dispatch(Initial(User(id: "id2", name: "Sergey"), Cycle(2024, d.Dec), path))
+    dispatch(Initial(User(id: "id2", name: "Sergey"), cycle, path))
   })
 }
 
@@ -690,7 +727,9 @@ fn add_transaction_eff(transaction_form: TransactionForm) -> effect.Effect(Msg) 
         AddTransactionResult(
           Ok(Transaction(
             id: gluid.guidv4(),
-            date: d.today(),
+            date: transaction_form.date
+              |> date_utils.from_date_string
+              |> result.unwrap(d.today()),
             payee: transaction_form.payee,
             category_id: cat.id,
             value: amount,
@@ -714,16 +753,29 @@ fn add_category(name: String) -> effect.Effect(Msg) {
   })
 }
 
-fn get_allocations() -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) { dispatch(Allocations(a: Ok(allocations()))) })
+fn get_allocations(cycle: Cycle) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) { dispatch(Allocations(a: Ok(allocations(cycle)))) })
 }
 
 fn get_categories() -> effect.Effect(Msg) {
   effect.from(fn(dispatch) { dispatch(Categories(cats: Ok(categories()))) })
 }
 
-fn get_transactions() -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) { dispatch(Transactions(Ok(transactions()))) })
+fn get_transactions(cycle: Cycle) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    dispatch(
+      Transactions(Ok(
+        transactions()
+        |> list.filter(fn(t) { is_equal(t.date, cycle) }),
+      )),
+    )
+  })
+}
+
+fn is_equal(date: d.Date, c: Cycle) -> Bool {
+  let d_mon = date |> d.month |> d.month_to_number()
+  let d_year = date |> d.year
+  d_mon == c.month |> d.month_to_number() && d_year == c.year
 }
 
 fn view(model: Model) -> element.Element(Msg) {
@@ -773,6 +825,17 @@ fn view(model: Model) -> element.Element(Msg) {
             [html.text("Transactions")],
           ),
         ]),
+        html.div([], [
+          html.button([event.on_click(CycleShift(ShiftLeft))], [
+            element.text("<"),
+          ]),
+          html.p([attribute.class("text-start fs-4")], [
+            element.text(model.cycle |> cycle_to_text()),
+          ]),
+          html.button([event.on_click(CycleShift(ShiftRight))], [
+            element.text(">"),
+          ]),
+        ]),
         html.div(
           [
             attribute.class("bg-success text-white"),
@@ -783,7 +846,7 @@ fn view(model: Model) -> element.Element(Msg) {
               element.text(ready_to_assign(
                 model.transactions,
                 model.allocations,
-                model.cycle.month,
+                model.cycle,
               )),
             ]),
             html.p([attribute.class("text-start")], [
@@ -841,6 +904,10 @@ fn view(model: Model) -> element.Element(Msg) {
   ])
 }
 
+fn cycle_to_text(c: Cycle) -> String {
+  c.month |> date_utils.month_to_name() <> " " <> c.year |> int.to_string
+}
+
 fn user_selection(m: Model) -> element.Element(Msg) {
   let #(serg_active_class, kate_active_class) = case m.user {
     User("id1", _) -> #("active", "")
@@ -891,10 +958,6 @@ fn category_details(
       html.button([event.on_click(DeleteCategory)], [element.text("Delete")]),
     ]),
     html.div([attribute.class("row")], [
-      html.div([attribute.class("col")], [
-        html.div([], [html.text("Assigned")]),
-        html.div([], [html.text(category_assigned(category, model.allocations))]),
-      ]),
       html.div([attribute.class("col")], [
         html.div([], [html.text("Activity")]),
         html.div([], [
@@ -1042,7 +1105,7 @@ fn custom_target_money_in_month(m: Money, date: MonthInYear) -> String {
 fn ready_to_assign(
   transactions: List(Transaction),
   allocations: List(Allocation),
-  cur_mon: d.Month,
+  cycle: Cycle,
 ) -> String {
   let income =
     transactions
@@ -1051,7 +1114,7 @@ fn ready_to_assign(
   let outcome =
     allocations
     |> list.filter_map(fn(a) {
-      case a.date == cur_mon {
+      case a.date == cycle {
         True -> Ok(a.amount)
         False -> Error("")
       }
@@ -1403,15 +1466,46 @@ pub fn month_to_string(value: MonthInYear) -> String {
 }
 
 //FACTORIES
-fn allocations() -> List(Allocation) {
+fn allocations(cycle: Cycle) -> List(Allocation) {
   [
-    Allocation(id: "1", amount: Money(80, 0), category_id: "1", date: d.Dec),
-    Allocation(id: "2", amount: Money(120, 0), category_id: "2", date: d.Dec),
-    Allocation(id: "3", amount: Money(150, 0), category_id: "3", date: d.Dec),
-    Allocation(id: "4", amount: Money(100, 2), category_id: "4", date: d.Dec),
-    Allocation(id: "5", amount: Money(200, 2), category_id: "5", date: d.Dec),
-    Allocation(id: "6", amount: Money(500, 2), category_id: "6", date: d.Dec),
+    Allocation(
+      id: "1",
+      amount: Money(80, 0),
+      category_id: "1",
+      date: Cycle(2024, d.Dec),
+    ),
+    Allocation(
+      id: "2",
+      amount: Money(120, 0),
+      category_id: "2",
+      date: Cycle(2024, d.Dec),
+    ),
+    Allocation(
+      id: "3",
+      amount: Money(150, 0),
+      category_id: "3",
+      date: Cycle(2024, d.Dec),
+    ),
+    Allocation(
+      id: "4",
+      amount: Money(100, 2),
+      category_id: "4",
+      date: Cycle(2024, d.Dec),
+    ),
+    Allocation(
+      id: "5",
+      amount: Money(200, 2),
+      category_id: "5",
+      date: Cycle(2024, d.Dec),
+    ),
+    Allocation(
+      id: "6",
+      amount: Money(500, 2),
+      category_id: "6",
+      date: Cycle(2024, d.Dec),
+    ),
   ]
+  |> list.filter(fn(a) { a.date == cycle })
 }
 
 fn categories() -> List(Category) {
