@@ -2,7 +2,7 @@
 var CustomType = class {
   withFields(fields) {
     let properties = Object.keys(this).map(
-      (label) => label in fields ? fields[label] : this[label]
+      (label2) => label2 in fields ? fields[label2] : this[label2]
     );
     return new this.constructor(...properties);
   }
@@ -1954,9 +1954,9 @@ function inspectObject(v) {
   return `//js(${head}{${body}})`;
 }
 function inspectCustomType(record) {
-  const props = Object.keys(record).map((label) => {
-    const value3 = inspect(record[label]);
-    return isNaN(parseInt(label)) ? `${label}: ${value3}` : value3;
+  const props = Object.keys(record).map((label2) => {
+    const value3 = inspect(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value3}` : value3;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
@@ -2286,6 +2286,9 @@ function handlers(element2) {
 function attribute(name, value3) {
   return new Attribute(name, identity(value3), false);
 }
+function property(name, value3) {
+  return new Attribute(name, identity(value3), true);
+}
 function on(name, handler) {
   return new Event("on" + name, handler);
 }
@@ -2318,8 +2321,14 @@ function type_(name) {
 function value(val) {
   return attribute("value", val);
 }
+function checked(is_checked) {
+  return property("checked", is_checked);
+}
 function placeholder(text3) {
   return attribute("placeholder", text3);
+}
+function for$(id2) {
+  return attribute("for", id2);
 }
 function href(uri) {
   return attribute("href", uri);
@@ -2698,8 +2707,8 @@ function lustreServerEventHandler(event2) {
   return {
     tag,
     data: include.reduce(
-      (data2, property) => {
-        const path = property.split(".");
+      (data2, property2) => {
+        const path = property2.split(".");
         for (let i = 0, o = data2, e = event2; i < path.length; i++) {
           if (i === path.length - 1) {
             o[path[i]] = e[path[i]];
@@ -3108,8 +3117,11 @@ function datalist(attrs, children2) {
 function input(attrs) {
   return element("input", attrs, toList([]));
 }
-function option(attrs, label) {
-  return element("option", attrs, toList([text(label)]));
+function label(attrs, children2) {
+  return element("label", attrs, children2);
+}
+function option(attrs, label2) {
+  return element("option", attrs, toList([text(label2)]));
 }
 
 // build/dev/javascript/lustre/lustre/event.mjs
@@ -5428,6 +5440,12 @@ function from_iso_string(str) {
     return new Error("Expected a date in ISO 8601 format");
   }
 }
+function is_between(value3, lower, upper) {
+  let value_rd = value3[0];
+  let lower_rd = lower[0];
+  let upper_rd = upper[0];
+  return is_between_int(value_rd, lower_rd, upper_rd);
+}
 
 // build/dev/javascript/budget_fe/date_utils.mjs
 function to_date_string(value3) {
@@ -5464,6 +5482,62 @@ function month_to_name2(month2) {
     return "November";
   } else {
     return "December";
+  }
+}
+function days_in_month2(year2, month2) {
+  if (month2 instanceof Jan) {
+    return 31;
+  } else if (month2 instanceof Feb) {
+    return 28;
+  } else if (month2 instanceof Mar) {
+    return 31;
+  } else if (month2 instanceof Apr) {
+    return 30;
+  } else if (month2 instanceof May) {
+    return 31;
+  } else if (month2 instanceof Jun) {
+    return 30;
+  } else if (month2 instanceof Jul) {
+    return 31;
+  } else if (month2 instanceof Aug) {
+    return 31;
+  } else if (month2 instanceof Sep) {
+    return 30;
+  } else if (month2 instanceof Oct) {
+    return 31;
+  } else if (month2 instanceof Nov) {
+    return 30;
+  } else {
+    return 31;
+  }
+}
+function month_by_number(month2) {
+  if (month2 === 1) {
+    return new Jan();
+  } else if (month2 === 2) {
+    return new Feb();
+  } else if (month2 === 3) {
+    return new Mar();
+  } else if (month2 === 4) {
+    return new Apr();
+  } else if (month2 === 5) {
+    return new May();
+  } else if (month2 === 6) {
+    return new Jun();
+  } else if (month2 === 7) {
+    return new Jul();
+  } else if (month2 === 8) {
+    return new Aug();
+  } else if (month2 === 9) {
+    return new Sep();
+  } else if (month2 === 10) {
+    return new Oct();
+  } else if (month2 === 11) {
+    return new Nov();
+  } else if (month2 === 12) {
+    return new Dec();
+  } else {
+    return new Jan();
   }
 }
 
@@ -5710,11 +5784,13 @@ var CycleShift = class extends CustomType {
   }
 };
 var Model2 = class extends CustomType {
-  constructor(user, cycle, route, categories2, transactions2, allocations2, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form) {
+  constructor(user, cycle, route, cycle_end_day, show_all_transactions, categories2, transactions2, allocations2, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form) {
     super();
     this.user = user;
     this.cycle = cycle;
     this.route = route;
+    this.cycle_end_day = cycle_end_day;
+    this.show_all_transactions = show_all_transactions;
     this.categories = categories2;
     this.transactions = transactions2;
     this.allocations = allocations2;
@@ -5841,6 +5917,39 @@ var AllocationEffectResult = class extends CustomType {
     this.is_created = is_created;
   }
 };
+function prev_month(year2, month2) {
+  let mon_num = month_to_number(month2);
+  if (mon_num === 1) {
+    return [year2 - 1, 12];
+  } else {
+    return [year2, mon_num - 1];
+  }
+}
+function cycle_bounds(c, cycle_end_day) {
+  if (cycle_end_day instanceof None) {
+    return [
+      from_calendar_date(c.year, c.month, 1),
+      from_calendar_date(
+        c.year,
+        c.month,
+        days_in_month2(c.year, c.month)
+      )
+    ];
+  } else {
+    let last_day = cycle_end_day[0];
+    let $ = prev_month(c.year, c.month);
+    let prev_year = $[0];
+    let prev_month$1 = $[1];
+    return [
+      from_calendar_date(
+        prev_year,
+        month_by_number(prev_month$1),
+        last_day + 1
+      ),
+      from_calendar_date(c.year, c.month, last_day)
+    ];
+  }
+}
 function cycle_decrease(c) {
   let mon_num = month_to_number(c.month);
   if (mon_num === 1) {
@@ -6014,6 +6123,8 @@ function init3(_) {
       new User("id1", "Sergey"),
       cycle,
       new Home(),
+      new Some(26),
+      false,
       toList([]),
       toList([]),
       toList([]),
@@ -6073,21 +6184,6 @@ function add_category(name) {
       );
     }
   );
-}
-function is_equal(date, c) {
-  let d_mon = (() => {
-    let _pipe = date;
-    let _pipe$1 = month(_pipe);
-    return month_to_number(_pipe$1);
-  })();
-  let d_year = (() => {
-    let _pipe = date;
-    return year(_pipe);
-  })();
-  return d_mon === (() => {
-    let _pipe = c.month;
-    return month_to_number(_pipe);
-  })() && d_year === c.year;
 }
 function cycle_to_text(c) {
   return (() => {
@@ -6521,36 +6617,64 @@ function add_transaction_ui(transactions2, categories2) {
   );
 }
 function budget_transactions(model) {
-  return table(
-    toList([class$("table table-sm table-hover")]),
+  return div(
+    toList([class$("d-flex flex-column flex-fill")]),
     toList([
-      thead(
-        toList([]),
+      div(
+        toList([class$("form-check")]),
         toList([
-          tr(
-            toList([]),
+          input(
             toList([
-              th(toList([]), toList([text2("Date")])),
-              th(toList([]), toList([text2("Payee")])),
-              th(toList([]), toList([text2("Category")])),
-              th(toList([]), toList([text2("Amount")]))
+              id("flexCheckDefault"),
+              value(""),
+              type_("checkbox"),
+              class$("form-check-input"),
+              checked(model.show_all_transactions)
             ])
+          ),
+          label(
+            toList([
+              for$("flexCheckDefault"),
+              class$("form-check-label")
+            ]),
+            toList([text2("Show all transactions")])
           )
         ])
       ),
-      tbody(
-        toList([]),
-        flatten2(
-          toList([
-            toList([add_transaction_ui(model.transactions, model.categories)]),
-            map2(
-              model.transactions,
-              (t) => {
-                return transaction_list_item(t, model);
-              }
+      table(
+        toList([class$("table table-sm table-hover")]),
+        toList([
+          thead(
+            toList([]),
+            toList([
+              tr(
+                toList([]),
+                toList([
+                  th(toList([]), toList([text2("Date")])),
+                  th(toList([]), toList([text2("Payee")])),
+                  th(toList([]), toList([text2("Category")])),
+                  th(toList([]), toList([text2("Amount")]))
+                ])
+              )
+            ])
+          ),
+          tbody(
+            toList([]),
+            flatten2(
+              toList([
+                toList([
+                  add_transaction_ui(model.transactions, model.categories)
+                ]),
+                map2(
+                  model.transactions,
+                  (t) => {
+                    return transaction_list_item(t, model);
+                  }
+                )
+              ])
             )
-          ])
-        )
+          )
+        ])
       )
     ])
   );
@@ -7161,13 +7285,14 @@ function view(model) {
   );
 }
 function allocations(cycle) {
+  let c = new Cycle(2024, new Dec());
   let _pipe = toList([
-    new Allocation("1", new Money(80, 0), "1", new Cycle(2024, new Dec())),
-    new Allocation("2", new Money(120, 0), "2", new Cycle(2024, new Dec())),
-    new Allocation("3", new Money(150, 0), "3", new Cycle(2024, new Dec())),
-    new Allocation("4", new Money(100, 2), "4", new Cycle(2024, new Dec())),
-    new Allocation("5", new Money(200, 2), "5", new Cycle(2024, new Dec())),
-    new Allocation("6", new Money(500, 2), "6", new Cycle(2024, new Dec()))
+    new Allocation("1", new Money(80, 0), "1", c),
+    new Allocation("2", new Money(120, 0), "2", c),
+    new Allocation("3", new Money(150, 0), "3", c),
+    new Allocation("4", new Money(100, 2), "4", c),
+    new Allocation("5", new Money(200, 2), "5", c),
+    new Allocation("6", new Money(500, 2), "6", c)
   ]);
   return filter(_pipe, (a2) => {
     return isEqual(a2.date, cycle);
@@ -7288,6 +7413,13 @@ function transactions() {
   return toList([
     new Transaction(
       "1",
+      from_calendar_date(2025, new Jan(), 1),
+      "Amazon",
+      "5",
+      new Money(-10, 0)
+    ),
+    new Transaction(
+      "1",
       from_calendar_date(2024, new Dec(), 2),
       "Amazon",
       "5",
@@ -7344,14 +7476,21 @@ function transactions() {
     ),
     new Transaction(
       "8",
-      from_calendar_date(2024, new Dec(), 2),
+      from_calendar_date(2024, new Nov(), 27),
       "O2",
       "1",
-      new Money(-100, 50)
+      new Money(-1, 50)
+    ),
+    new Transaction(
+      "8",
+      from_calendar_date(2024, new Nov(), 26),
+      "O2",
+      "1",
+      new Money(-1, 50)
     )
   ]);
 }
-function get_transactions(cycle) {
+function get_transactions(start3, end) {
   return from(
     (dispatch) => {
       return dispatch(
@@ -7362,7 +7501,7 @@ function get_transactions(cycle) {
               return filter(
                 _pipe,
                 (t) => {
-                  return is_equal(t.date, cycle);
+                  return is_between(t.date, start3, end);
                 }
               );
             })()
@@ -7381,21 +7520,27 @@ function update(model, msg) {
     let user = msg.user;
     let cycle = msg.cycle;
     let initial_path = msg.initial_route;
+    let $ = cycle_bounds(cycle, model.cycle_end_day);
+    let start3 = $[0];
+    let end = $[1];
     return [
       model.withFields({ user, cycle, route: initial_path }),
       batch(
         toList([
           get_categories(),
-          get_transactions(cycle),
+          get_transactions(start3, end),
           get_allocations(cycle)
         ])
       )
     ];
   } else if (msg instanceof Categories && msg.cats.isOk()) {
     let cats = msg.cats[0];
+    let $ = cycle_bounds(model.cycle, model.cycle_end_day);
+    let start3 = $[0];
+    let end = $[1];
     return [
       model.withFields({ categories: cats }),
-      get_transactions(model.cycle)
+      get_transactions(start3, end)
     ];
   } else if (msg instanceof Categories && !msg.cats.isOk()) {
     return [model, none()];
@@ -7942,10 +8087,29 @@ function update(model, msg) {
         return cycle_increase(model.cycle);
       }
     })();
+    let $ = cycle_bounds(new_cycle, model.cycle_end_day);
+    let start3 = $[0];
+    let end = $[1];
+    debug("new cycle");
+    debug(new_cycle);
+    debug("start");
+    debug(
+      (() => {
+        let _pipe = start3;
+        return to_date_string(_pipe);
+      })()
+    );
+    debug("end");
+    debug(
+      (() => {
+        let _pipe = end;
+        return to_date_string(_pipe);
+      })()
+    );
     return [
       model.withFields({ cycle: new_cycle }),
       batch(
-        toList([get_transactions(new_cycle), get_allocations(new_cycle)])
+        toList([get_transactions(start3, end), get_allocations(new_cycle)])
       )
     ];
   }
@@ -7957,7 +8121,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      172,
+      174,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

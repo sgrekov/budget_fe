@@ -74,6 +74,8 @@ type Model {
     user: User,
     cycle: Cycle,
     route: Route,
+    cycle_end_day: option.Option(Int),
+    show_all_transactions: Bool,
     categories: List(Category),
     transactions: List(Transaction),
     allocations: List(Allocation),
@@ -180,18 +182,21 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     OnRouteChange(route) -> {
       #(Model(..model, route: route), effect.none())
     }
-    Initial(user, cycle, initial_path) -> #(
-      Model(..model, user: user, cycle: cycle, route: initial_path),
-      effect.batch([
-        get_categories(),
-        get_transactions(cycle),
-        get_allocations(cycle),
-      ]),
-    )
-    Categories(Ok(cats)) -> #(
-      Model(..model, categories: cats),
-      get_transactions(model.cycle),
-    )
+    Initial(user, cycle, initial_path) -> {
+      let #(start, end) = cycle_bounds(cycle, model.cycle_end_day)
+      #(
+        Model(..model, user: user, cycle: cycle, route: initial_path),
+        effect.batch([
+          get_categories(),
+          get_transactions(start, end),
+          get_allocations(cycle),
+        ]),
+      )
+    }
+    Categories(Ok(cats)) -> {
+      let #(start, end) = cycle_bounds(model.cycle, model.cycle_end_day)
+      #(Model(..model, categories: cats), get_transactions(start, end))
+    }
     Categories(Error(_)) -> #(model, effect.none())
     Transactions(Ok(t)) -> #(Model(..model, transactions: t), effect.none())
     Transactions(Error(_)) -> #(model, effect.none())
@@ -525,11 +530,53 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         ShiftLeft -> cycle_decrease(model.cycle)
         ShiftRight -> cycle_increase(model.cycle)
       }
+      let #(start, end) = cycle_bounds(new_cycle, model.cycle_end_day)
+      io.debug("new cycle")
+      io.debug(new_cycle)
+      io.debug("start")
+      io.debug(start |> date_utils.to_date_string)
+      io.debug("end")
+      io.debug(end |> date_utils.to_date_string)
       #(
         Model(..model, cycle: new_cycle),
-        effect.batch([get_transactions(new_cycle), get_allocations(new_cycle)]),
+        effect.batch([get_transactions(start, end), get_allocations(new_cycle)]),
       )
     }
+  }
+}
+
+fn cycle_bounds(
+  c: Cycle,
+  cycle_end_day: option.Option(Int),
+) -> #(d.Date, d.Date) {
+  case cycle_end_day {
+    option.None -> #(
+      d.from_calendar_date(c.year, c.month, 1),
+      d.from_calendar_date(
+        c.year,
+        c.month,
+        date_utils.days_in_month(c.year, c.month),
+      ),
+    )
+    option.Some(last_day) -> {
+      let #(prev_year, prev_month) = prev_month(c.year, c.month)
+      #(
+        d.from_calendar_date(
+          prev_year,
+          date_utils.month_by_number(prev_month),
+          last_day + 1,
+        ),
+        d.from_calendar_date(c.year, c.month, last_day),
+      )
+    }
+  }
+}
+
+fn prev_month(year: Int, month: d.Month) -> #(Int, Int) {
+  let mon_num = d.month_to_number(month)
+  case mon_num {
+    1 -> #(year - 1, 12)
+    _ -> #(year, mon_num - 1)
   }
 }
 
@@ -678,6 +725,8 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       user: User(id: "id1", name: "Sergey"),
       cycle: cycle,
       route: Home,
+      cycle_end_day: option.Some(26),
+      show_all_transactions: False,
       categories: [],
       transactions: [],
       allocations: [],
@@ -761,12 +810,12 @@ fn get_categories() -> effect.Effect(Msg) {
   effect.from(fn(dispatch) { dispatch(Categories(cats: Ok(categories()))) })
 }
 
-fn get_transactions(cycle: Cycle) -> effect.Effect(Msg) {
+fn get_transactions(start: d.Date, end: d.Date) -> effect.Effect(Msg) {
   effect.from(fn(dispatch) {
     dispatch(
       Transactions(Ok(
         transactions()
-        |> list.filter(fn(t) { is_equal(t.date, cycle) }),
+        |> list.filter(fn(t) { d.is_between(t.date, start, end) }),
       )),
     )
   })
@@ -1125,22 +1174,37 @@ fn ready_to_assign(
 }
 
 fn budget_transactions(model: Model) -> element.Element(Msg) {
-  html.table([attribute.class("table table-sm table-hover")], [
-    html.thead([], [
-      html.tr([], [
-        html.th([], [html.text("Date")]),
-        html.th([], [html.text("Payee")]),
-        html.th([], [html.text("Category")]),
-        html.th([], [html.text("Amount")]),
+  html.div([attribute.class("d-flex flex-column flex-fill")], [
+    html.div([attribute.class("form-check")], [
+      html.input([
+        attribute.id("flexCheckDefault"),
+        attribute.value(""),
+        attribute.type_("checkbox"),
+        attribute.class("form-check-input"),
+        attribute.checked(model.show_all_transactions),
       ]),
+      html.label(
+        [attribute.for("flexCheckDefault"), attribute.class("form-check-label")],
+        [html.text("Show all transactions")],
+      ),
     ]),
-    html.tbody(
-      [],
-      list.flatten([
-        [add_transaction_ui(model.transactions, model.categories)],
-        list.map(model.transactions, fn(t) { transaction_list_item(t, model) }),
+    html.table([attribute.class("table table-sm table-hover")], [
+      html.thead([], [
+        html.tr([], [
+          html.th([], [html.text("Date")]),
+          html.th([], [html.text("Payee")]),
+          html.th([], [html.text("Category")]),
+          html.th([], [html.text("Amount")]),
+        ]),
       ]),
-    ),
+      html.tbody(
+        [],
+        list.flatten([
+          [add_transaction_ui(model.transactions, model.categories)],
+          list.map(model.transactions, fn(t) { transaction_list_item(t, model) }),
+        ]),
+      ),
+    ]),
   ])
 }
 
@@ -1397,12 +1461,12 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
   ])
 }
 
-fn category_assigned(c: Category, allocations: List(Allocation)) -> String {
-  allocations
-  |> list.filter(fn(a) { a.category_id == c.id })
-  |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.amount) })
-  |> money_to_string
-}
+// fn category_assigned(c: Category, allocations: List(Allocation)) -> String {
+//   allocations
+//   |> list.filter(fn(a) { a.category_id == c.id })
+//   |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.amount) })
+//   |> money_to_string
+// }
 
 fn category_target(cat: Category) -> String {
   case cat.target {
@@ -1467,43 +1531,14 @@ pub fn month_to_string(value: MonthInYear) -> String {
 
 //FACTORIES
 fn allocations(cycle: Cycle) -> List(Allocation) {
+  let c = Cycle(2024, d.Dec)
   [
-    Allocation(
-      id: "1",
-      amount: Money(80, 0),
-      category_id: "1",
-      date: Cycle(2024, d.Dec),
-    ),
-    Allocation(
-      id: "2",
-      amount: Money(120, 0),
-      category_id: "2",
-      date: Cycle(2024, d.Dec),
-    ),
-    Allocation(
-      id: "3",
-      amount: Money(150, 0),
-      category_id: "3",
-      date: Cycle(2024, d.Dec),
-    ),
-    Allocation(
-      id: "4",
-      amount: Money(100, 2),
-      category_id: "4",
-      date: Cycle(2024, d.Dec),
-    ),
-    Allocation(
-      id: "5",
-      amount: Money(200, 2),
-      category_id: "5",
-      date: Cycle(2024, d.Dec),
-    ),
-    Allocation(
-      id: "6",
-      amount: Money(500, 2),
-      category_id: "6",
-      date: Cycle(2024, d.Dec),
-    ),
+    Allocation(id: "1", amount: Money(80, 0), category_id: "1", date: c),
+    Allocation(id: "2", amount: Money(120, 0), category_id: "2", date: c),
+    Allocation(id: "3", amount: Money(150, 0), category_id: "3", date: c),
+    Allocation(id: "4", amount: Money(100, 2), category_id: "4", date: c),
+    Allocation(id: "5", amount: Money(200, 2), category_id: "5", date: c),
+    Allocation(id: "6", amount: Money(500, 2), category_id: "6", date: c),
   ]
   |> list.filter(fn(a) { a.date == cycle })
 }
@@ -1545,6 +1580,13 @@ fn categories() -> List(Category) {
 
 fn transactions() -> List(Transaction) {
   [
+    Transaction(
+      id: "1",
+      date: d.from_calendar_date(2025, d.Jan, 1),
+      payee: "Amazon",
+      category_id: "5",
+      value: Money(-10, 0),
+    ),
     Transaction(
       id: "1",
       date: d.from_calendar_date(2024, d.Dec, 2),
@@ -1603,10 +1645,17 @@ fn transactions() -> List(Transaction) {
     ),
     Transaction(
       id: "8",
-      date: d.from_calendar_date(2024, d.Dec, 2),
+      date: d.from_calendar_date(2024, d.Nov, 27),
       payee: "O2",
       category_id: "1",
-      value: Money(-100, 50),
+      value: Money(-1, 50),
+    ),
+    Transaction(
+      id: "8",
+      date: d.from_calendar_date(2024, d.Nov, 26),
+      payee: "O2",
+      category_id: "1",
+      value: Money(-1, 50),
     ),
   ]
 }
