@@ -531,12 +531,6 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         ShiftRight -> cycle_increase(model.cycle)
       }
       let #(start, end) = cycle_bounds(new_cycle, model.cycle_end_day)
-      io.debug("new cycle")
-      io.debug(new_cycle)
-      io.debug("start")
-      io.debug(start |> date_utils.to_date_string)
-      io.debug("end")
-      io.debug(end |> date_utils.to_date_string)
       #(
         Model(..model, cycle: new_cycle),
         effect.batch([get_transactions(start, end), get_allocations(new_cycle)]),
@@ -821,11 +815,11 @@ fn get_transactions(start: d.Date, end: d.Date) -> effect.Effect(Msg) {
   })
 }
 
-fn is_equal(date: d.Date, c: Cycle) -> Bool {
-  let d_mon = date |> d.month |> d.month_to_number()
-  let d_year = date |> d.year
-  d_mon == c.month |> d.month_to_number() && d_year == c.year
-}
+// fn is_equal(date: d.Date, c: Cycle) -> Bool {
+//   let d_mon = date |> d.month |> d.month_to_number()
+//   let d_year = date |> d.year
+//   d_mon == c.month |> d.month_to_number() && d_year == c.year
+// }
 
 fn view(model: Model) -> element.Element(Msg) {
   // html.div([attribute.class("container-fluid bg-dark")], [
@@ -925,15 +919,7 @@ fn view(model: Model) -> element.Element(Msg) {
         },
         html.div([], [
           {
-            let selected_cat =
-              model.selected_category
-              |> option.map(fn(selected_cat) {
-                model.categories
-                |> list.find(fn(cat) { cat.id == selected_cat.id })
-                |> option.from_result
-              })
-              |> option.flatten
-
+            let selected_cat = get_selected_category(model)
             case selected_cat, model.route, model.selected_category {
               option.Some(c), Home, option.Some(sc) ->
                 category_details(
@@ -951,6 +937,16 @@ fn view(model: Model) -> element.Element(Msg) {
       ]),
     ]),
   ])
+}
+
+fn get_selected_category(model: Model) -> option.Option(Category) {
+  model.selected_category
+  |> option.map(fn(selected_cat) {
+    model.categories
+    |> list.find(fn(cat) { cat.id == selected_cat.id })
+    |> option.from_result
+  })
+  |> option.flatten
 }
 
 fn cycle_to_text(c: Cycle) -> String {
@@ -1010,7 +1006,11 @@ fn category_details(
       html.div([attribute.class("col")], [
         html.div([], [html.text("Activity")]),
         html.div([], [
-          html.text(category_activity(category, model.transactions)),
+          html.text(
+            category_activity(category, model.transactions)
+            |> money_to_string
+            |> prepend("-"),
+          ),
         ]),
       ]),
     ]),
@@ -1131,7 +1131,7 @@ fn target_string(category: Category) -> String {
     option.None -> ""
     option.Some(Custom(amount, date_till)) ->
       "Monthly: "
-      <> custom_target_money_in_month(amount, date_till)
+      <> custom_target_money_in_month(amount, date_till) |> money_to_string
       <> "\n till date: "
       <> month_to_string(date_till)
       <> " Total amount: "
@@ -1140,15 +1140,21 @@ fn target_string(category: Category) -> String {
   }
 }
 
-fn custom_target_money_in_month(m: Money, date: MonthInYear) -> String {
+fn target_money(category: Category) -> Money {
+  case category.target {
+    option.None -> Money(0, 0)
+    option.Some(Custom(amount, date_till)) ->
+      custom_target_money_in_month(amount, date_till)
+    option.Some(Monthly(amount)) -> amount
+  }
+}
+
+fn custom_target_money_in_month(m: Money, date: MonthInYear) -> Money {
   let today = d.today()
   let final_date =
     d.from_calendar_date(date.year, d.number_to_month(date.month), 28)
   let months_count = d.diff(d.Months, today, final_date) + 1
-  "€"
-  <> m.s / months_count |> int.to_string
-  <> "."
-  <> m.b / months_count |> int.to_string
+  Money(m.s / months_count, m.b / months_count)
 }
 
 fn ready_to_assign(
@@ -1432,7 +1438,7 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
             [event.on_click(SelectCategory(c)), attribute.class(active_class)],
             [
               html.td([], [html.text(c.name)]),
-              html.td([], [html.text(category_target(c))]),
+              html.td([], [html.text(category_target(c, model))]),
             ],
           )
         })
@@ -1468,23 +1474,16 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
 //   |> money_to_string
 // }
 
-fn category_target(cat: Category) -> String {
-  case cat.target {
-    option.Some(v) ->
-      case v {
-        Monthly(value) -> money_to_string(value)
-        Custom(money, date) -> custom_target_money_in_month(money, date)
-      }
-    option.None -> ""
-  }
+fn category_target(cat: Category, model: Model) -> String {
+  let target_money = target_money(cat)
+  let activity = category_activity(cat, model.transactions)
+  money_sum(target_money, activity) |> money_to_string
 }
 
-fn category_activity(cat: Category, transactions: List(Transaction)) -> String {
+fn category_activity(cat: Category, transactions: List(Transaction)) -> Money {
   transactions
   |> list.filter(fn(t) { t.category_id == cat.id })
   |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.value) })
-  |> money_to_string
-  |> prepend("-")
 }
 
 fn prepend(body: String, prefix: String) -> String {

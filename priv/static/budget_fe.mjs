@@ -6185,6 +6185,23 @@ function add_category(name) {
     }
   );
 }
+function get_selected_category(model) {
+  let _pipe = model.selected_category;
+  let _pipe$1 = map(
+    _pipe,
+    (selected_cat) => {
+      let _pipe$12 = model.categories;
+      let _pipe$2 = find(
+        _pipe$12,
+        (cat) => {
+          return cat.id === selected_cat.id;
+        }
+      );
+      return from_result(_pipe$2);
+    }
+  );
+  return flatten(_pipe$1);
+}
 function cycle_to_text(c) {
   return (() => {
     let _pipe = c.month;
@@ -6277,13 +6294,20 @@ function custom_target_money_in_month(m, date) {
     28
   );
   let months_count = diff2(new Months(), today2, final_date) + 1;
-  return "\u20AC" + (() => {
-    let _pipe = divideInt(m.s, months_count);
-    return to_string(_pipe);
-  })() + "." + (() => {
-    let _pipe = divideInt(m.b, months_count);
-    return to_string(_pipe);
-  })();
+  return new Money(divideInt(m.s, months_count), divideInt(m.b, months_count));
+}
+function target_money(category) {
+  let $ = category.target;
+  if ($ instanceof None) {
+    return new Money(0, 0);
+  } else if ($ instanceof Some && $[0] instanceof Custom) {
+    let amount = $[0].target;
+    let date_till = $[0].date;
+    return custom_target_money_in_month(amount, date_till);
+  } else {
+    let amount = $[0].target;
+    return amount;
+  }
 }
 function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
   let $ = selected_id === t.id;
@@ -6694,21 +6718,38 @@ function money_to_string_no_sign(m) {
 function money_to_string(m) {
   return "\u20AC" + money_to_string_no_sign(m);
 }
-function category_target(cat) {
-  let $ = cat.target;
-  if ($ instanceof Some) {
-    let v = $[0];
-    if (v instanceof Monthly) {
-      let value3 = v.target;
-      return money_to_string(value3);
+function money_sum(a2, b) {
+  let base_sum = a2.b + b.b;
+  let $ = (() => {
+    let $1 = base_sum >= 100;
+    if ($1) {
+      return [1, remainderInt(base_sum, 100)];
     } else {
-      let money = v.target;
-      let date = v.date;
-      return custom_target_money_in_month(money, date);
+      return [0, base_sum];
     }
-  } else {
-    return "";
-  }
+  })();
+  let euro = $[0];
+  let base = $[1];
+  return new Money(a2.s + b.s + euro, base);
+}
+function category_activity(cat, transactions2) {
+  let _pipe = transactions2;
+  let _pipe$1 = filter(_pipe, (t) => {
+    return t.category_id === cat.id;
+  });
+  return fold(
+    _pipe$1,
+    new Money(0, 0),
+    (m, t) => {
+      return money_sum(m, t.value);
+    }
+  );
+}
+function category_target(cat, model) {
+  let target_money$1 = target_money(cat);
+  let activity = category_activity(cat, model.transactions);
+  let _pipe = money_sum(target_money$1, activity);
+  return money_to_string(_pipe);
 }
 function budget_categories(model) {
   let size = (() => {
@@ -6780,7 +6821,10 @@ function budget_categories(model) {
                 ]),
                 toList([
                   td(toList([]), toList([text2(c.name)])),
-                  td(toList([]), toList([text2(category_target(c))]))
+                  td(
+                    toList([]),
+                    toList([text2(category_target(c, model))])
+                  )
                 ])
               );
             }
@@ -6831,35 +6875,6 @@ function budget_categories(model) {
       )
     ])
   );
-}
-function money_sum(a2, b) {
-  let base_sum = a2.b + b.b;
-  let $ = (() => {
-    let $1 = base_sum >= 100;
-    if ($1) {
-      return [1, remainderInt(base_sum, 100)];
-    } else {
-      return [0, base_sum];
-    }
-  })();
-  let euro = $[0];
-  let base = $[1];
-  return new Money(a2.s + b.s + euro, base);
-}
-function category_activity(cat, transactions2) {
-  let _pipe = transactions2;
-  let _pipe$1 = filter(_pipe, (t) => {
-    return t.category_id === cat.id;
-  });
-  let _pipe$2 = fold(
-    _pipe$1,
-    new Money(0, 0),
-    (m, t) => {
-      return money_sum(m, t.value);
-    }
-  );
-  let _pipe$3 = money_to_string(_pipe$2);
-  return prepend4(_pipe$3, "-");
 }
 function money_minus(a2, b) {
   let base_sum = a2.b - b.b;
@@ -6931,9 +6946,12 @@ function target_string(category) {
   } else if ($ instanceof Some && $[0] instanceof Custom) {
     let amount = $[0].target;
     let date_till = $[0].date;
-    return "Monthly: " + custom_target_money_in_month(amount, date_till) + "\n till date: " + month_to_string(
-      date_till
-    ) + " Total amount: " + money_to_string(amount);
+    return "Monthly: " + (() => {
+      let _pipe = custom_target_money_in_month(amount, date_till);
+      return money_to_string(_pipe);
+    })() + "\n till date: " + month_to_string(date_till) + " Total amount: " + money_to_string(
+      amount
+    );
   } else {
     let amount = $[0].target;
     return "Monthly: " + money_to_string(amount);
@@ -7079,7 +7097,16 @@ function category_details(category, model, sc, allocation) {
               div(
                 toList([]),
                 toList([
-                  text2(category_activity(category, model.transactions))
+                  text2(
+                    (() => {
+                      let _pipe = category_activity(
+                        category,
+                        model.transactions
+                      );
+                      let _pipe$1 = money_to_string(_pipe);
+                      return prepend4(_pipe$1, "-");
+                    })()
+                  )
                 ])
               )
             ])
@@ -7234,23 +7261,7 @@ function view(model) {
                 toList([]),
                 toList([
                   (() => {
-                    let selected_cat = (() => {
-                      let _pipe = model.selected_category;
-                      let _pipe$1 = map(
-                        _pipe,
-                        (selected_cat2) => {
-                          let _pipe$12 = model.categories;
-                          let _pipe$2 = find(
-                            _pipe$12,
-                            (cat) => {
-                              return cat.id === selected_cat2.id;
-                            }
-                          );
-                          return from_result(_pipe$2);
-                        }
-                      );
-                      return flatten(_pipe$1);
-                    })();
+                    let selected_cat = get_selected_category(model);
                     let $ = model.route;
                     let $1 = model.selected_category;
                     if (selected_cat instanceof Some && $ instanceof Home && $1 instanceof Some) {
@@ -8090,22 +8101,6 @@ function update(model, msg) {
     let $ = cycle_bounds(new_cycle, model.cycle_end_day);
     let start3 = $[0];
     let end = $[1];
-    debug("new cycle");
-    debug(new_cycle);
-    debug("start");
-    debug(
-      (() => {
-        let _pipe = start3;
-        return to_date_string(_pipe);
-      })()
-    );
-    debug("end");
-    debug(
-      (() => {
-        let _pipe = end;
-        return to_date_string(_pipe);
-      })()
-    );
     return [
       model.withFields({ cycle: new_cycle }),
       batch(
