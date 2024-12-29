@@ -287,6 +287,29 @@ function makeError(variant, module, line, fn, message, extra) {
   return error;
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/bool.mjs
+function to_int(bool3) {
+  if (!bool3) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+function to_string(bool3) {
+  if (!bool3) {
+    return "False";
+  } else {
+    return "True";
+  }
+}
+function guard(requirement, consequence, alternative) {
+  if (requirement) {
+    return consequence;
+  } else {
+    return alternative();
+  }
+}
+
 // build/dev/javascript/gleam_stdlib/gleam/option.mjs
 var Some = class extends CustomType {
   constructor(x0) {
@@ -841,7 +864,7 @@ function push_path(error, name) {
   let name$1 = identity(name);
   let decoder = any(
     toList([string, (x) => {
-      return map3(int(x), to_string);
+      return map3(int(x), to_string2);
     }])
   );
   let name$2 = (() => {
@@ -1607,7 +1630,7 @@ function parse_int(value3) {
     return new Error(Nil);
   }
 }
-function to_string(term) {
+function to_string2(term) {
   return term.toString();
 }
 function float_to_string(float3) {
@@ -2132,22 +2155,6 @@ function guidv4() {
   return format_uuid(concatened);
 }
 
-// build/dev/javascript/gleam_stdlib/gleam/bool.mjs
-function to_int(bool3) {
-  if (!bool3) {
-    return 0;
-  } else {
-    return 1;
-  }
-}
-function guard(requirement, consequence, alternative) {
-  if (requirement) {
-    return consequence;
-  } else {
-    return alternative();
-  }
-}
-
 // build/dev/javascript/lustre/lustre/effect.mjs
 var Effect = class extends CustomType {
   constructor(all) {
@@ -2240,7 +2247,7 @@ function do_element_list_handlers(elements2, handlers2, key) {
     elements2,
     handlers2,
     (handlers3, element2, index3) => {
-      let key$1 = key + "-" + to_string(index3);
+      let key$1 = key + "-" + to_string2(index3);
       return do_handlers(element2, handlers3, key$1);
     }
   );
@@ -4737,7 +4744,7 @@ function pad_signed_int(value3, length4) {
   let suffix = (() => {
     let _pipe = value3;
     let _pipe$1 = absolute_value(_pipe);
-    let _pipe$2 = to_string(_pipe$1);
+    let _pipe$2 = to_string2(_pipe$1);
     return pad_left(_pipe$2, length4, "0");
   })();
   return prefix + suffix;
@@ -4824,7 +4831,7 @@ function ordinal_suffix(value3) {
   }
 }
 function with_ordinal_suffix(value3) {
-  return to_string(value3) + ordinal_suffix(value3);
+  return to_string2(value3) + ordinal_suffix(value3);
 }
 function language_en() {
   return new Language(
@@ -5022,7 +5029,7 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
       if (length4 === 2) {
         let _pipe = date;
         let _pipe$1 = year(_pipe);
-        let _pipe$2 = to_string(_pipe$1);
+        let _pipe$2 = to_string2(_pipe$1);
         let _pipe$3 = pad_left(_pipe$2, 2, "0");
         return string_take_right(_pipe$3, 2);
       } else {
@@ -5034,7 +5041,7 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
       if (length4 === 2) {
         let _pipe = date;
         let _pipe$1 = week_year(_pipe);
-        let _pipe$2 = to_string(_pipe$1);
+        let _pipe$2 = to_string2(_pipe$1);
         let _pipe$3 = pad_left(_pipe$2, 2, "0");
         return string_take_right(_pipe$3, 2);
       } else {
@@ -5046,15 +5053,15 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
       if (length4 === 1) {
         let _pipe = date;
         let _pipe$1 = quarter(_pipe);
-        return to_string(_pipe$1);
+        return to_string2(_pipe$1);
       } else if (length4 === 2) {
         let _pipe = date;
         let _pipe$1 = quarter(_pipe);
-        return to_string(_pipe$1);
+        return to_string2(_pipe$1);
       } else if (length4 === 3) {
         let _pipe = date;
         let _pipe$1 = quarter(_pipe);
-        let _pipe$2 = to_string(_pipe$1);
+        let _pipe$2 = to_string2(_pipe$1);
         return ((str) => {
           return "Q" + str;
         })(_pipe$2);
@@ -5065,7 +5072,7 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
       } else if (length4 === 5) {
         let _pipe = date;
         let _pipe$1 = quarter(_pipe);
-        return to_string(_pipe$1);
+        return to_string2(_pipe$1);
       } else {
         return "";
       }
@@ -5073,11 +5080,11 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
       if (length4 === 1) {
         let _pipe = date;
         let _pipe$1 = month_number(_pipe);
-        return to_string(_pipe$1);
+        return to_string2(_pipe$1);
       } else if (length4 === 2) {
         let _pipe = date;
         let _pipe$1 = month_number(_pipe);
-        let _pipe$2 = to_string(_pipe$1);
+        let _pipe$2 = to_string2(_pipe$1);
         return pad_left(_pipe$2, 2, "0");
       } else if (length4 === 3) {
         let _pipe = date;
@@ -5099,11 +5106,11 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
       if (length4 === 1) {
         let _pipe = date;
         let _pipe$1 = week_number(_pipe);
-        return to_string(_pipe$1);
+        return to_string2(_pipe$1);
       } else if (length4 === 2) {
         let _pipe = date;
         let _pipe$1 = week_number(_pipe);
-        let _pipe$2 = to_string(_pipe$1);
+        let _pipe$2 = to_string2(_pipe$1);
         return pad_left(_pipe$2, 2, "0");
       } else {
         return "";
@@ -5112,11 +5119,11 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
       if (length4 === 1) {
         let _pipe = date;
         let _pipe$1 = day(_pipe);
-        return to_string(_pipe$1);
+        return to_string2(_pipe$1);
       } else if (length4 === 2) {
         let _pipe = date;
         let _pipe$1 = day(_pipe);
-        let _pipe$2 = to_string(_pipe$1);
+        let _pipe$2 = to_string2(_pipe$1);
         return pad_left(_pipe$2, 2, "0");
       } else if (length4 === 3) {
         let _pipe = date;
@@ -5129,16 +5136,16 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
       if (length4 === 1) {
         let _pipe = date;
         let _pipe$1 = ordinal_day(_pipe);
-        return to_string(_pipe$1);
+        return to_string2(_pipe$1);
       } else if (length4 === 2) {
         let _pipe = date;
         let _pipe$1 = ordinal_day(_pipe);
-        let _pipe$2 = to_string(_pipe$1);
+        let _pipe$2 = to_string2(_pipe$1);
         return pad_left(_pipe$2, 2, "0");
       } else if (length4 === 3) {
         let _pipe = date;
         let _pipe$1 = ordinal_day(_pipe);
-        let _pipe$2 = to_string(_pipe$1);
+        let _pipe$2 = to_string2(_pipe$1);
         return pad_left(_pipe$2, 3, "0");
       } else {
         return "";
@@ -5177,11 +5184,11 @@ function format_field(loop$date, loop$language, loop$char, loop$length) {
       if (length4 === 1) {
         let _pipe = date;
         let _pipe$1 = weekday_number(_pipe);
-        return to_string(_pipe$1);
+        return to_string2(_pipe$1);
       } else if (length4 === 2) {
         let _pipe = date;
         let _pipe$1 = weekday_number(_pipe);
-        return to_string(_pipe$1);
+        return to_string2(_pipe$1);
       } else {
         let _pipe = date;
         loop$date = _pipe;
@@ -5262,11 +5269,11 @@ function from_ordinal_parts(year2, ordinal) {
   let $ = !is_between_int(ordinal, 1, days_in_year);
   if ($) {
     return new Error(
-      "Invalid ordinal date: " + ("ordinal-day " + to_string(ordinal) + " is out of range") + (" (1 to " + to_string(
+      "Invalid ordinal date: " + ("ordinal-day " + to_string2(ordinal) + " is out of range") + (" (1 to " + to_string2(
         days_in_year
-      ) + ")") + (" for " + to_string(year2)) + ("; received (year " + to_string(
+      ) + ")") + (" for " + to_string2(year2)) + ("; received (year " + to_string2(
         year2
-      ) + ", ordinal-day " + to_string(ordinal) + ")")
+      ) + ", ordinal-day " + to_string2(ordinal) + ")")
     );
   } else {
     return new Ok(new RD(days_before_year(year2) + ordinal));
@@ -5281,15 +5288,15 @@ function from_calendar_parts(year2, month_number2, day2) {
   );
   if (!$) {
     return new Error(
-      "Invalid date: " + ("month " + to_string(month_number2) + " is out of range") + " (1 to 12)" + ("; received (year " + to_string(
+      "Invalid date: " + ("month " + to_string2(month_number2) + " is out of range") + " (1 to 12)" + ("; received (year " + to_string2(
         year2
-      ) + ", month " + to_string(month_number2) + ", day " + to_string(
+      ) + ", month " + to_string2(month_number2) + ", day " + to_string2(
         day2
       ) + ")")
     );
   } else if ($ && !$1) {
     return new Error(
-      "Invalid date: " + ("day " + to_string(day2) + " is out of range") + (" (1 to " + to_string(
+      "Invalid date: " + ("day " + to_string2(day2) + " is out of range") + (" (1 to " + to_string2(
         days_in_month(year2, number_to_month(month_number2))
       ) + ")") + (" for " + (() => {
         let _pipe = month_number2;
@@ -5298,13 +5305,13 @@ function from_calendar_parts(year2, month_number2, day2) {
       })()) + (() => {
         let $2 = month_number2 === 2 && day2 === 29;
         if ($2) {
-          return " (" + to_string(year2) + " is not a leap year)";
+          return " (" + to_string2(year2) + " is not a leap year)";
         } else {
           return "";
         }
-      })() + ("; received (year " + to_string(year2) + ", month " + to_string(
+      })() + ("; received (year " + to_string2(year2) + ", month " + to_string2(
         month_number2
-      ) + ", day " + to_string(day2) + ")")
+      ) + ", day " + to_string2(day2) + ")")
     );
   } else {
     return new Ok(
@@ -5330,19 +5337,19 @@ function from_week_parts(week_year2, week_number2, weekday_number2) {
   let $1 = is_between_int(weekday_number2, 1, 7);
   if (!$) {
     return new Error(
-      "Invalid week date: " + ("week " + to_string(week_number2) + " is out of range") + (" (1 to " + to_string(
+      "Invalid week date: " + ("week " + to_string2(week_number2) + " is out of range") + (" (1 to " + to_string2(
         weeks_in_year
-      ) + ")") + (" for " + to_string(week_year2)) + ("; received (year " + to_string(
+      ) + ")") + (" for " + to_string2(week_year2)) + ("; received (year " + to_string2(
         week_year2
-      ) + ", week " + to_string(week_number2) + ", weekday " + to_string(
+      ) + ", week " + to_string2(week_number2) + ", weekday " + to_string2(
         weekday_number2
       ) + ")")
     );
   } else if ($ && !$1) {
     return new Error(
-      "Invalid week date: " + ("weekday " + to_string(weekday_number2) + " is out of range") + " (1 to 7)" + ("; received (year " + to_string(
+      "Invalid week date: " + ("weekday " + to_string2(weekday_number2) + " is out of range") + " (1 to 7)" + ("; received (year " + to_string2(
         week_year2
-      ) + ", week " + to_string(week_number2) + ", weekday " + to_string(
+      ) + ", week " + to_string2(week_number2) + ", weekday " + to_string2(
         weekday_number2
       ) + ")")
     );
@@ -6208,7 +6215,7 @@ function cycle_to_text(c) {
     return month_to_name2(_pipe);
   })() + " " + (() => {
     let _pipe = c.year;
-    return to_string(_pipe);
+    return to_string2(_pipe);
   })();
 }
 function user_selection(m) {
@@ -6355,10 +6362,10 @@ function transaction_category_name(t, cats) {
 function transaction_amount(t) {
   return (() => {
     let _pipe = t.value.s;
-    return to_string(_pipe);
+    return to_string2(_pipe);
   })() + "." + (() => {
     let _pipe = t.value.b;
-    return to_string(_pipe);
+    return to_string2(_pipe);
   })();
 }
 function transaction_list_item(t, model) {
@@ -6703,16 +6710,27 @@ function budget_transactions(model) {
     ])
   );
 }
+function div_context(text3, color) {
+  return div(
+    toList([
+      class$("ms-2 p-1"),
+      style(
+        toList([["background-color", color], ["width", "fit-content"]])
+      )
+    ]),
+    toList([text2(text3)])
+  );
+}
 function prepend4(body, prefix) {
   return prefix + body;
 }
 function money_to_string_no_sign(m) {
   return (() => {
     let _pipe = m.s;
-    return to_string(_pipe);
+    return to_string2(_pipe);
   })() + "." + (() => {
     let _pipe = m.b;
-    return to_string(_pipe);
+    return to_string2(_pipe);
   })();
 }
 function money_to_string(m) {
@@ -6732,6 +6750,22 @@ function money_sum(a2, b) {
   let base = $[1];
   return new Money(a2.s + b.s + euro, base);
 }
+function category_assigned(c, allocations2, cycle) {
+  let _pipe = allocations2;
+  let _pipe$1 = filter(_pipe, (a2) => {
+    return isEqual(a2.date, cycle);
+  });
+  let _pipe$2 = filter(_pipe$1, (a2) => {
+    return a2.category_id === c.id;
+  });
+  return fold(
+    _pipe$2,
+    new Money(0, 0),
+    (m, t) => {
+      return money_sum(m, t.amount);
+    }
+  );
+}
 function category_activity(cat, transactions2) {
   let _pipe = transactions2;
   let _pipe$1 = filter(_pipe, (t) => {
@@ -6745,11 +6779,111 @@ function category_activity(cat, transactions2) {
     }
   );
 }
+function money_minus(a2, b) {
+  let base_sum = a2.b - b.b;
+  let $ = (() => {
+    let $1 = base_sum < 0;
+    if ($1) {
+      return [1, 100 + base_sum];
+    } else {
+      return [0, base_sum];
+    }
+  })();
+  let euro = $[0];
+  let base = $[1];
+  return new Money(a2.s - b.s - euro, base);
+}
+function ready_to_assign(transactions2, allocations2, cycle) {
+  debug("ready_to_assign");
+  let income = (() => {
+    let _pipe2 = transactions2;
+    let _pipe$1 = filter(_pipe2, (t) => {
+      return t.category_id === "0";
+    });
+    return fold(
+      _pipe$1,
+      new Money(0, 0),
+      (m, t) => {
+        return money_sum(m, t.value);
+      }
+    );
+  })();
+  let outcome = (() => {
+    let _pipe2 = allocations2;
+    let _pipe$1 = filter_map(
+      _pipe2,
+      (a2) => {
+        debug(
+          "alloc id:" + a2.category_id + " amount:" + (() => {
+            let _pipe$12 = a2.amount;
+            return money_to_string_no_sign(_pipe$12);
+          })()
+        );
+        let $ = isEqual(a2.date, cycle);
+        if ($) {
+          return new Ok(a2.amount);
+        } else {
+          return new Error("");
+        }
+      }
+    );
+    return fold(
+      _pipe$1,
+      new Money(0, 0),
+      (m, t) => {
+        return money_sum(m, t);
+      }
+    );
+  })();
+  let _pipe = money_minus(income, outcome);
+  return money_to_string_no_sign(_pipe);
+}
 function category_target(cat, model) {
   let target_money$1 = target_money(cat);
   let activity = category_activity(cat, model.transactions);
-  let _pipe = money_sum(target_money$1, activity);
-  return money_to_string(_pipe);
+  let assigned = category_assigned(cat, model.allocations, model.cycle);
+  let balance = money_sum(assigned, activity);
+  let color = (() => {
+    let $ = balance.s;
+    if ($ === 0) {
+      return "rgb(137, 143, 138)";
+    } else {
+      let $1 = balance.s > 0;
+      if ($1) {
+        return "rgba(64,185,78,1)";
+      } else {
+        return "rgb(231, 41, 12)";
+      }
+    }
+  })();
+  let add_diff = money_minus(target_money$1, assigned);
+  let warn_text = (() => {
+    let $ = add_diff.s > 0;
+    if (!$) {
+      return text2("");
+    } else {
+      return div_context(
+        " Add more " + (() => {
+          let _pipe = add_diff;
+          return money_to_string(_pipe);
+        })(),
+        "rgb(235, 199, 16)"
+      );
+    }
+  })();
+  return div(
+    toList([class$("d-flex flex-row")]),
+    toList([
+      div_context(
+        (() => {
+          let _pipe = balance;
+          return money_to_string(_pipe);
+        })(),
+        color
+      ),
+      warn_text
+    ])
+  );
 }
 function budget_categories(model) {
   let size = (() => {
@@ -6821,10 +6955,7 @@ function budget_categories(model) {
                 ]),
                 toList([
                   td(toList([]), toList([text2(c.name)])),
-                  td(
-                    toList([]),
-                    toList([text2(category_target(c, model))])
-                  )
+                  td(toList([]), toList([category_target(c, model)]))
                 ])
               );
             }
@@ -6876,66 +7007,14 @@ function budget_categories(model) {
     ])
   );
 }
-function money_minus(a2, b) {
-  let base_sum = a2.b - b.b;
-  let $ = (() => {
-    let $1 = base_sum < 0;
-    if ($1) {
-      return [1, 100 + base_sum];
-    } else {
-      return [0, base_sum];
-    }
-  })();
-  let euro = $[0];
-  let base = $[1];
-  return new Money(a2.s - b.s - euro, base);
-}
-function ready_to_assign(transactions2, allocations2, cycle) {
-  let income = (() => {
-    let _pipe2 = transactions2;
-    let _pipe$1 = filter(_pipe2, (t) => {
-      return t.category_id === "0";
-    });
-    return fold(
-      _pipe$1,
-      new Money(0, 0),
-      (m, t) => {
-        return money_sum(m, t.value);
-      }
-    );
-  })();
-  let outcome = (() => {
-    let _pipe2 = allocations2;
-    let _pipe$1 = filter_map(
-      _pipe2,
-      (a2) => {
-        let $ = isEqual(a2.date, cycle);
-        if ($) {
-          return new Ok(a2.amount);
-        } else {
-          return new Error("");
-        }
-      }
-    );
-    return fold(
-      _pipe$1,
-      new Money(0, 0),
-      (m, t) => {
-        return money_sum(m, t);
-      }
-    );
-  })();
-  let _pipe = money_minus(income, outcome);
-  return money_to_string_no_sign(_pipe);
-}
 function month_to_string(value3) {
   return (() => {
     let _pipe = value3.month;
-    let _pipe$1 = to_string(_pipe);
+    let _pipe$1 = to_string2(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })() + "." + (() => {
     let _pipe = value3.year;
-    let _pipe$1 = to_string(_pipe);
+    let _pipe$1 = to_string2(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })();
 }
@@ -7273,13 +7352,19 @@ function view(model) {
                         sc,
                         (() => {
                           let _pipe = model.allocations;
-                          let _pipe$1 = find(
+                          let _pipe$1 = filter(
                             _pipe,
+                            (a2) => {
+                              return isEqual(a2.date, model.cycle);
+                            }
+                          );
+                          let _pipe$2 = find(
+                            _pipe$1,
                             (a2) => {
                               return a2.id === c.id;
                             }
                           );
-                          return from_result(_pipe$1);
+                          return from_result(_pipe$2);
                         })()
                       );
                     } else {
@@ -7302,7 +7387,7 @@ function allocations(cycle) {
     new Allocation("2", new Money(120, 0), "2", c),
     new Allocation("3", new Money(150, 0), "3", c),
     new Allocation("4", new Money(100, 2), "4", c),
-    new Allocation("5", new Money(200, 2), "5", c),
+    new Allocation("5", new Money(150, 2), "5", c),
     new Allocation("6", new Money(500, 2), "6", c)
   ]);
   return filter(_pipe, (a2) => {
@@ -8047,6 +8132,12 @@ function update(model, msg) {
     ];
   } else if (msg instanceof SaveAllocationResult && msg[0].isOk()) {
     let aer = msg[0][0];
+    debug(
+      "SaveAllocationResult Ok is_created:" + (() => {
+        let _pipe = aer.is_created;
+        return to_string(_pipe);
+      })()
+    );
     return [
       model.withFields({
         allocations: (() => {
@@ -8062,6 +8153,7 @@ function update(model, msg) {
                 if (!$1) {
                   return a2;
                 } else {
+                  debug("SaveAllocationResult true");
                   return aer.alloc;
                 }
               }
@@ -8116,7 +8208,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      174,
+      175,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

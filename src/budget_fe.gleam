@@ -1,5 +1,6 @@
 // import birl
 import date_utils
+import gleam/bool
 import gleam/int
 import gleam/io
 import gleam/list
@@ -499,23 +500,32 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         save_allocation_eff(a, sc.allocation, sc.id, model.cycle)
       option.None -> effect.none()
     })
-    SaveAllocationResult(Ok(aer)) -> #(
-      Model(
-        ..model,
-        allocations: case aer.is_created {
-          True -> list.append(model.allocations, [aer.alloc])
-          False ->
-            model.allocations
-            |> list.map(fn(a) {
-              case a.id == aer.alloc.id {
-                False -> a
-                True -> aer.alloc
-              }
-            })
-        },
-      ),
-      effect.none(),
-    )
+    SaveAllocationResult(Ok(aer)) -> {
+      io.debug(
+        "SaveAllocationResult Ok is_created:"
+        <> aer.is_created |> bool.to_string,
+      )
+      #(
+        Model(
+          ..model,
+          allocations: case aer.is_created {
+            True -> list.append(model.allocations, [aer.alloc])
+            False ->
+              model.allocations
+              |> list.map(fn(a) {
+                case a.id == aer.alloc.id {
+                  False -> a
+                  True -> {
+                    io.debug("SaveAllocationResult true")
+                    aer.alloc
+                  }
+                }
+              })
+          },
+        ),
+        effect.none(),
+      )
+    }
     SaveAllocationResult(Error(_)) -> #(model, effect.none())
     UserAllocationUpdate(a) -> #(
       Model(
@@ -927,6 +937,7 @@ fn view(model: Model) -> element.Element(Msg) {
                   model,
                   sc,
                   model.allocations
+                    |> list.filter(fn(a) { a.date == model.cycle })
                     |> list.find(fn(a) { a.id == c.id })
                     |> option.from_result,
                 )
@@ -1162,6 +1173,7 @@ fn ready_to_assign(
   allocations: List(Allocation),
   cycle: Cycle,
 ) -> String {
+  io.debug("ready_to_assign")
   let income =
     transactions
     |> list.filter(fn(t) { t.category_id == "0" })
@@ -1169,6 +1181,12 @@ fn ready_to_assign(
   let outcome =
     allocations
     |> list.filter_map(fn(a) {
+      io.debug(
+        "alloc id:"
+        <> a.category_id
+        <> " amount:"
+        <> a.amount |> money_to_string_no_sign,
+      )
       case a.date == cycle {
         True -> Ok(a.amount)
         False -> Error("")
@@ -1438,7 +1456,12 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
             [event.on_click(SelectCategory(c)), attribute.class(active_class)],
             [
               html.td([], [html.text(c.name)]),
-              html.td([], [html.text(category_target(c, model))]),
+              html.td(
+                [
+                  // attribute.style([#("background-color", "rgba(64,185,78,1)")])
+                ],
+                [category_target(c, model)],
+              ),
             ],
           )
         })
@@ -1467,17 +1490,53 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
   ])
 }
 
-// fn category_assigned(c: Category, allocations: List(Allocation)) -> String {
-//   allocations
-//   |> list.filter(fn(a) { a.category_id == c.id })
-//   |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.amount) })
-//   |> money_to_string
-// }
+fn category_assigned(
+  c: Category,
+  allocations: List(Allocation),
+  cycle: Cycle,
+) -> Money {
+  allocations
+  |> list.filter(fn(a) { a.date == cycle })
+  |> list.filter(fn(a) { a.category_id == c.id })
+  |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.amount) })
+}
 
-fn category_target(cat: Category, model: Model) -> String {
+fn category_target(cat: Category, model: Model) -> element.Element(Msg) {
   let target_money = target_money(cat)
   let activity = category_activity(cat, model.transactions)
-  money_sum(target_money, activity) |> money_to_string
+  let assigned = category_assigned(cat, model.allocations, model.cycle)
+  let balance = money_sum(assigned, activity)
+  let color = case balance.s {
+    0 -> "rgb(137, 143, 138)"
+    _ ->
+      case balance.s > 0 {
+        True -> "rgba(64,185,78,1)"
+        False -> "rgb(231, 41, 12)"
+      }
+  }
+  let add_diff = money_minus(target_money, assigned)
+  let warn_text = case add_diff.s > 0 {
+    False -> html.text("")
+    True ->
+      div_context(
+        " Add more " <> add_diff |> money_to_string,
+        "rgb(235, 199, 16)",
+      )
+  }
+  html.div([attribute.class("d-flex flex-row")], [
+    div_context(balance |> money_to_string, color),
+    warn_text,
+  ])
+}
+
+fn div_context(text: String, color: String) -> element.Element(Msg) {
+  html.div(
+    [
+      attribute.class("ms-2 p-1"),
+      attribute.style([#("background-color", color), #("width", "fit-content")]),
+    ],
+    [html.text(text)],
+  )
 }
 
 fn category_activity(cat: Category, transactions: List(Transaction)) -> Money {
@@ -1536,7 +1595,7 @@ fn allocations(cycle: Cycle) -> List(Allocation) {
     Allocation(id: "2", amount: Money(120, 0), category_id: "2", date: c),
     Allocation(id: "3", amount: Money(150, 0), category_id: "3", date: c),
     Allocation(id: "4", amount: Money(100, 2), category_id: "4", date: c),
-    Allocation(id: "5", amount: Money(200, 2), category_id: "5", date: c),
+    Allocation(id: "5", amount: Money(150, 2), category_id: "5", date: c),
     Allocation(id: "6", amount: Money(500, 2), category_id: "6", date: c),
   ]
   |> list.filter(fn(a) { a.date == cycle })
