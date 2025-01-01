@@ -68,6 +68,7 @@ type Msg {
   SaveAllocationResult(Result(AllocationEffectResult, lustre_http.HttpError))
   UserAllocationUpdate(amount: String)
   CycleShift(shift: CycleShift)
+  UserInputShowAllTransactions(show: Bool)
 }
 
 type Model {
@@ -546,6 +547,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         effect.batch([get_transactions(start, end), get_allocations(new_cycle)]),
       )
     }
+    UserInputShowAllTransactions(show) -> #(
+      Model(..model, show_all_transactions: show),
+      effect.none(),
+    )
   }
 }
 
@@ -721,13 +726,21 @@ fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
   })
 }
 
-fn init(_flags) -> #(Model, effect.Effect(Msg)) {
+fn calculate_current_cycle() -> Cycle {
   let today = d.today()
+  let last_day = 26
   let cycle = Cycle(d.year(today), today |> d.month)
+  case d.day(today) > last_day {
+    False -> cycle
+    True -> cycle_increase(cycle)
+  }
+}
+
+fn init(_flags) -> #(Model, effect.Effect(Msg)) {
   #(
     Model(
       user: User(id: "id1", name: "Sergey"),
-      cycle: cycle,
+      cycle: calculate_current_cycle(),
       route: Home,
       cycle_end_day: option.Some(26),
       show_all_transactions: False,
@@ -762,14 +775,16 @@ fn uri_to_route(uri: Uri) -> Route {
 //<!---- Effects ----!>
 
 fn initial_eff() -> effect.Effect(Msg) {
-  let today = d.today()
-  let cycle = Cycle(d.year(today), today |> d.month)
   let path = case initial_uri() {
     Ok(uri) -> uri_to_route(uri)
     _ -> Home
   }
   effect.from(fn(dispatch) {
-    dispatch(Initial(User(id: "id2", name: "Sergey"), cycle, path))
+    dispatch(Initial(
+      User(id: "id2", name: "Sergey"),
+      calculate_current_cycle(),
+      path,
+    ))
   })
 }
 
@@ -815,14 +830,12 @@ fn get_categories() -> effect.Effect(Msg) {
 }
 
 fn get_transactions(start: d.Date, end: d.Date) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(
-      Transactions(Ok(
-        transactions()
-        |> list.filter(fn(t) { d.is_between(t.date, start, end) }),
-      )),
-    )
-  })
+  effect.from(fn(dispatch) { dispatch(Transactions(Ok(transactions()))) })
+}
+
+fn current_cycle_transactions(model: Model) -> List(Transaction) {
+  let #(start, end) = cycle_bounds(model.cycle, model.cycle_end_day)
+  list.filter(model.transactions, fn(t) { d.is_between(t.date, start, end) })
 }
 
 // fn is_equal(date: d.Date, c: Cycle) -> Bool {
@@ -897,7 +910,7 @@ fn view(model: Model) -> element.Element(Msg) {
           [
             html.p([attribute.class("text-start fs-4")], [
               element.text(ready_to_assign(
-                model.transactions,
+                current_cycle_transactions(model),
                 model.allocations,
                 model.cycle,
               )),
@@ -927,27 +940,35 @@ fn view(model: Model) -> element.Element(Msg) {
           TransactionsRoute -> budget_transactions(model)
           UserRoute -> user_selection(model)
         },
-        html.div([], [
-          {
-            let selected_cat = get_selected_category(model)
-            case selected_cat, model.route, model.selected_category {
-              option.Some(c), Home, option.Some(sc) ->
-                category_details(
-                  c,
-                  model,
-                  sc,
-                  model.allocations
-                    |> list.filter(fn(a) { a.date == model.cycle })
-                    |> list.find(fn(a) { a.id == c.id })
-                    |> option.from_result,
-                )
-              _, _, _ -> html.text("")
-            }
-          },
-        ]),
+        html.div([], [category_details_ui(model)]),
       ]),
     ]),
   ])
+}
+
+fn category_details_ui(model: Model) -> element.Element(Msg) {
+  let selected_cat = get_selected_category(model)
+  case selected_cat, model.route, model.selected_category {
+    option.Some(c), Home, option.Some(sc) ->
+      category_details(
+        c,
+        model,
+        sc,
+        category_cycle_allocation(model.allocations, model.cycle, c),
+      )
+    _, _, _ -> html.text("")
+  }
+}
+
+fn category_cycle_allocation(
+  allocations: List(Allocation),
+  cycle: Cycle,
+  c: Category,
+) -> option.Option(Allocation) {
+  allocations
+  |> list.filter(fn(a) { a.date == cycle })
+  |> list.find(fn(a) { a.id == c.id })
+  |> option.from_result
 }
 
 fn get_selected_category(model: Model) -> option.Option(Category) {
@@ -1018,7 +1039,7 @@ fn category_details(
         html.div([], [html.text("Activity")]),
         html.div([], [
           html.text(
-            category_activity(category, model.transactions)
+            category_activity(category, current_cycle_transactions(model))
             |> money_to_string
             |> prepend("-"),
           ),
@@ -1173,7 +1194,6 @@ fn ready_to_assign(
   allocations: List(Allocation),
   cycle: Cycle,
 ) -> String {
-  io.debug("ready_to_assign")
   let income =
     transactions
     |> list.filter(fn(t) { t.category_id == "0" })
@@ -1202,7 +1222,8 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
     html.div([attribute.class("form-check")], [
       html.input([
         attribute.id("flexCheckDefault"),
-        attribute.value(""),
+        event.on_check(UserInputShowAllTransactions),
+        // attribute.value(model.show_all_transactions),
         attribute.type_("checkbox"),
         attribute.class("form-check-input"),
         attribute.checked(model.show_all_transactions),
@@ -1225,14 +1246,28 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
         [],
         list.flatten([
           [add_transaction_ui(model.transactions, model.categories)],
-          list.map(model.transactions, fn(t) { transaction_list_item(t, model) }),
+          {
+            case model.show_all_transactions {
+              False ->
+                list.map(current_cycle_transactions(model), fn(t) {
+                  transaction_list_item_html(t, model)
+                })
+              True ->
+                list.map(model.transactions, fn(t) {
+                  transaction_list_item_html(t, model)
+                })
+            }
+          },
         ]),
       ),
     ]),
   ])
 }
 
-fn transaction_list_item(t: Transaction, model: Model) -> element.Element(Msg) {
+fn transaction_list_item_html(
+  t: Transaction,
+  model: Model,
+) -> element.Element(Msg) {
   let selected_id = model.selected_transaction |> option.unwrap("")
   let active_class = case selected_id == t.id {
     True -> "table-active"
@@ -1389,19 +1424,14 @@ fn add_transaction_ui(
       ),
     ]),
     html.td([], [
-      html.input([
-        event.on_input(UserUpdatedTransactionCategory),
-        attribute.placeholder("category"),
-        attribute.id("addTransactionCategoryId"),
-        attribute.class("form-control"),
-        attribute.type_("text"),
-        attribute.attribute("list", "categories_list"),
-      ]),
-      html.datalist(
-        [attribute.id("categories_list")],
+      html.select(
+        [
+          event.on_input(UserUpdatedTransactionCategory),
+          attribute.class("form-select"),
+        ],
         categories
           |> list.map(fn(c) { c.name })
-          |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
+          |> list.map(fn(p) { html.option([attribute.value(p)], p) }),
       ),
     ]),
     html.td([attribute.class("d-flex flex-row")], [
@@ -1460,7 +1490,7 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
                 [
                   // attribute.style([#("background-color", "rgba(64,185,78,1)")])
                 ],
-                [category_target(c, model)],
+                [category_balance(c, model)],
               ),
             ],
           )
@@ -1501,9 +1531,9 @@ fn category_assigned(
   |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.amount) })
 }
 
-fn category_target(cat: Category, model: Model) -> element.Element(Msg) {
+fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
   let target_money = target_money(cat)
-  let activity = category_activity(cat, model.transactions)
+  let activity = category_activity(cat, current_cycle_transactions(model))
   let assigned = category_assigned(cat, model.allocations, model.cycle)
   let balance = money_sum(assigned, activity)
   let color = case balance.s {
