@@ -101,6 +101,7 @@ type TransactionForm {
     payee: String,
     category: option.Option(Category),
     amount: option.Option(Money),
+    is_inflow: Bool,
   )
 }
 
@@ -116,6 +117,7 @@ type TransactionEditForm {
     payee: String,
     category: String,
     amount: String,
+    is_inflow: Bool,
   )
 }
 
@@ -160,6 +162,7 @@ pub type Transaction {
     payee: String,
     category_id: String,
     value: Money,
+    is_inflow: Bool,
   )
 }
 
@@ -243,6 +246,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           payee: "",
           category: option.None,
           amount: option.None,
+          is_inflow: False,
         ),
       ),
       add_transaction_eff(model.transaction_add_input),
@@ -396,6 +400,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           payee: t.payee,
           category: category_name,
           amount: t.value |> money_to_string_no_sign,
+          is_inflow: t.is_inflow,
         )),
       ),
       effect.none(),
@@ -697,6 +702,7 @@ fn update_transaction_eff(
             })
             |> result.unwrap(""),
           value: money,
+          is_inflow: tef.is_inflow,
         )),
       ),
     )
@@ -743,14 +749,20 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       cycle: calculate_current_cycle(),
       route: Home,
       cycle_end_day: option.Some(26),
-      show_all_transactions: False,
+      show_all_transactions: True,
       categories: [],
       transactions: [],
       allocations: [],
       selected_category: option.None,
       show_add_category_ui: False,
       user_category_name_input: "",
-      transaction_add_input: TransactionForm("", "", option.None, option.None),
+      transaction_add_input: TransactionForm(
+        "",
+        "",
+        option.None,
+        option.None,
+        False,
+      ),
       target_edit: TargetEdit("", False, Monthly(Money(0, 0))),
       selected_transaction: option.None,
       transaction_edit_form: option.None,
@@ -801,6 +813,7 @@ fn add_transaction_eff(transaction_form: TransactionForm) -> effect.Effect(Msg) 
             payee: transaction_form.payee,
             category_id: cat.id,
             value: amount,
+            is_inflow: transaction_form.is_inflow,
           )),
         )
       _, _ ->
@@ -1040,8 +1053,8 @@ fn category_details(
         html.div([], [
           html.text(
             category_activity(category, current_cycle_transactions(model))
-            |> money_to_string
-            |> prepend("-"),
+            |> balance_to_string_no_symbol,
+            // |> prepend("-"),
           ),
         ]),
       ]),
@@ -1201,12 +1214,12 @@ fn ready_to_assign(
   let outcome =
     allocations
     |> list.filter_map(fn(a) {
-      io.debug(
-        "alloc id:"
-        <> a.category_id
-        <> " amount:"
-        <> a.amount |> money_to_string_no_sign,
-      )
+      // io.debug(
+      //   "alloc id:"
+      //   <> a.category_id
+      //   <> " amount:"
+      //   <> a.amount |> money_to_string_no_sign,
+      // )
       case a.date == cycle {
         True -> Ok(a.amount)
         False -> Error("")
@@ -1214,7 +1227,7 @@ fn ready_to_assign(
     })
     |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t) })
 
-  money_minus(income, outcome) |> money_to_string_no_sign
+  money_minus(income, outcome) |> balance_to_string
 }
 
 fn budget_transactions(model: Model) -> element.Element(Msg) {
@@ -1249,13 +1262,11 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
           {
             case model.show_all_transactions {
               False ->
-                list.map(current_cycle_transactions(model), fn(t) {
-                  transaction_list_item_html(t, model)
-                })
+                current_cycle_transactions(model)
+                |> list.map(fn(t) { transaction_list_item_html(t, model) })
               True ->
-                list.map(model.transactions, fn(t) {
-                  transaction_list_item_html(t, model)
-                })
+                model.transactions
+                |> list.map(fn(t) { transaction_list_item_html(t, model) })
             }
           },
         ]),
@@ -1390,7 +1401,11 @@ fn transaction_category_name(t: Transaction, cats: List(Category)) -> String {
 }
 
 fn transaction_amount(t: Transaction) -> String {
-  t.value.s |> int.to_string <> "." <> t.value.b |> int.to_string
+  let sign = case t.is_inflow {
+    False -> "-"
+    True -> ""
+  }
+  sign <> "€" <> t.value.s |> int.to_string <> "." <> t.value.b |> int.to_string
 }
 
 fn add_transaction_ui(
@@ -1535,19 +1550,19 @@ fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
   let target_money = target_money(cat)
   let activity = category_activity(cat, current_cycle_transactions(model))
   let assigned = category_assigned(cat, model.allocations, model.cycle)
-  let balance = money_sum(assigned, activity)
-  let color = case balance.s {
+  let balance = money_minus(assigned, activity.m)
+  let color = case balance.m.s {
     0 -> "rgb(137, 143, 138)"
     _ ->
-      case balance.s > 0 {
-        True -> "rgba(64,185,78,1)"
-        False -> "rgb(231, 41, 12)"
+      case balance.is_neg {
+        False -> "rgba(64,185,78,1)"
+        True -> "rgb(231, 41, 12)"
       }
   }
   let add_diff = money_minus(target_money, assigned)
-  let warn_text = case add_diff.s > 0 {
-    False -> html.text("")
-    True ->
+  let warn_text = case add_diff.is_neg {
+    True -> html.text("")
+    False ->
       div_context(
         " Add more " <> add_diff |> money_to_string,
         "rgb(235, 199, 16)",
@@ -1569,10 +1584,17 @@ fn div_context(text: String, color: String) -> element.Element(Msg) {
   )
 }
 
-fn category_activity(cat: Category, transactions: List(Transaction)) -> Money {
-  transactions
-  |> list.filter(fn(t) { t.category_id == cat.id })
-  |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.value) })
+fn category_activity(cat: Category, transactions: List(Transaction)) -> Balance {
+  let outflow =
+    transactions
+    |> list.filter(fn(t) { t.category_id == cat.id && !t.is_inflow })
+    |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.value) })
+  let inflow =
+    transactions
+    |> list.filter(fn(t) { t.category_id == cat.id && t.is_inflow })
+    |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.value) })
+
+  money_minus(inflow, outflow)
 }
 
 fn prepend(body: String, prefix: String) -> String {
@@ -1587,6 +1609,26 @@ fn money_to_string_no_sign(m: Money) -> String {
   m.s |> int.to_string <> "." <> m.b |> int.to_string
 }
 
+fn balance_to_string(m: Balance) -> String {
+  let sign = case m.is_neg {
+    True -> "-"
+    False -> ""
+  }
+  sign <> "€" <> { m.m.s |> int.to_string <> "." <> m.m.b |> int.to_string }
+}
+
+fn balance_to_string_no_symbol(m: Balance) -> String {
+  let sign = case m.is_neg {
+    True -> "-"
+    False -> ""
+  }
+  sign <> { m.m.s |> int.to_string <> "." <> m.m.b |> int.to_string }
+}
+
+type Balance {
+  Balance(m: Money, is_neg: Bool)
+}
+
 fn money_sum(a: Money, b: Money) -> Money {
   let base_sum = a.b + b.b
   let #(euro, base) = case base_sum >= 100 {
@@ -1596,13 +1638,14 @@ fn money_sum(a: Money, b: Money) -> Money {
   Money(a.s + b.s + euro, base)
 }
 
-fn money_minus(a: Money, b: Money) -> Money {
+fn money_minus(a: Money, b: Money) -> Balance {
   let base_sum = a.b - b.b
   let #(euro, base) = case base_sum < 0 {
     True -> #(1, 100 + base_sum)
     False -> #(0, base_sum)
   }
-  Money(a.s - b.s - euro, base)
+  let s = a.s - b.s - euro
+  Balance(Money(int.absolute_value(s), base), s < 0)
 }
 
 pub fn month_to_string(value: MonthInYear) -> String {
@@ -1673,56 +1716,64 @@ fn transactions() -> List(Transaction) {
       date: d.from_calendar_date(2025, d.Jan, 1),
       payee: "Amazon",
       category_id: "5",
-      value: Money(-10, 0),
+      value: Money(10, 0),
+      is_inflow: False,
     ),
     Transaction(
       id: "1",
       date: d.from_calendar_date(2024, d.Dec, 2),
       payee: "Amazon",
       category_id: "5",
-      value: Money(-50, 0),
+      value: Money(50, 0),
+      is_inflow: False,
     ),
     Transaction(
       id: "2",
       date: d.from_calendar_date(2024, d.Dec, 2),
       payee: "Bauhaus",
       category_id: "5",
-      value: Money(-50, 0),
+      value: Money(50, 0),
+      is_inflow: False,
     ),
     Transaction(
       id: "3",
       date: d.from_calendar_date(2024, d.Dec, 2),
       payee: "Rewe",
       category_id: "6",
-      value: Money(-50, 0),
+      value: Money(50, 0),
+      is_inflow: False,
     ),
     Transaction(
       id: "4",
       date: d.from_calendar_date(2024, d.Dec, 2),
       payee: "Vodafone",
       category_id: "1",
-      value: Money(-50, 0),
+      value: Money(50, 0),
+      is_inflow: False,
     ),
     Transaction(
       id: "5",
       date: d.from_calendar_date(2024, d.Dec, 2),
       payee: "Steam",
       category_id: "5",
-      value: Money(-50, 0),
+      value: Money(50, 0),
+      is_inflow: False,
     ),
     Transaction(
       id: "6",
       date: d.from_calendar_date(2024, d.Dec, 2),
       payee: "Duo",
       category_id: "1",
-      value: Money(-50, 60),
+      value: Money(50, 60),
+      is_inflow: False,
     ),
     Transaction(
       id: "7",
       date: d.from_calendar_date(2024, d.Dec, 2),
       payee: "O2",
       category_id: "1",
-      value: Money(-50, 0),
+      value: Money(50, 0),
+      is_inflow: False,
     ),
     Transaction(
       id: "8",
@@ -1730,20 +1781,23 @@ fn transactions() -> List(Transaction) {
       payee: "Trade Republic",
       category_id: "0",
       value: Money(1000, 0),
+      is_inflow: True,
     ),
     Transaction(
       id: "8",
       date: d.from_calendar_date(2024, d.Nov, 27),
       payee: "O2",
       category_id: "1",
-      value: Money(-1, 50),
+      value: Money(1, 50),
+      is_inflow: False,
     ),
     Transaction(
       id: "8",
       date: d.from_calendar_date(2024, d.Nov, 26),
       payee: "O2",
       category_id: "1",
-      value: Money(-1, 50),
+      value: Money(1, 50),
+      is_inflow: False,
     ),
   ]
 }
