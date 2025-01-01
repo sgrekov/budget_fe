@@ -1,4 +1,5 @@
-// import birl
+// import bigi
+import bigi.{type BigInt}
 import date_utils
 import gleam/bool
 import gleam/int
@@ -18,6 +19,7 @@ import lustre/event
 import lustre_http
 import modem.{initial_uri}
 import rada/date as d
+import bigi as b
 
 type Route {
   Home
@@ -180,6 +182,7 @@ pub fn main() {
 
   Nil
 }
+
 
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   io.debug(msg)
@@ -1584,7 +1587,7 @@ fn div_context(text: String, color: String) -> element.Element(Msg) {
   )
 }
 
-fn category_activity(cat: Category, transactions: List(Transaction)) -> Balance {
+fn category_activity(cat: Category, transactions: List(Transaction)) -> Money {
   let outflow =
     transactions
     |> list.filter(fn(t) { t.category_id == cat.id && !t.is_inflow })
@@ -1594,7 +1597,7 @@ fn category_activity(cat: Category, transactions: List(Transaction)) -> Balance 
     |> list.filter(fn(t) { t.category_id == cat.id && t.is_inflow })
     |> list.fold(Money(0, 0), fn(m, t) { money_sum(m, t.value) })
 
-  money_minus(inflow, outflow)
+  money_sum(inflow, outflow)
 }
 
 fn prepend(body: String, prefix: String) -> String {
@@ -1602,51 +1605,66 @@ fn prepend(body: String, prefix: String) -> String {
 }
 
 fn money_to_string(m: Money) -> String {
-  "€" <> money_to_string_no_sign(m)
+  let sign = case m.s > 0 {
+    True -> ""
+    False -> "-"
+  }
+  sign <> "€" <> money_to_string_no_sign(m)
 }
 
 fn money_to_string_no_sign(m: Money) -> String {
+  int.absolute_value(m.s) |> int.to_string <> "." <> m.b |> int.to_string
+}
+
+fn money_to_string_no_currency(m: Money) -> String {
   m.s |> int.to_string <> "." <> m.b |> int.to_string
 }
 
-fn balance_to_string(m: Balance) -> String {
-  let sign = case m.is_neg {
-    True -> "-"
-    False -> ""
-  }
-  sign <> "€" <> { m.m.s |> int.to_string <> "." <> m.m.b |> int.to_string }
-}
+// fn balance_to_string(m: Balance) -> String {
+//   let sign = case m.is_neg {
+//     True -> "-"
+//     False -> ""
+//   }
+//   sign <> "€" <> { m.m.s |> int.to_string <> "." <> m.m.b |> int.to_string }
+// }
 
-fn balance_to_string_no_symbol(m: Balance) -> String {
-  let sign = case m.is_neg {
-    True -> "-"
-    False -> ""
-  }
-  sign <> { m.m.s |> int.to_string <> "." <> m.m.b |> int.to_string }
-}
+// fn balance_to_string_no_symbol(m: Balance) -> String {
+//   let sign = case m.is_neg {
+//     True -> "-"
+//     False -> ""
+//   }
+//   sign <> { m.m.s |> int.to_string <> "." <> m.m.b |> int.to_string }
+// }
 
-type Balance {
-  Balance(m: Money, is_neg: Bool)
-}
+// type Balance {
+//   Balance(m: Money, is_neg: Bool)
+// }
 
 fn money_sum(a: Money, b: Money) -> Money {
   let base_sum = a.b + b.b
   let #(euro, base) = case base_sum >= 100 {
     True -> #(1, base_sum % 100)
-    False -> #(0, base_sum)
+    False -> #(-1, base_sum % 100)
+    // case base_sum < 0 {
+    //   True -> case base_sum < -99 {
+    //     True -> #(-1, base_sum % 100)
+    //     False -> 
+    //   }
+    //   False -> #(0, base_sum)
+    // }
   }
   Money(a.s + b.s + euro, base)
 }
 
-fn money_minus(a: Money, b: Money) -> Balance {
-  let base_sum = a.b - b.b
-  let #(euro, base) = case base_sum < 0 {
-    True -> #(1, 100 + base_sum)
-    False -> #(0, base_sum)
-  }
-  let s = a.s - b.s - euro
-  Balance(Money(int.absolute_value(s), base), s < 0)
-}
+// fn money_minus(a: Money, b: Money) -> Balance {
+//   let base_sum = a.b - b.b
+//   let #(euro, base) = case base_sum < 0 {
+//     True -> #(1, 100 + base_sum)
+//     False -> #(0, base_sum)
+//   }
+//   let s = a.s - b.s - euro
+//   Balance(Money(int.absolute_value(s), base), s < 0)
+// }
 
 pub fn month_to_string(value: MonthInYear) -> String {
   value.month
