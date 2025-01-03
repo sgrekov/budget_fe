@@ -287,6 +287,14 @@ function makeError(variant, module, line, fn, message, extra) {
   return error;
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/order.mjs
+var Lt = class extends CustomType {
+};
+var Eq = class extends CustomType {
+};
+var Gt = class extends CustomType {
+};
+
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
 function to_int(bool3) {
   if (!bool3) {
@@ -426,6 +434,10 @@ var Stop = class extends CustomType {
     this[0] = x0;
   }
 };
+var Ascending = class extends CustomType {
+};
+var Descending = class extends CustomType {
+};
 function length_loop(loop$list, loop$count) {
   while (true) {
     let list = loop$list;
@@ -458,6 +470,22 @@ function reverse_loop(loop$remaining, loop$accumulator) {
 }
 function reverse(list) {
   return reverse_loop(list, toList([]));
+}
+function contains(loop$list, loop$elem) {
+  while (true) {
+    let list = loop$list;
+    let elem = loop$elem;
+    if (list.hasLength(0)) {
+      return false;
+    } else if (list.atLeastLength(1) && isEqual(list.head, elem)) {
+      let first$1 = list.head;
+      return true;
+    } else {
+      let rest$1 = list.tail;
+      loop$list = rest$1;
+      loop$elem = elem;
+    }
+  }
 }
 function filter_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
@@ -678,6 +706,329 @@ function find_map(loop$list, loop$fun) {
         loop$fun = fun;
       }
     }
+  }
+}
+function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$prev, loop$acc) {
+  while (true) {
+    let list = loop$list;
+    let compare4 = loop$compare;
+    let growing = loop$growing;
+    let direction = loop$direction;
+    let prev = loop$prev;
+    let acc = loop$acc;
+    let growing$1 = prepend(prev, growing);
+    if (list.hasLength(0)) {
+      if (direction instanceof Ascending) {
+        return prepend(reverse_loop(growing$1, toList([])), acc);
+      } else {
+        return prepend(growing$1, acc);
+      }
+    } else {
+      let new$1 = list.head;
+      let rest$1 = list.tail;
+      let $ = compare4(prev, new$1);
+      if ($ instanceof Gt && direction instanceof Descending) {
+        loop$list = rest$1;
+        loop$compare = compare4;
+        loop$growing = growing$1;
+        loop$direction = direction;
+        loop$prev = new$1;
+        loop$acc = acc;
+      } else if ($ instanceof Lt && direction instanceof Ascending) {
+        loop$list = rest$1;
+        loop$compare = compare4;
+        loop$growing = growing$1;
+        loop$direction = direction;
+        loop$prev = new$1;
+        loop$acc = acc;
+      } else if ($ instanceof Eq && direction instanceof Ascending) {
+        loop$list = rest$1;
+        loop$compare = compare4;
+        loop$growing = growing$1;
+        loop$direction = direction;
+        loop$prev = new$1;
+        loop$acc = acc;
+      } else if ($ instanceof Gt && direction instanceof Ascending) {
+        let acc$1 = (() => {
+          if (direction instanceof Ascending) {
+            return prepend(reverse_loop(growing$1, toList([])), acc);
+          } else {
+            return prepend(growing$1, acc);
+          }
+        })();
+        if (rest$1.hasLength(0)) {
+          return prepend(toList([new$1]), acc$1);
+        } else {
+          let next2 = rest$1.head;
+          let rest$2 = rest$1.tail;
+          let direction$1 = (() => {
+            let $1 = compare4(new$1, next2);
+            if ($1 instanceof Lt) {
+              return new Ascending();
+            } else if ($1 instanceof Eq) {
+              return new Ascending();
+            } else {
+              return new Descending();
+            }
+          })();
+          loop$list = rest$2;
+          loop$compare = compare4;
+          loop$growing = toList([new$1]);
+          loop$direction = direction$1;
+          loop$prev = next2;
+          loop$acc = acc$1;
+        }
+      } else if ($ instanceof Lt && direction instanceof Descending) {
+        let acc$1 = (() => {
+          if (direction instanceof Ascending) {
+            return prepend(reverse_loop(growing$1, toList([])), acc);
+          } else {
+            return prepend(growing$1, acc);
+          }
+        })();
+        if (rest$1.hasLength(0)) {
+          return prepend(toList([new$1]), acc$1);
+        } else {
+          let next2 = rest$1.head;
+          let rest$2 = rest$1.tail;
+          let direction$1 = (() => {
+            let $1 = compare4(new$1, next2);
+            if ($1 instanceof Lt) {
+              return new Ascending();
+            } else if ($1 instanceof Eq) {
+              return new Ascending();
+            } else {
+              return new Descending();
+            }
+          })();
+          loop$list = rest$2;
+          loop$compare = compare4;
+          loop$growing = toList([new$1]);
+          loop$direction = direction$1;
+          loop$prev = next2;
+          loop$acc = acc$1;
+        }
+      } else {
+        let acc$1 = (() => {
+          if (direction instanceof Ascending) {
+            return prepend(reverse_loop(growing$1, toList([])), acc);
+          } else {
+            return prepend(growing$1, acc);
+          }
+        })();
+        if (rest$1.hasLength(0)) {
+          return prepend(toList([new$1]), acc$1);
+        } else {
+          let next2 = rest$1.head;
+          let rest$2 = rest$1.tail;
+          let direction$1 = (() => {
+            let $1 = compare4(new$1, next2);
+            if ($1 instanceof Lt) {
+              return new Ascending();
+            } else if ($1 instanceof Eq) {
+              return new Ascending();
+            } else {
+              return new Descending();
+            }
+          })();
+          loop$list = rest$2;
+          loop$compare = compare4;
+          loop$growing = toList([new$1]);
+          loop$direction = direction$1;
+          loop$prev = next2;
+          loop$acc = acc$1;
+        }
+      }
+    }
+  }
+}
+function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
+  while (true) {
+    let list1 = loop$list1;
+    let list2 = loop$list2;
+    let compare4 = loop$compare;
+    let acc = loop$acc;
+    if (list1.hasLength(0)) {
+      let list = list2;
+      return reverse_loop(list, acc);
+    } else if (list2.hasLength(0)) {
+      let list = list1;
+      return reverse_loop(list, acc);
+    } else {
+      let first1 = list1.head;
+      let rest1 = list1.tail;
+      let first2 = list2.head;
+      let rest2 = list2.tail;
+      let $ = compare4(first1, first2);
+      if ($ instanceof Lt) {
+        loop$list1 = rest1;
+        loop$list2 = list2;
+        loop$compare = compare4;
+        loop$acc = prepend(first1, acc);
+      } else if ($ instanceof Gt) {
+        loop$list1 = list1;
+        loop$list2 = rest2;
+        loop$compare = compare4;
+        loop$acc = prepend(first2, acc);
+      } else {
+        loop$list1 = list1;
+        loop$list2 = rest2;
+        loop$compare = compare4;
+        loop$acc = prepend(first2, acc);
+      }
+    }
+  }
+}
+function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
+  while (true) {
+    let sequences2 = loop$sequences;
+    let compare4 = loop$compare;
+    let acc = loop$acc;
+    if (sequences2.hasLength(0)) {
+      return reverse_loop(acc, toList([]));
+    } else if (sequences2.hasLength(1)) {
+      let sequence = sequences2.head;
+      return reverse_loop(
+        prepend(reverse_loop(sequence, toList([])), acc),
+        toList([])
+      );
+    } else {
+      let ascending1 = sequences2.head;
+      let ascending2 = sequences2.tail.head;
+      let rest$1 = sequences2.tail.tail;
+      let descending = merge_ascendings(
+        ascending1,
+        ascending2,
+        compare4,
+        toList([])
+      );
+      loop$sequences = rest$1;
+      loop$compare = compare4;
+      loop$acc = prepend(descending, acc);
+    }
+  }
+}
+function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
+  while (true) {
+    let list1 = loop$list1;
+    let list2 = loop$list2;
+    let compare4 = loop$compare;
+    let acc = loop$acc;
+    if (list1.hasLength(0)) {
+      let list = list2;
+      return reverse_loop(list, acc);
+    } else if (list2.hasLength(0)) {
+      let list = list1;
+      return reverse_loop(list, acc);
+    } else {
+      let first1 = list1.head;
+      let rest1 = list1.tail;
+      let first2 = list2.head;
+      let rest2 = list2.tail;
+      let $ = compare4(first1, first2);
+      if ($ instanceof Lt) {
+        loop$list1 = list1;
+        loop$list2 = rest2;
+        loop$compare = compare4;
+        loop$acc = prepend(first2, acc);
+      } else if ($ instanceof Gt) {
+        loop$list1 = rest1;
+        loop$list2 = list2;
+        loop$compare = compare4;
+        loop$acc = prepend(first1, acc);
+      } else {
+        loop$list1 = rest1;
+        loop$list2 = list2;
+        loop$compare = compare4;
+        loop$acc = prepend(first1, acc);
+      }
+    }
+  }
+}
+function merge_descending_pairs(loop$sequences, loop$compare, loop$acc) {
+  while (true) {
+    let sequences2 = loop$sequences;
+    let compare4 = loop$compare;
+    let acc = loop$acc;
+    if (sequences2.hasLength(0)) {
+      return reverse_loop(acc, toList([]));
+    } else if (sequences2.hasLength(1)) {
+      let sequence = sequences2.head;
+      return reverse_loop(
+        prepend(reverse_loop(sequence, toList([])), acc),
+        toList([])
+      );
+    } else {
+      let descending1 = sequences2.head;
+      let descending2 = sequences2.tail.head;
+      let rest$1 = sequences2.tail.tail;
+      let ascending = merge_descendings(
+        descending1,
+        descending2,
+        compare4,
+        toList([])
+      );
+      loop$sequences = rest$1;
+      loop$compare = compare4;
+      loop$acc = prepend(ascending, acc);
+    }
+  }
+}
+function merge_all(loop$sequences, loop$direction, loop$compare) {
+  while (true) {
+    let sequences2 = loop$sequences;
+    let direction = loop$direction;
+    let compare4 = loop$compare;
+    if (sequences2.hasLength(0)) {
+      return toList([]);
+    } else if (sequences2.hasLength(1) && direction instanceof Ascending) {
+      let sequence = sequences2.head;
+      return sequence;
+    } else if (sequences2.hasLength(1) && direction instanceof Descending) {
+      let sequence = sequences2.head;
+      return reverse_loop(sequence, toList([]));
+    } else if (direction instanceof Ascending) {
+      let sequences$1 = merge_ascending_pairs(sequences2, compare4, toList([]));
+      loop$sequences = sequences$1;
+      loop$direction = new Descending();
+      loop$compare = compare4;
+    } else {
+      let sequences$1 = merge_descending_pairs(sequences2, compare4, toList([]));
+      loop$sequences = sequences$1;
+      loop$direction = new Ascending();
+      loop$compare = compare4;
+    }
+  }
+}
+function sort(list, compare4) {
+  if (list.hasLength(0)) {
+    return toList([]);
+  } else if (list.hasLength(1)) {
+    let x = list.head;
+    return toList([x]);
+  } else {
+    let x = list.head;
+    let y = list.tail.head;
+    let rest$1 = list.tail.tail;
+    let direction = (() => {
+      let $ = compare4(x, y);
+      if ($ instanceof Lt) {
+        return new Ascending();
+      } else if ($ instanceof Eq) {
+        return new Ascending();
+      } else {
+        return new Descending();
+      }
+    })();
+    let sequences$1 = sequences(
+      rest$1,
+      compare4,
+      toList([x]),
+      direction,
+      y,
+      toList([])
+    );
+    return merge_all(sequences$1, new Ascending(), compare4);
   }
 }
 
@@ -2050,6 +2401,19 @@ function absolute_value(x) {
 function to_base16(x) {
   return int_to_base_string(x, 16);
 }
+function compare2(a2, b) {
+  let $ = a2 === b;
+  if ($) {
+    return new Eq();
+  } else {
+    let $1 = a2 < b;
+    if ($1) {
+      return new Lt();
+    } else {
+      return new Gt();
+    }
+  }
+}
 function min(a2, b) {
   let $ = a2 < b;
   if ($) {
@@ -2421,7 +2785,7 @@ var Set2 = class extends CustomType {
 function new$2() {
   return new Set2(new_map());
 }
-function contains(set, member) {
+function contains2(set, member) {
   let _pipe = set.dict;
   let _pipe$1 = map_get(_pipe, member);
   return is_ok(_pipe$1);
@@ -4212,7 +4576,7 @@ function from_string2(str) {
     return from_list2(_pipe$1);
   })();
   let is_alpha$1 = (char) => {
-    return contains(alpha, char);
+    return contains2(alpha, char);
   };
   let l = simple(
     toList([
@@ -4705,6 +5069,11 @@ function parse_day_of_year() {
       succeed(new OrdinalDay(1))
     ])
   );
+}
+function compare3(date1, date2) {
+  let rd_1 = date1[0];
+  let rd_2 = date2[0];
+  return compare2(rd_1, rd_2);
 }
 function month_to_number(month2) {
   if (month2 instanceof Jan) {
@@ -6074,11 +6443,12 @@ var User = class extends CustomType {
   }
 };
 var Category = class extends CustomType {
-  constructor(id2, name, target) {
+  constructor(id2, name, target, inflow) {
     super();
     this.id = id2;
     this.name = name;
     this.target = target;
+    this.inflow = inflow;
   }
 };
 var Monthly = class extends CustomType {
@@ -6373,7 +6743,7 @@ function add_category(name) {
     (dispatch) => {
       return dispatch(
         new AddCategoryResult(
-          new Ok(new Category(guidv4(), name, new None()))
+          new Ok(new Category(guidv4(), name, new None(), false))
         )
       );
     }
@@ -6523,12 +6893,30 @@ function target_money(category) {
     return amount;
   }
 }
-function ready_to_assign(transactions2, allocations2, cycle) {
+function ready_to_assign(transactions2, allocations2, cycle, categories2) {
+  let income_cat_ids = (() => {
+    let _pipe2 = categories2;
+    return filter_map(
+      _pipe2,
+      (c) => {
+        let $ = c.inflow;
+        if ($) {
+          return new Ok(c.id);
+        } else {
+          return new Error("");
+        }
+      }
+    );
+  })();
   let income = (() => {
     let _pipe2 = transactions2;
-    let _pipe$1 = filter(_pipe2, (t) => {
-      return t.category_id === "0";
-    });
+    let _pipe$1 = filter(
+      _pipe2,
+      (t) => {
+        let _pipe$12 = income_cat_ids;
+        return contains(_pipe$12, t.category_id);
+      }
+    );
     return fold(
       _pipe$1,
       int_to_money(0),
@@ -7110,35 +7498,41 @@ function budget_categories(model) {
       tbody(
         toList([]),
         (() => {
-          let cats_ui = map2(
-            model.categories,
-            (c) => {
-              let active_class = (() => {
-                let $ = model.selected_category;
-                if ($ instanceof None) {
-                  return "";
-                } else {
-                  let selected_cat = $[0];
-                  let $1 = selected_cat.id === c.id;
-                  if ($1) {
-                    return "table-active";
-                  } else {
+          let cats_ui = (() => {
+            let _pipe = model.categories;
+            let _pipe$1 = filter(_pipe, (c) => {
+              return !c.inflow;
+            });
+            return map2(
+              _pipe$1,
+              (c) => {
+                let active_class = (() => {
+                  let $ = model.selected_category;
+                  if ($ instanceof None) {
                     return "";
+                  } else {
+                    let selected_cat = $[0];
+                    let $1 = selected_cat.id === c.id;
+                    if ($1) {
+                      return "table-active";
+                    } else {
+                      return "";
+                    }
                   }
-                }
-              })();
-              return tr(
-                toList([
-                  on_click(new SelectCategory(c)),
-                  class$(active_class)
-                ]),
-                toList([
-                  td(toList([]), toList([text2(c.name)])),
-                  td(toList([]), toList([category_balance(c, model)]))
-                ])
-              );
-            }
-          );
+                })();
+                return tr(
+                  toList([
+                    on_click(new SelectCategory(c)),
+                    class$(active_class)
+                  ]),
+                  toList([
+                    td(toList([]), toList([text2(c.name)])),
+                    td(toList([]), toList([category_balance(c, model)]))
+                  ])
+                );
+              }
+            );
+          })();
           let add_cat_ui = (() => {
             let $ = model.show_add_category_ui;
             if (!$) {
@@ -7495,7 +7889,8 @@ function view(model) {
                         ready_to_assign(
                           current_cycle_transactions(model),
                           model.allocations,
-                          model.cycle
+                          model.cycle,
+                          model.categories
                         )
                       )
                     ])
@@ -7630,35 +8025,42 @@ function categories() {
     new Category(
       "1",
       "Subscriptions",
-      new Some(new Monthly(float_to_money(60, 0)))
+      new Some(new Monthly(float_to_money(60, 0))),
+      false
     ),
     new Category(
       "2",
       "Shopping",
-      new Some(new Monthly(float_to_money(40, 0)))
+      new Some(new Monthly(float_to_money(40, 0))),
+      false
     ),
     new Category(
       "3",
       "Goals",
       new Some(
         new Custom(float_to_money(150, 0), new MonthInYear(2, 2025))
-      )
+      ),
+      false
     ),
     new Category(
       "4",
       "Vacation",
-      new Some(new Monthly(float_to_money(100, 0)))
+      new Some(new Monthly(float_to_money(100, 0))),
+      false
     ),
     new Category(
       "5",
       "Entertainment",
-      new Some(new Monthly(float_to_money(200, 0)))
+      new Some(new Monthly(float_to_money(200, 0))),
+      false
     ),
     new Category(
       "6",
       "Groceries",
-      new Some(new Monthly(float_to_money(500, 0)))
-    )
+      new Some(new Monthly(float_to_money(500, 0))),
+      false
+    ),
+    new Category("7", "Ready to assign", new None(), true)
   ]);
 }
 function get_categories() {
@@ -7730,7 +8132,7 @@ function transactions() {
       "8",
       from_calendar_date(2024, new Dec(), 2),
       "Trade Republic",
-      "0",
+      "7",
       float_to_money(1e3, 0)
     ),
     new Transaction(
@@ -7765,9 +8167,6 @@ function update(model, msg) {
     let user = msg.user;
     let cycle = msg.cycle;
     let initial_path = msg.initial_route;
-    let $ = cycle_bounds(cycle, model.cycle_end_day);
-    let start3 = $[0];
-    let end = $[1];
     return [
       model.withFields({ user, cycle, route: initial_path }),
       batch(
@@ -7776,15 +8175,25 @@ function update(model, msg) {
     ];
   } else if (msg instanceof Categories && msg.cats.isOk()) {
     let cats = msg.cats[0];
-    let $ = cycle_bounds(model.cycle, model.cycle_end_day);
-    let start3 = $[0];
-    let end = $[1];
     return [model.withFields({ categories: cats }), get_transactions()];
   } else if (msg instanceof Categories && !msg.cats.isOk()) {
     return [model, none()];
   } else if (msg instanceof Transactions && msg.trans.isOk()) {
     let t = msg.trans[0];
-    return [model.withFields({ transactions: t }), none()];
+    return [
+      model.withFields({
+        transactions: (() => {
+          let _pipe = t;
+          return sort(
+            _pipe,
+            (t1, t2) => {
+              return compare3(t2.date, t1.date);
+            }
+          );
+        })()
+      }),
+      none()
+    ];
   } else if (msg instanceof Transactions && !msg.trans.isOk()) {
     return [model, none()];
   } else if (msg instanceof Allocations && msg.a.isOk()) {
@@ -7862,7 +8271,15 @@ function update(model, msg) {
     let t = msg.c[0];
     return [
       model.withFields({
-        transactions: flatten2(toList([model.transactions, toList([t])]))
+        transactions: (() => {
+          let _pipe = flatten2(toList([model.transactions, toList([t])]));
+          return sort(
+            _pipe,
+            (t1, t2) => {
+              return compare3(t2.date, t1.date);
+            }
+          );
+        })()
       }),
       none()
     ];
@@ -8352,7 +8769,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      172,
+      177,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

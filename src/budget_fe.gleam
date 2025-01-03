@@ -133,7 +133,12 @@ pub type User {
 }
 
 pub type Category {
-  Category(id: String, name: String, target: option.Option(Target))
+  Category(
+    id: String,
+    name: String,
+    target: option.Option(Target),
+    inflow: Bool,
+  )
 }
 
 pub type Target {
@@ -181,7 +186,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       #(Model(..model, route: route), effect.none())
     }
     Initial(user, cycle, initial_path) -> {
-      let #(start, end) = cycle_bounds(cycle, model.cycle_end_day)
+      // let #(start, end) = cycle_bounds(cycle, model.cycle_end_day)
       #(
         Model(..model, user: user, cycle: cycle, route: initial_path),
         effect.batch([
@@ -192,11 +197,17 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       )
     }
     Categories(Ok(cats)) -> {
-      let #(start, end) = cycle_bounds(model.cycle, model.cycle_end_day)
       #(Model(..model, categories: cats), get_transactions())
     }
     Categories(Error(_)) -> #(model, effect.none())
-    Transactions(Ok(t)) -> #(Model(..model, transactions: t), effect.none())
+    Transactions(Ok(t)) -> #(
+      Model(
+        ..model,
+        transactions: t
+          |> list.sort(by: fn(t1, t2) { d.compare(t2.date, t1.date) }),
+      ),
+      effect.none(),
+    )
     Transactions(Error(_)) -> #(model, effect.none())
     Allocations(Ok(a)) -> #(Model(..model, allocations: a), effect.none())
     Allocations(Error(_)) -> #(model, effect.none())
@@ -245,7 +256,11 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       add_transaction_eff(model.transaction_add_input),
     )
     AddTransactionResult(Ok(t)) -> #(
-      Model(..model, transactions: list.flatten([model.transactions, [t]])),
+      Model(
+        ..model,
+        transactions: list.flatten([model.transactions, [t]])
+          |> list.sort(by: fn(t1, t2) { d.compare(t2.date, t1.date) }),
+      ),
       effect.none(),
     )
     AddTransactionResult(Error(_)) -> #(model, effect.none())
@@ -808,7 +823,12 @@ fn add_category(name: String) -> effect.Effect(Msg) {
   effect.from(fn(dispatch) {
     dispatch(
       AddCategoryResult(
-        Ok(Category(id: gluid.guidv4(), name: name, target: option.None)),
+        Ok(Category(
+          id: gluid.guidv4(),
+          name: name,
+          target: option.None,
+          inflow: False,
+        )),
       ),
     )
   })
@@ -906,6 +926,7 @@ fn view(model: Model) -> element.Element(Msg) {
                 current_cycle_transactions(model),
                 model.allocations,
                 model.cycle,
+                model.categories,
               )),
             ]),
             html.p([attribute.class("text-start")], [
@@ -1034,7 +1055,6 @@ fn category_details(
           html.text(
             category_activity(category, current_cycle_transactions(model))
             |> m.money_to_string,
-            // |> prepend("-"),
           ),
         ]),
       ]),
@@ -1186,10 +1206,19 @@ fn ready_to_assign(
   transactions: List(Transaction),
   allocations: List(Allocation),
   cycle: Cycle,
+  categories: List(Category),
 ) -> String {
+  let income_cat_ids =
+    categories
+    |> list.filter_map(fn(c) {
+      case c.inflow {
+        True -> Ok(c.id)
+        False -> Error("")
+      }
+    })
   let income =
     transactions
-    |> list.filter(fn(t) { t.category_id == "0" })
+    |> list.filter(fn(t) { income_cat_ids |> list.contains(t.category_id) })
     |> list.fold(m.int_to_money(0), fn(m, t) { m.money_sum(m, t.value) })
 
   let outcome =
@@ -1456,7 +1485,9 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
     ]),
     html.tbody([], {
       let cats_ui =
-        list.map(model.categories, fn(c) {
+        model.categories
+        |> list.filter(fn(c) { !c.inflow })
+        |> list.map(fn(c) {
           let active_class = case model.selected_category {
             option.None -> ""
             option.Some(selected_cat) ->
@@ -1609,31 +1640,43 @@ fn categories() -> List(Category) {
       id: "1",
       name: "Subscriptions",
       target: option.Some(Monthly(m.float_to_money(60, 0))),
+      inflow: False,
     ),
     Category(
       id: "2",
       name: "Shopping",
       target: option.Some(Monthly(m.float_to_money(40, 0))),
+      inflow: False,
     ),
     Category(
       id: "3",
       name: "Goals",
       target: option.Some(Custom(m.float_to_money(150, 0), MonthInYear(2, 2025))),
+      inflow: False,
     ),
     Category(
       id: "4",
       name: "Vacation",
       target: option.Some(Monthly(m.float_to_money(100, 0))),
+      inflow: False,
     ),
     Category(
       id: "5",
       name: "Entertainment",
       target: option.Some(Monthly(m.float_to_money(200, 0))),
+      inflow: False,
     ),
     Category(
       id: "6",
       name: "Groceries",
       target: option.Some(Monthly(m.float_to_money(500, 0))),
+      inflow: False,
+    ),
+    Category(
+      id: "7",
+      name: "Ready to assign",
+      target: option.None,
+      inflow: True,
     ),
   ]
 }
@@ -1700,7 +1743,7 @@ fn transactions() -> List(Transaction) {
       id: "8",
       date: d.from_calendar_date(2024, d.Dec, 2),
       payee: "Trade Republic",
-      category_id: "0",
+      category_id: "7",
       value: m.float_to_money(1000, 0),
     ),
     Transaction(
