@@ -5874,6 +5874,68 @@ function is_between(value3, lower, upper) {
 }
 
 // build/dev/javascript/budget_fe/budget_fe/internals/model.mjs
+var User = class extends CustomType {
+  constructor(id2, name) {
+    super();
+    this.id = id2;
+    this.name = name;
+  }
+};
+var Category = class extends CustomType {
+  constructor(id2, name, target, inflow) {
+    super();
+    this.id = id2;
+    this.name = name;
+    this.target = target;
+    this.inflow = inflow;
+  }
+};
+var Monthly = class extends CustomType {
+  constructor(target) {
+    super();
+    this.target = target;
+  }
+};
+var Custom = class extends CustomType {
+  constructor(target, date) {
+    super();
+    this.target = target;
+    this.date = date;
+  }
+};
+var MonthInYear = class extends CustomType {
+  constructor(month2, year2) {
+    super();
+    this.month = month2;
+    this.year = year2;
+  }
+};
+var Allocation = class extends CustomType {
+  constructor(id2, amount, category_id, date) {
+    super();
+    this.id = id2;
+    this.amount = amount;
+    this.category_id = category_id;
+    this.date = date;
+  }
+};
+var Cycle = class extends CustomType {
+  constructor(year2, month2) {
+    super();
+    this.year = year2;
+    this.month = month2;
+  }
+};
+var Transaction = class extends CustomType {
+  constructor(id2, date, payee, category_id, value3) {
+    super();
+    this.id = id2;
+    this.date = date;
+    this.payee = payee;
+    this.category_id = category_id;
+    this.value = value3;
+  }
+};
 var Money = class extends CustomType {
   constructor(s, b, is_neg2) {
     super();
@@ -6426,68 +6488,6 @@ var TargetEdit = class extends CustomType {
     this.cat_id = cat_id;
     this.enabled = enabled;
     this.target = target;
-  }
-};
-var Cycle = class extends CustomType {
-  constructor(year2, month2) {
-    super();
-    this.year = year2;
-    this.month = month2;
-  }
-};
-var User = class extends CustomType {
-  constructor(id2, name) {
-    super();
-    this.id = id2;
-    this.name = name;
-  }
-};
-var Category = class extends CustomType {
-  constructor(id2, name, target, inflow) {
-    super();
-    this.id = id2;
-    this.name = name;
-    this.target = target;
-    this.inflow = inflow;
-  }
-};
-var Monthly = class extends CustomType {
-  constructor(target) {
-    super();
-    this.target = target;
-  }
-};
-var Custom = class extends CustomType {
-  constructor(target, date) {
-    super();
-    this.target = target;
-    this.date = date;
-  }
-};
-var MonthInYear = class extends CustomType {
-  constructor(month2, year2) {
-    super();
-    this.month = month2;
-    this.year = year2;
-  }
-};
-var Allocation = class extends CustomType {
-  constructor(id2, amount, category_id, date) {
-    super();
-    this.id = id2;
-    this.amount = amount;
-    this.category_id = category_id;
-    this.date = date;
-  }
-};
-var Transaction = class extends CustomType {
-  constructor(id2, date, payee, category_id, value3) {
-    super();
-    this.id = id2;
-    this.date = date;
-    this.payee = payee;
-    this.category_id = category_id;
-    this.value = value3;
   }
 };
 var AllocationEffectResult = class extends CustomType {
@@ -8750,9 +8750,6 @@ function update(model, msg) {
         return cycle_increase(model.cycle);
       }
     })();
-    let $ = cycle_bounds(new_cycle, model.cycle_end_day);
-    let start3 = $[0];
-    let end = $[1];
     return [
       model.withFields({ cycle: new_cycle }),
       batch(toList([get_transactions(), get_allocations(new_cycle)]))
@@ -8769,7 +8766,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      177,
+      145,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

@@ -1,10 +1,18 @@
-import budget_fe/internals/model as m
+// import budget_fe/internals/model as m
+import budget_fe/internals/model.{
+  type Allocation, type Category, type Cycle, type Money, type MonthInYear,
+  type Target, type Transaction, type User,
+} as m
+import budget_fe/internals/model.{
+  Allocation, Category, Cycle, Money, MonthInYear, Transaction, User,
+} as models_constructors
 import date_utils
 import gleam/bool
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/option
+import gleam/option.{None, Some}
+import gleam/option.{type Option} as o
 import gleam/result
 import gleam/string
 import gleam/uri.{type Uri}
@@ -17,7 +25,7 @@ import lustre/element/html
 import lustre/event
 import lustre_http
 import modem.{initial_uri}
-import rada/date as d
+import rada/date.{type Date} as d
 
 type Route {
   Home
@@ -64,7 +72,7 @@ type Msg {
   UpdateCategoryName(cat: Category)
   DeleteCategory
   CategoryDeleteResult(a: Result(String, lustre_http.HttpError))
-  SaveAllocation(alloc_id: option.Option(String))
+  SaveAllocation(alloc_id: Option(String))
   SaveAllocationResult(Result(AllocationEffectResult, lustre_http.HttpError))
   UserAllocationUpdate(amount: String)
   CycleShift(shift: CycleShift)
@@ -76,18 +84,18 @@ type Model {
     user: User,
     cycle: Cycle,
     route: Route,
-    cycle_end_day: option.Option(Int),
+    cycle_end_day: Option(Int),
     show_all_transactions: Bool,
     categories: List(Category),
     transactions: List(Transaction),
     allocations: List(Allocation),
-    selected_category: option.Option(SelectedCategory),
+    selected_category: Option(SelectedCategory),
     show_add_category_ui: Bool,
     user_category_name_input: String,
     transaction_add_input: TransactionForm,
     target_edit: TargetEdit,
-    selected_transaction: option.Option(String),
-    transaction_edit_form: option.Option(TransactionEditForm),
+    selected_transaction: Option(String),
+    transaction_edit_form: Option(TransactionEditForm),
   )
 }
 
@@ -99,8 +107,8 @@ type TransactionForm {
   TransactionForm(
     date: String,
     payee: String,
-    category: option.Option(Category),
-    amount: option.Option(m.Money),
+    category: Option(Category),
+    amount: Option(Money),
     is_inflow: Bool,
   )
 }
@@ -122,46 +130,6 @@ type TransactionEditForm {
 
 type TargetEdit {
   TargetEdit(cat_id: String, enabled: Bool, target: Target)
-}
-
-pub type Cycle {
-  Cycle(year: Int, month: d.Month)
-}
-
-pub type User {
-  User(id: String, name: String)
-}
-
-pub type Category {
-  Category(
-    id: String,
-    name: String,
-    target: option.Option(Target),
-    inflow: Bool,
-  )
-}
-
-pub type Target {
-  Monthly(target: m.Money)
-  Custom(target: m.Money, date: MonthInYear)
-}
-
-pub type MonthInYear {
-  MonthInYear(month: Int, year: Int)
-}
-
-pub type Allocation {
-  Allocation(id: String, amount: m.Money, category_id: String, date: Cycle)
-}
-
-pub type Transaction {
-  Transaction(
-    id: String,
-    date: d.Date,
-    payee: String,
-    category_id: String,
-    value: m.Money,
-  )
 }
 
 pub fn main() {
@@ -336,8 +304,8 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     UserTargetUpdateAmount(amount) -> {
       let amount = amount |> int.parse |> result.unwrap(0)
       let target = case model.target_edit.target {
-        Custom(_, date) -> Custom(m.int_to_money(amount), date)
-        Monthly(_) -> Monthly(m.int_to_money(amount))
+        m.Custom(_, date) -> m.Custom(m.int_to_money(amount), date)
+        m.Monthly(_) -> m.Monthly(m.int_to_money(amount))
       }
       #(
         Model(
@@ -349,8 +317,8 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     }
     EditTargetCadence(is_monthly) -> {
       let target = case model.target_edit.target, is_monthly {
-        Custom(money, _), True -> Monthly(money)
-        Monthly(money), False -> Custom(money, date_to_month(d.today()))
+        m.Custom(money, _), True -> m.Monthly(money)
+        m.Monthly(money), False -> m.Custom(money, date_to_month(d.today()))
         target, _ -> target
       }
       #(
@@ -366,8 +334,8 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         date_utils.from_date_string(date)
         |> result.lazy_unwrap(fn() { d.today() })
       let target = case model.target_edit.target {
-        Custom(money, _) -> Custom(money, date_to_month(parsed_date))
-        Monthly(money) -> Monthly(money)
+        m.Custom(money, _) -> m.Custom(money, date_to_month(parsed_date))
+        m.Monthly(money) -> m.Monthly(money)
       }
       #(
         Model(
@@ -553,7 +521,6 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         ShiftLeft -> cycle_decrease(model.cycle)
         ShiftRight -> cycle_increase(model.cycle)
       }
-      let #(start, end) = cycle_bounds(new_cycle, model.cycle_end_day)
       #(
         Model(..model, cycle: new_cycle),
         effect.batch([get_transactions(), get_allocations(new_cycle)]),
@@ -566,12 +533,9 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   }
 }
 
-fn cycle_bounds(
-  c: Cycle,
-  cycle_end_day: option.Option(Int),
-) -> #(d.Date, d.Date) {
+fn cycle_bounds(c: Cycle, cycle_end_day: Option(Int)) -> #(Date, Date) {
   case cycle_end_day {
-    option.None -> #(
+    None -> #(
       d.from_calendar_date(c.year, c.month, 1),
       d.from_calendar_date(
         c.year,
@@ -579,7 +543,7 @@ fn cycle_bounds(
         date_utils.days_in_month(c.year, c.month),
       ),
     )
-    option.Some(last_day) -> {
+    Some(last_day) -> {
       let #(prev_year, prev_month) = prev_month(c.year, c.month)
       #(
         d.from_calendar_date(
@@ -622,14 +586,14 @@ fn cycle_increase(c: Cycle) -> Cycle {
 }
 
 fn save_allocation_eff(
-  alloc_id: option.Option(String),
+  alloc_id: Option(String),
   allocation: String,
   category_id: String,
   cycle: Cycle,
 ) -> effect.Effect(Msg) {
   let money = allocation |> m.string_to_money
   case alloc_id {
-    option.Some(id) -> {
+    Some(id) -> {
       let alloc = find_alloc_by_id(id, cycle)
       effect.from(fn(dispatch) {
         dispatch(case alloc {
@@ -644,7 +608,7 @@ fn save_allocation_eff(
         })
       })
     }
-    option.None ->
+    None ->
       effect.from(fn(dispatch) {
         dispatch(
           SaveAllocationResult(
@@ -709,13 +673,13 @@ fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {
   effect.from(fn(dispatch) { dispatch(TransactionDeleteResult(Ok(t_id))) })
 }
 
-fn date_to_month(d: d.Date) -> MonthInYear {
+fn date_to_month(d: Date) -> MonthInYear {
   MonthInYear(d |> d.month_number, d |> d.year)
 }
 
 fn save_target_eff(
   category: Category,
-  target_edit: option.Option(Target),
+  target_edit: Option(Target),
 ) -> effect.Effect(Msg) {
   effect.from(fn(dispatch) {
     dispatch(CategorySaveTarget(Ok(Category(..category, target: target_edit))))
@@ -724,7 +688,7 @@ fn save_target_eff(
 
 fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
   effect.from(fn(dispatch) {
-    dispatch(CategorySaveTarget(Ok(Category(..category, target: option.None))))
+    dispatch(CategorySaveTarget(Ok(Category(..category, target: None))))
   })
 }
 
@@ -759,7 +723,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
         option.None,
         False,
       ),
-      target_edit: TargetEdit("", False, Monthly(m.int_to_money(0))),
+      target_edit: TargetEdit("", False, m.Monthly(m.int_to_money(0))),
       selected_transaction: option.None,
       transaction_edit_form: option.None,
     ),
@@ -978,14 +942,14 @@ fn category_cycle_allocation(
   allocations: List(Allocation),
   cycle: Cycle,
   c: Category,
-) -> option.Option(Allocation) {
+) -> Option(Allocation) {
   allocations
   |> list.filter(fn(a) { a.date == cycle })
   |> list.find(fn(a) { a.id == c.id })
   |> option.from_result
 }
 
-fn get_selected_category(model: Model) -> option.Option(Category) {
+fn get_selected_category(model: Model) -> Option(Category) {
   model.selected_category
   |> option.map(fn(selected_cat) {
     model.categories
@@ -1095,7 +1059,7 @@ fn category_target_ui(c: Category, et: TargetEdit) -> element.Element(Msg) {
         ]),
         target_switcher_ui(et),
         case et.target {
-          Custom(_, _) ->
+          m.Custom(_, _) ->
             html.div([], [
               html.text("Amount needed for date: "),
               html.input([
@@ -1112,7 +1076,7 @@ fn category_target_ui(c: Category, et: TargetEdit) -> element.Element(Msg) {
                 attribute.type_("date"),
               ]),
             ])
-          Monthly(_) ->
+          m.Monthly(_) ->
             html.div([], [
               html.text("Amount monthly: "),
               html.input([
@@ -1142,8 +1106,8 @@ fn category_target_ui(c: Category, et: TargetEdit) -> element.Element(Msg) {
 
 fn target_switcher_ui(et: TargetEdit) -> element.Element(Msg) {
   let #(monthly, custom) = case et.target {
-    Custom(_, _) -> #("", "active")
-    Monthly(_) -> #("active", "")
+    m.Custom(_, _) -> #("", "active")
+    m.Monthly(_) -> #("active", "")
   }
   html.div(
     [
@@ -1175,23 +1139,23 @@ fn target_switcher_ui(et: TargetEdit) -> element.Element(Msg) {
 fn target_string(category: Category) -> String {
   case category.target {
     option.None -> ""
-    option.Some(Custom(amount, date_till)) ->
+    option.Some(m.Custom(amount, date_till)) ->
       "Monthly: "
       <> custom_target_money_in_month(amount, date_till) |> m.money_to_string
       <> "\n till date: "
       <> month_to_string(date_till)
       <> " Total amount: "
       <> m.money_to_string(amount)
-    option.Some(Monthly(amount)) -> "Monthly: " <> m.money_to_string(amount)
+    option.Some(m.Monthly(amount)) -> "Monthly: " <> m.money_to_string(amount)
   }
 }
 
 fn target_money(category: Category) -> m.Money {
   case category.target {
     option.None -> m.int_to_money(0)
-    option.Some(Custom(amount, date_till)) ->
+    option.Some(m.Custom(amount, date_till)) ->
       custom_target_money_in_month(amount, date_till)
-    option.Some(Monthly(amount)) -> amount
+    option.Some(m.Monthly(amount)) -> amount
   }
 }
 
@@ -1538,7 +1502,7 @@ fn category_assigned(
   c: Category,
   allocations: List(Allocation),
   cycle: Cycle,
-) -> m.Money {
+) -> Money {
   allocations
   |> list.filter(fn(a) { a.date == cycle })
   |> list.filter(fn(a) { a.category_id == c.id })
@@ -1583,15 +1547,15 @@ fn div_context(text: String, color: String) -> element.Element(Msg) {
   )
 }
 
-fn category_activity(cat: Category, transactions: List(Transaction)) -> m.Money {
+fn category_activity(cat: Category, transactions: List(Transaction)) -> Money {
   transactions
   |> list.filter(fn(t) { t.category_id == cat.id })
   |> list.fold(m.int_to_money(0), fn(m, t) { m.money_sum(m, t.value) })
 }
 
-fn prepend(body: String, prefix: String) -> String {
-  prefix <> body
-}
+// fn prepend(body: String, prefix: String) -> String {
+//   prefix <> body
+// }
 
 pub fn month_to_string(value: MonthInYear) -> String {
   value.month
@@ -1639,37 +1603,40 @@ fn categories() -> List(Category) {
     Category(
       id: "1",
       name: "Subscriptions",
-      target: option.Some(Monthly(m.float_to_money(60, 0))),
+      target: option.Some(m.Monthly(m.float_to_money(60, 0))),
       inflow: False,
     ),
     Category(
       id: "2",
       name: "Shopping",
-      target: option.Some(Monthly(m.float_to_money(40, 0))),
+      target: option.Some(m.Monthly(m.float_to_money(40, 0))),
       inflow: False,
     ),
     Category(
       id: "3",
       name: "Goals",
-      target: option.Some(Custom(m.float_to_money(150, 0), MonthInYear(2, 2025))),
+      target: option.Some(m.Custom(
+        m.float_to_money(150, 0),
+        MonthInYear(2, 2025),
+      )),
       inflow: False,
     ),
     Category(
       id: "4",
       name: "Vacation",
-      target: option.Some(Monthly(m.float_to_money(100, 0))),
+      target: option.Some(m.Monthly(m.float_to_money(100, 0))),
       inflow: False,
     ),
     Category(
       id: "5",
       name: "Entertainment",
-      target: option.Some(Monthly(m.float_to_money(200, 0))),
+      target: option.Some(m.Monthly(m.float_to_money(200, 0))),
       inflow: False,
     ),
     Category(
       id: "6",
       name: "Groceries",
-      target: option.Some(Monthly(m.float_to_money(500, 0))),
+      target: option.Some(m.Monthly(m.float_to_money(500, 0))),
       inflow: False,
     ),
     Category(

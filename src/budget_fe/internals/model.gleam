@@ -1,5 +1,47 @@
 import gleam/int
+import gleam/option
 import gleam/string
+import rada/date as d
+
+pub type User {
+  User(id: String, name: String)
+}
+
+pub type Category {
+  Category(
+    id: String,
+    name: String,
+    target: option.Option(Target),
+    inflow: Bool,
+  )
+}
+
+pub type Target {
+  Monthly(target: Money)
+  Custom(target: Money, date: MonthInYear)
+}
+
+pub type MonthInYear {
+  MonthInYear(month: Int, year: Int)
+}
+
+pub type Allocation {
+  Allocation(id: String, amount: Money, category_id: String, date: Cycle)
+}
+
+pub type Cycle {
+  Cycle(year: Int, month: d.Month)
+}
+
+pub type Transaction {
+  Transaction(
+    id: String,
+    date: d.Date,
+    payee: String,
+    category_id: String,
+    value: Money,
+  )
+}
 
 pub type Money {
   //s - signature, b - base
