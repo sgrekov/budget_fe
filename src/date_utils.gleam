@@ -29,7 +29,7 @@ pub fn month_to_name(month: d.Month) -> String {
   }
 }
 
-pub fn days_in_month(year: Int, month: d.Month) -> Int {
+pub fn days_in_month(_: Int, month: d.Month) -> Int {
   case month {
     d.Jan -> 31
     d.Feb -> 28

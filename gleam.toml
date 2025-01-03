@@ -1,5 +1,5 @@
 name = "budget_fe"
-target = "javascript"
+#target = "javascript"
 version = "1.0.0"
 
 # Fill out these fields if you intend to generate HTML documentation or publish
@@ -20,7 +20,6 @@ lustre_http = ">= 0.6.0 and < 1.0.0"
 modem = ">= 2.0.1 and < 3.0.0"
 gluid = ">= 1.0.0 and < 2.0.0"
 rada = ">= 0.4.0 and < 1.0.0"
-bigi = ">= 3.2.0 and < 4.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"

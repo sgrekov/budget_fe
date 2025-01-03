@@ -1,0 +1,3 @@
+find out how to test private funcs
+what to do with income category
+check anonym func syntax

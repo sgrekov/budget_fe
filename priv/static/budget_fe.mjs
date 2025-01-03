@@ -682,6 +682,12 @@ function find_map(loop$list, loop$fun) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/string.mjs
+function replace(string3, pattern, substitute) {
+  let _pipe = string3;
+  let _pipe$1 = identity(_pipe);
+  let _pipe$2 = string_replace(_pipe$1, pattern, substitute);
+  return identity(_pipe$2);
+}
 function slice(string3, idx, len) {
   let $ = len < 0;
   if ($) {
@@ -742,6 +748,16 @@ function pad_start(string3, desired_length, pad_string) {
 }
 function pad_left(string3, desired_length, pad_string) {
   return pad_start(string3, desired_length, pad_string);
+}
+function pad_end(string3, desired_length, pad_string) {
+  let current_length = string_length(string3);
+  let to_pad_length = desired_length - current_length;
+  let $ = to_pad_length <= 0;
+  if ($) {
+    return string3;
+  } else {
+    return string3 + padding(to_pad_length, pad_string);
+  }
 }
 function drop_start(loop$string, loop$num_graphemes) {
   while (true) {
@@ -1651,6 +1667,16 @@ function float_to_string(float3) {
 }
 function int_to_base_string(int3, base) {
   return int3.toString(base).toUpperCase();
+}
+function string_replace(string3, target, substitute) {
+  if (typeof string3.replaceAll !== "undefined") {
+    return string3.replaceAll(target, substitute);
+  }
+  return string3.replace(
+    // $& means the whole matched string
+    new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+    substitute
+  );
 }
 function string_length(string3) {
   if (string3 === "") {
@@ -5478,6 +5504,156 @@ function is_between(value3, lower, upper) {
   return is_between_int(value_rd, lower_rd, upper_rd);
 }
 
+// build/dev/javascript/budget_fe/budget_fe/internals/model.mjs
+var Money = class extends CustomType {
+  constructor(s, b, is_neg2) {
+    super();
+    this.s = s;
+    this.b = b;
+    this.is_neg = is_neg2;
+  }
+};
+function money_sum(a2, b) {
+  let sign_a = (() => {
+    let $ = a2.is_neg;
+    if (!$) {
+      return 1;
+    } else {
+      return -1;
+    }
+  })();
+  let sign_b = (() => {
+    let $ = b.is_neg;
+    if (!$) {
+      return 1;
+    } else {
+      return -1;
+    }
+  })();
+  let a_cents = (a2.s * 100 + a2.b) * sign_a;
+  let b_cents = (b.s * 100 + b.b) * sign_b;
+  return new Money(
+    (() => {
+      let _pipe = divideInt(a_cents + b_cents, 100);
+      return absolute_value(_pipe);
+    })(),
+    (() => {
+      let _pipe = remainderInt(a_cents + b_cents, 100);
+      return absolute_value(_pipe);
+    })(),
+    a_cents + b_cents < 0
+  );
+}
+function divide_money(m, d) {
+  return new Money(divideInt(m.s, d), divideInt(m.b, d), m.is_neg);
+}
+function int_to_money(i) {
+  return new Money(
+    (() => {
+      let _pipe = i;
+      return absolute_value(_pipe);
+    })(),
+    0,
+    i < 0
+  );
+}
+function negate3(m) {
+  return m.withFields({ is_neg: true });
+}
+function float_to_money(i, c) {
+  return new Money(
+    (() => {
+      let _pipe = i;
+      return absolute_value(_pipe);
+    })(),
+    c,
+    i < 0
+  );
+}
+function string_to_money(raw) {
+  let $ = (() => {
+    let $12 = slice(raw, 0, 1);
+    if ($12 === "-") {
+      return [true, slice(raw, 1, string_length(raw))];
+    } else {
+      return [false, raw];
+    }
+  })();
+  let is_neg$1 = $[0];
+  let s = $[1];
+  let $1 = (() => {
+    let _pipe = replace(s, ",", ".");
+    return split2(_pipe, ".");
+  })();
+  if ($1.atLeastLength(2)) {
+    let s$1 = $1.head;
+    let b = $1.tail.head;
+    let $2 = parse_int(s$1);
+    let $3 = (() => {
+      let _pipe = b;
+      let _pipe$1 = pad_end(_pipe, 2, "0");
+      let _pipe$2 = slice(_pipe$1, 0, 2);
+      return parse_int(_pipe$2);
+    })();
+    if ($2.isOk() && $3.isOk()) {
+      let s$2 = $2[0];
+      let b$1 = $3[0];
+      return new Money(s$2, b$1, is_neg$1);
+    } else {
+      return new Money(0, 0, is_neg$1);
+    }
+  } else if ($1.atLeastLength(1)) {
+    let s$1 = $1.head;
+    let $2 = parse_int(s$1);
+    if ($2.isOk()) {
+      let s$2 = $2[0];
+      return new Money(s$2, 0, is_neg$1);
+    } else {
+      return new Money(0, 0, is_neg$1);
+    }
+  } else {
+    return new Money(0, 0, is_neg$1);
+  }
+}
+function money_to_string_no_sign(m) {
+  return (() => {
+    let _pipe = m.s;
+    return to_string2(_pipe);
+  })() + "." + (() => {
+    let _pipe = m.b;
+    return to_string2(_pipe);
+  })();
+}
+function is_neg(m) {
+  return m.is_neg;
+}
+function is_zero(m) {
+  let $ = m.s;
+  let $1 = m.b;
+  if ($ === 0 && $1 === 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+function sign_symbols(m) {
+  let $ = m.is_neg;
+  if ($) {
+    let $1 = is_zero(m);
+    if ($1) {
+      return "";
+    } else {
+      return "-";
+    }
+  } else {
+    return "";
+  }
+}
+function money_to_string(m) {
+  let sign = sign_symbols(m);
+  return sign + "\u20AC" + money_to_string_no_sign(m);
+}
+
 // build/dev/javascript/budget_fe/date_utils.mjs
 function to_date_string(value3) {
   return format(value3, "dd.MM.yyyy");
@@ -5515,7 +5691,7 @@ function month_to_name2(month2) {
     return "December";
   }
 }
-function days_in_month2(year2, month2) {
+function days_in_month2(_, month2) {
   if (month2 instanceof Jan) {
     return 31;
   } else if (month2 instanceof Feb) {
@@ -5863,14 +6039,13 @@ var ShiftLeft = class extends CustomType {
 var ShiftRight = class extends CustomType {
 };
 var TransactionEditForm = class extends CustomType {
-  constructor(id2, date, payee, category, amount, is_inflow) {
+  constructor(id2, date, payee, category, amount) {
     super();
     this.id = id2;
     this.date = date;
     this.payee = payee;
     this.category = category;
     this.amount = amount;
-    this.is_inflow = is_inflow;
   }
 };
 var TargetEdit = class extends CustomType {
@@ -5903,13 +6078,6 @@ var Category = class extends CustomType {
     this.target = target;
   }
 };
-var Money = class extends CustomType {
-  constructor(s, b) {
-    super();
-    this.s = s;
-    this.b = b;
-  }
-};
 var Monthly = class extends CustomType {
   constructor(target) {
     super();
@@ -5940,14 +6108,13 @@ var Allocation = class extends CustomType {
   }
 };
 var Transaction = class extends CustomType {
-  constructor(id2, date, payee, category_id, value3, is_inflow) {
+  constructor(id2, date, payee, category_id, value3) {
     super();
     this.id = id2;
     this.date = date;
     this.payee = payee;
     this.category_id = category_id;
     this.value = value3;
-    this.is_inflow = is_inflow;
   }
 };
 var AllocationEffectResult = class extends CustomType {
@@ -6013,25 +6180,6 @@ function delete_category_eff(c_id) {
     }
   );
 }
-function string_to_money(s) {
-  let $ = (() => {
-    let _pipe = split2(s, ".");
-    return map2(
-      _pipe,
-      (s2) => {
-        let _pipe$1 = parse_int(s2);
-        return unwrap2(_pipe$1, 0);
-      }
-    );
-  })();
-  if ($.atLeastLength(2)) {
-    let s$1 = $.head;
-    let b = $.tail.head;
-    return new Money(s$1, b);
-  } else {
-    return new Money(0, 0);
-  }
-}
 function update_transaction_eff(tef, categories2) {
   let money = string_to_money(tef.amount);
   return from(
@@ -6062,8 +6210,7 @@ function update_transaction_eff(tef, categories2) {
                 );
                 return unwrap2(_pipe$1, "");
               })(),
-              money,
-              tef.is_inflow
+              money
             )
           )
         )
@@ -6176,7 +6323,7 @@ function init3(_) {
       false,
       "",
       new TransactionForm("", "", new None(), new None(), false),
-      new TargetEdit("", false, new Monthly(new Money(0, 0))),
+      new TargetEdit("", false, new Monthly(int_to_money(0))),
       new None(),
       new None()
     ),
@@ -6204,8 +6351,7 @@ function add_transaction_eff(transaction_form) {
                   })(),
                   transaction_form.payee,
                   cat.id,
-                  amount,
-                  transaction_form.is_inflow
+                  amount
                 )
               )
             );
@@ -6360,12 +6506,12 @@ function custom_target_money_in_month(m, date) {
     28
   );
   let months_count = diff2(new Months(), today2, final_date) + 1;
-  return new Money(divideInt(m.s, months_count), divideInt(m.b, months_count));
+  return divide_money(m, months_count);
 }
 function target_money(category) {
   let $ = category.target;
   if ($ instanceof None) {
-    return new Money(0, 0);
+    return int_to_money(0);
   } else if ($ instanceof Some && $[0] instanceof Custom) {
     let amount = $[0].target;
     let date_till = $[0].date;
@@ -6374,6 +6520,44 @@ function target_money(category) {
     let amount = $[0].target;
     return amount;
   }
+}
+function ready_to_assign(transactions2, allocations2, cycle) {
+  let income = (() => {
+    let _pipe2 = transactions2;
+    let _pipe$1 = filter(_pipe2, (t) => {
+      return t.category_id === "0";
+    });
+    return fold(
+      _pipe$1,
+      int_to_money(0),
+      (m, t) => {
+        return money_sum(m, t.value);
+      }
+    );
+  })();
+  let outcome = (() => {
+    let _pipe2 = allocations2;
+    let _pipe$1 = filter_map(
+      _pipe2,
+      (a2) => {
+        let $ = isEqual(a2.date, cycle);
+        if ($) {
+          return new Ok(a2.amount);
+        } else {
+          return new Error("");
+        }
+      }
+    );
+    return fold(
+      _pipe$1,
+      int_to_money(0),
+      (m, t) => {
+        return money_sum(m, t);
+      }
+    );
+  })();
+  let _pipe = money_sum(income, negate3(outcome));
+  return money_to_string(_pipe);
 }
 function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
   let $ = selected_id === t.id;
@@ -6417,23 +6601,6 @@ function transaction_category_name(t, cats) {
     }
   })();
   return category_name;
-}
-function transaction_amount(t) {
-  let sign = (() => {
-    let $ = t.is_inflow;
-    if (!$) {
-      return "-";
-    } else {
-      return "";
-    }
-  })();
-  return sign + "\u20AC" + (() => {
-    let _pipe = t.value.s;
-    return to_string2(_pipe);
-  })() + "." + (() => {
-    let _pipe = t.value.b;
-    return to_string2(_pipe);
-  })();
 }
 function transaction_list_item_html(t, model) {
   let selected_id = (() => {
@@ -6590,7 +6757,12 @@ function transaction_list_item_html(t, model) {
         td(
           toList([]),
           toList([
-            text2(transaction_amount(t)),
+            text2(
+              (() => {
+                let _pipe = t.value;
+                return money_to_string(_pipe);
+              })()
+            ),
             manage_transaction_buttons(t, selected_id, category_name, false)
           ])
         )
@@ -6788,6 +6960,22 @@ function budget_transactions(model) {
     ])
   );
 }
+function category_assigned(c, allocations2, cycle) {
+  let _pipe = allocations2;
+  let _pipe$1 = filter(_pipe, (a2) => {
+    return isEqual(a2.date, cycle);
+  });
+  let _pipe$2 = filter(_pipe$1, (a2) => {
+    return a2.category_id === c.id;
+  });
+  return fold(
+    _pipe$2,
+    int_to_money(0),
+    (m, t) => {
+      return money_sum(m, t.amount);
+    }
+  );
+}
 function div_context(text3, color) {
   return div(
     toList([
@@ -6799,162 +6987,49 @@ function div_context(text3, color) {
     toList([text2(text3)])
   );
 }
-function money_to_string_no_sign(m) {
-  return (() => {
-    let _pipe = m.s;
-    return to_string2(_pipe);
-  })() + "." + (() => {
-    let _pipe = m.b;
-    return to_string2(_pipe);
-  })();
-}
-function money_to_string(m) {
-  return "\u20AC" + money_to_string_no_sign(m);
-}
-function money_sum(a2, b) {
-  let base_sum = a2.b + b.b;
-  let $ = (() => {
-    let $1 = base_sum >= 100;
-    if ($1) {
-      return [1, remainderInt(base_sum, 100)];
-    } else {
-      return [0, base_sum];
-    }
-  })();
-  let euro = $[0];
-  let base = $[1];
-  return new Money(a2.s + b.s + euro, base);
-}
-function category_assigned(c, allocations2, cycle) {
-  let _pipe = allocations2;
-  let _pipe$1 = filter(_pipe, (a2) => {
-    return isEqual(a2.date, cycle);
-  });
-  let _pipe$2 = filter(_pipe$1, (a2) => {
-    return a2.category_id === c.id;
+function category_activity(cat, transactions2) {
+  let _pipe = transactions2;
+  let _pipe$1 = filter(_pipe, (t) => {
+    return t.category_id === cat.id;
   });
   return fold(
-    _pipe$2,
-    new Money(0, 0),
+    _pipe$1,
+    int_to_money(0),
     (m, t) => {
-      return money_sum(m, t.amount);
+      return money_sum(m, t.value);
     }
   );
-}
-function money_minus(a2, b) {
-  let base_sum = a2.b - b.b;
-  let $ = (() => {
-    let $1 = base_sum < 0;
-    if ($1) {
-      return [1, 100 + base_sum];
-    } else {
-      return [0, base_sum];
-    }
-  })();
-  let euro = $[0];
-  let base = $[1];
-  return new Money(a2.s - b.s - euro, base);
-}
-function ready_to_assign(transactions2, allocations2, cycle) {
-  let income = (() => {
-    let _pipe2 = transactions2;
-    let _pipe$1 = filter(_pipe2, (t) => {
-      return t.category_id === "0";
-    });
-    return fold(
-      _pipe$1,
-      new Money(0, 0),
-      (m, t) => {
-        return money_sum(m, t.value);
-      }
-    );
-  })();
-  let outcome = (() => {
-    let _pipe2 = allocations2;
-    let _pipe$1 = filter_map(
-      _pipe2,
-      (a2) => {
-        debug(
-          "alloc id:" + a2.category_id + " amount:" + (() => {
-            let _pipe$12 = a2.amount;
-            return money_to_string_no_sign(_pipe$12);
-          })()
-        );
-        let $ = isEqual(a2.date, cycle);
-        if ($) {
-          return new Ok(a2.amount);
-        } else {
-          return new Error("");
-        }
-      }
-    );
-    return fold(
-      _pipe$1,
-      new Money(0, 0),
-      (m, t) => {
-        return money_sum(m, t);
-      }
-    );
-  })();
-  let _pipe = money_minus(income, outcome);
-  return money_to_string_no_sign(_pipe);
-}
-function category_activity(cat, transactions2) {
-  let outflow = (() => {
-    let _pipe = transactions2;
-    let _pipe$1 = filter(
-      _pipe,
-      (t) => {
-        return t.category_id === cat.id && !t.is_inflow;
-      }
-    );
-    return fold(
-      _pipe$1,
-      new Money(0, 0),
-      (m, t) => {
-        return money_sum(m, t.value);
-      }
-    );
-  })();
-  let inflow = (() => {
-    let _pipe = transactions2;
-    let _pipe$1 = filter(
-      _pipe,
-      (t) => {
-        return t.category_id === cat.id && t.is_inflow;
-      }
-    );
-    return fold(
-      _pipe$1,
-      new Money(0, 0),
-      (m, t) => {
-        return money_sum(m, t.value);
-      }
-    );
-  })();
-  return money_minus(inflow, outflow);
 }
 function category_balance(cat, model) {
   let target_money$1 = target_money(cat);
   let activity = category_activity(cat, current_cycle_transactions(model));
   let assigned = category_assigned(cat, model.allocations, model.cycle);
-  let balance = money_minus(assigned, activity);
+  let balance = money_sum(assigned, activity);
   let color = (() => {
-    let $ = balance.s;
-    if ($ === 0) {
+    let $ = (() => {
+      let _pipe = balance;
+      return is_zero(_pipe);
+    })();
+    if ($) {
       return "rgb(137, 143, 138)";
     } else {
-      let $1 = balance.s > 0;
+      let $1 = (() => {
+        let _pipe = balance;
+        return is_neg(_pipe);
+      })();
       if ($1) {
-        return "rgba(64,185,78,1)";
-      } else {
         return "rgb(231, 41, 12)";
+      } else {
+        return "rgba(64,185,78,1)";
       }
     }
   })();
-  let add_diff = money_minus(target_money$1, assigned);
+  let add_diff = money_sum(target_money$1, assigned);
   let warn_text = (() => {
-    let $ = add_diff.s > 0;
+    let $ = (() => {
+      let _pipe = add_diff;
+      return is_neg(_pipe);
+    })();
     if (!$) {
       return text2("");
     } else {
@@ -7203,6 +7278,8 @@ function category_target_ui(c, et) {
                     placeholder("amount"),
                     class$("form-control"),
                     type_("text"),
+                    style(toList([["width", "120px"]])),
+                    style(toList([["width", "120px"]])),
                     style(toList([["width", "120px"]]))
                   ])
                 )
@@ -7278,7 +7355,7 @@ function category_details(category, model, sc, allocation) {
                         category,
                         current_cycle_transactions(model)
                       );
-                      return money_to_string_no_sign(_pipe);
+                      return money_to_string(_pipe);
                     })()
                   )
                 ])
@@ -7459,12 +7536,12 @@ function view(model) {
 function allocations(cycle) {
   let c = new Cycle(2024, new Dec());
   let _pipe = toList([
-    new Allocation("1", new Money(80, 0), "1", c),
-    new Allocation("2", new Money(120, 0), "2", c),
-    new Allocation("3", new Money(150, 0), "3", c),
-    new Allocation("4", new Money(100, 2), "4", c),
-    new Allocation("5", new Money(150, 2), "5", c),
-    new Allocation("6", new Money(500, 2), "6", c)
+    new Allocation("1", int_to_money(80), "1", c),
+    new Allocation("2", int_to_money(120), "2", c),
+    new Allocation("3", int_to_money(150), "3", c),
+    new Allocation("4", float_to_money(100, 2), "4", c),
+    new Allocation("5", float_to_money(150, 2), "5", c),
+    new Allocation("6", float_to_money(500, 2), "6", c)
   ]);
   return filter(_pipe, (a2) => {
     return isEqual(a2.date, cycle);
@@ -7545,32 +7622,34 @@ function categories() {
     new Category(
       "1",
       "Subscriptions",
-      new Some(new Monthly(new Money(60, 0)))
+      new Some(new Monthly(float_to_money(60, 0)))
     ),
     new Category(
       "2",
       "Shopping",
-      new Some(new Monthly(new Money(40, 0)))
+      new Some(new Monthly(float_to_money(40, 0)))
     ),
     new Category(
       "3",
       "Goals",
-      new Some(new Custom(new Money(150, 0), new MonthInYear(2, 2025)))
+      new Some(
+        new Custom(float_to_money(150, 0), new MonthInYear(2, 2025))
+      )
     ),
     new Category(
       "4",
       "Vacation",
-      new Some(new Monthly(new Money(100, 0)))
+      new Some(new Monthly(float_to_money(100, 0)))
     ),
     new Category(
       "5",
       "Entertainment",
-      new Some(new Monthly(new Money(200, 0)))
+      new Some(new Monthly(float_to_money(200, 0)))
     ),
     new Category(
       "6",
       "Groceries",
-      new Some(new Monthly(new Money(500, 0)))
+      new Some(new Monthly(float_to_money(500, 0)))
     )
   ]);
 }
@@ -7588,92 +7667,81 @@ function transactions() {
       from_calendar_date(2025, new Jan(), 1),
       "Amazon",
       "5",
-      new Money(10, 0),
-      false
+      float_to_money(-10, 0)
     ),
     new Transaction(
       "1",
       from_calendar_date(2024, new Dec(), 2),
       "Amazon",
       "5",
-      new Money(50, 0),
-      false
+      float_to_money(-50, 0)
     ),
     new Transaction(
       "2",
       from_calendar_date(2024, new Dec(), 2),
       "Bauhaus",
       "5",
-      new Money(50, 0),
-      false
+      float_to_money(-50, 0)
     ),
     new Transaction(
       "3",
       from_calendar_date(2024, new Dec(), 2),
       "Rewe",
       "6",
-      new Money(50, 0),
-      false
+      float_to_money(-50, 0)
     ),
     new Transaction(
       "4",
       from_calendar_date(2024, new Dec(), 2),
       "Vodafone",
       "1",
-      new Money(50, 0),
-      false
+      float_to_money(-50, 0)
     ),
     new Transaction(
       "5",
       from_calendar_date(2024, new Dec(), 2),
       "Steam",
       "5",
-      new Money(50, 0),
-      false
+      float_to_money(-50, 0)
     ),
     new Transaction(
       "6",
       from_calendar_date(2024, new Dec(), 2),
       "Duo",
       "1",
-      new Money(50, 60),
-      false
+      float_to_money(-50, 60)
     ),
     new Transaction(
       "7",
       from_calendar_date(2024, new Dec(), 2),
       "O2",
       "1",
-      new Money(50, 0),
-      false
+      float_to_money(-50, 0)
     ),
     new Transaction(
       "8",
       from_calendar_date(2024, new Dec(), 2),
       "Trade Republic",
       "0",
-      new Money(1e3, 0),
-      true
+      float_to_money(1e3, 0)
     ),
     new Transaction(
       "8",
       from_calendar_date(2024, new Nov(), 27),
       "O2",
       "1",
-      new Money(1, 50),
-      false
+      float_to_money(-1, 50)
     ),
     new Transaction(
       "8",
       from_calendar_date(2024, new Nov(), 26),
       "O2",
       "1",
-      new Money(1, 50),
-      false
+      float_to_money(-1, 50)
     )
   ]);
 }
-function get_transactions(start3, end) {
+function get_transactions() {
   return from(
     (dispatch) => {
       return dispatch(new Transactions(new Ok(transactions())));
@@ -7695,11 +7763,7 @@ function update(model, msg) {
     return [
       model.withFields({ user, cycle, route: initial_path }),
       batch(
-        toList([
-          get_categories(),
-          get_transactions(start3, end),
-          get_allocations(cycle)
-        ])
+        toList([get_categories(), get_transactions(), get_allocations(cycle)])
       )
     ];
   } else if (msg instanceof Categories && msg.cats.isOk()) {
@@ -7707,10 +7771,7 @@ function update(model, msg) {
     let $ = cycle_bounds(model.cycle, model.cycle_end_day);
     let start3 = $[0];
     let end = $[1];
-    return [
-      model.withFields({ categories: cats }),
-      get_transactions(start3, end)
-    ];
+    return [model.withFields({ categories: cats }), get_transactions()];
   } else if (msg instanceof Categories && !msg.cats.isOk()) {
     return [model, none()];
   } else if (msg instanceof Transactions && msg.trans.isOk()) {
@@ -7848,7 +7909,7 @@ function update(model, msg) {
             let _pipe$1 = map3(
               _pipe,
               (amount2) => {
-                return new Money(amount2, 0);
+                return int_to_money(amount2);
               }
             );
             return from_result(_pipe$1);
@@ -7897,9 +7958,9 @@ function update(model, msg) {
       let $ = model.target_edit.target;
       if ($ instanceof Custom) {
         let date = $.date;
-        return new Custom(new Money(amount$1, 0), date);
+        return new Custom(int_to_money(amount$1), date);
       } else {
-        return new Monthly(new Money(amount$1, 0));
+        return new Monthly(int_to_money(amount$1));
       }
     })();
     return [
@@ -8005,8 +8066,7 @@ function update(model, msg) {
             (() => {
               let _pipe = t.value;
               return money_to_string_no_sign(_pipe);
-            })(),
-            t.is_inflow
+            })()
           )
         )
       }),
@@ -8270,9 +8330,7 @@ function update(model, msg) {
     let end = $[1];
     return [
       model.withFields({ cycle: new_cycle }),
-      batch(
-        toList([get_transactions(start3, end), get_allocations(new_cycle)])
-      )
+      batch(toList([get_transactions(), get_allocations(new_cycle)]))
     ];
   } else {
     let show = msg.show;
@@ -8286,7 +8344,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      179,
+      172,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
