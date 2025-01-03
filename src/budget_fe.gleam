@@ -1102,9 +1102,7 @@ fn category_target_ui(c: Category, et: TargetEdit) -> element.Element(Msg) {
                 attribute.type_("text"),
                 attribute.style([#("width", "120px")]),
                 attribute.style([#("width", "120px")]),
-                // attribute.value(money.b |> int.to_string),
                 attribute.style([#("width", "120px")]),
-                // attribute.value(money.b |> int.to_string),
               ]),
             ])
         },
@@ -1178,10 +1176,9 @@ fn target_money(category: Category) -> m.Money {
 }
 
 fn custom_target_money_in_month(m: m.Money, date: MonthInYear) -> m.Money {
-  let today = d.today()
   let final_date =
     d.from_calendar_date(date.year, d.number_to_month(date.month), 28)
-  let months_count = d.diff(d.Months, today, final_date) + 1
+  let months_count = d.diff(d.Months, d.today(), final_date) + 1
   m.divide_money(m, months_count)
 }
 
@@ -1215,7 +1212,6 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
       html.input([
         attribute.id("flexCheckDefault"),
         event.on_check(UserInputShowAllTransactions),
-        // attribute.value(model.show_all_transactions),
         attribute.type_("checkbox"),
         attribute.class("form-check-input"),
         attribute.checked(model.show_all_transactions),
@@ -1242,10 +1238,11 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
             case model.show_all_transactions {
               False ->
                 current_cycle_transactions(model)
-                |> list.map(fn(t) { transaction_list_item_html(t, model) })
+                // |> list.map(fn(t) { transaction_list_item_html(t, model) })
+                |> list.map(transaction_list_item_html(_, model))
               True ->
                 model.transactions
-                |> list.map(fn(t) { transaction_list_item_html(t, model) })
+                |> list.map(transaction_list_item_html(_, model))
             }
           },
         ]),
@@ -1522,7 +1519,7 @@ fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
   let activity = category_activity(cat, current_cycle_transactions(model))
   let assigned = category_assigned(cat, model.allocations, model.cycle)
   let balance = m.money_sum(assigned, activity)
-  let color = case balance |> m.is_zero {
+  let color = case balance |> m.is_zero_int {
     True -> "rgb(137, 143, 138)"
     _ ->
       case balance |> m.is_neg {
@@ -1530,7 +1527,7 @@ fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
         False -> "rgba(64,185,78,1)"
       }
   }
-  let add_diff = m.money_sum(target_money, assigned)
+  let add_diff = m.money_sum(assigned, target_money |> m.negate)
   let warn_text = case add_diff |> m.is_neg {
     False -> html.text("")
     True ->

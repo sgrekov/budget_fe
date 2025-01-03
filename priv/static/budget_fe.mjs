@@ -5653,6 +5653,9 @@ function money_to_string(m) {
   let sign = sign_symbols(m);
   return sign + "\u20AC" + money_to_string_no_sign(m);
 }
+function is_zero_int(m) {
+  return m.s === 0;
+}
 
 // build/dev/javascript/budget_fe/date_utils.mjs
 function to_date_string(value3) {
@@ -6499,13 +6502,12 @@ function target_switcher_ui(et) {
   );
 }
 function custom_target_money_in_month(m, date) {
-  let today2 = today();
   let final_date = from_calendar_date(
     date.year,
     number_to_month(date.month),
     28
   );
-  let months_count = diff2(new Months(), today2, final_date) + 1;
+  let months_count = diff2(new Months(), today(), final_date) + 1;
   return divide_money(m, months_count);
 }
 function target_money(category) {
@@ -6938,16 +6940,16 @@ function budget_transactions(model) {
                     let _pipe = current_cycle_transactions(model);
                     return map2(
                       _pipe,
-                      (t) => {
-                        return transaction_list_item_html(t, model);
+                      (_capture) => {
+                        return transaction_list_item_html(_capture, model);
                       }
                     );
                   } else {
                     let _pipe = model.transactions;
                     return map2(
                       _pipe,
-                      (t) => {
-                        return transaction_list_item_html(t, model);
+                      (_capture) => {
+                        return transaction_list_item_html(_capture, model);
                       }
                     );
                   }
@@ -7008,7 +7010,7 @@ function category_balance(cat, model) {
   let color = (() => {
     let $ = (() => {
       let _pipe = balance;
-      return is_zero(_pipe);
+      return is_zero_int(_pipe);
     })();
     if ($) {
       return "rgb(137, 143, 138)";
@@ -7024,7 +7026,13 @@ function category_balance(cat, model) {
       }
     }
   })();
-  let add_diff = money_sum(target_money$1, assigned);
+  let add_diff = money_sum(
+    assigned,
+    (() => {
+      let _pipe = target_money$1;
+      return negate3(_pipe);
+    })()
+  );
   let warn_text = (() => {
     let $ = (() => {
       let _pipe = add_diff;

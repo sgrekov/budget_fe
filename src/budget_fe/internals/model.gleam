@@ -98,3 +98,7 @@ pub fn is_zero(m: Money) -> Bool {
     _, _ -> False
   }
 }
+
+pub fn is_zero_int(m: Money) -> Bool {
+  m.s == 0
+}
