@@ -1,10 +1,8 @@
-import budget_fe/internals/model.{
+import budget_test.{
   type Allocation, type Category, type Cycle, type Money, type Target,
   type Transaction, type User,
 } as _
-import budget_fe/internals/model.{
-  Allocation, Category, Cycle, Money, Transaction, User,
-}
+import budget_test.{Allocation, Category, Cycle, Money, Transaction, User}
 import gleam/option.{type Option}
 import lustre_http
 

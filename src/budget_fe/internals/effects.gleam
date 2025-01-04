@@ -1,9 +1,9 @@
 import budget_fe/internals/factories.{allocations}
-import budget_fe/internals/model.{
+import budget_test.{
   type Allocation, type Category, type Cycle, type Target, type Transaction,
 } as m
 
-import budget_fe/internals/model.{Allocation, Category, Cycle, Transaction}
+import budget_test.{Allocation, Category, Cycle, Transaction}
 
 import budget_fe/internals/msg.{type Msg}
 import date_utils

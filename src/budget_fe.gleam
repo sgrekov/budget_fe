@@ -1,11 +1,9 @@
 import budget_fe/internals/factories.{allocations, categories, transactions}
-import budget_fe/internals/model.{
-  type Allocation, type Category, type Cycle, type MonthInYear,
-  type Transaction, type User,
+import budget_test.{
+  type Allocation, type Category, type Cycle, type MonthInYear, type Transaction,
+  type User,
 } as m
-import budget_fe/internals/model.{
-  Allocation, Category, Cycle, MonthInYear, Transaction, User,
-}
+import budget_test.{Allocation, Category, Cycle, MonthInYear, Transaction, User}
 
 import budget_fe/internals/effects as eff
 import budget_fe/internals/msg.{Model} as _
@@ -30,14 +28,6 @@ import modem.{initial_uri}
 import rada/date.{type Date} as d
 
 pub fn main() {
-  // let today = d.from_calendar_date(2024, d.Nov, 1)
-  // let feb = d.from_calendar_date(2024, d.Dec, 1)
-
-  // let dates = date.range(date.Month, 1, today, feb)
-  // io.debug(dates |> list.count(fn(d) { True }) |> int.to_string)
-  // dates
-  // |> list.each(fn(entry) { date.format(entry, "EEEE, d MMMM y") |> io.println })
-  // io.debug(d.diff(d.Months, today, feb) |> int.to_string)
   let app = lustre.application(init, update, v.view)
   let assert Ok(_) = lustre.start(app, "#app", Nil)
 

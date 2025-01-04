@@ -1,14 +1,14 @@
-import budget_fe/internals/model.{
-  type Allocation, type Category, type Cycle, type Money, type MonthInYear,
-  type Transaction, type User,
-} as m
-import budget_fe/internals/model.{
-  Allocation, Category, Cycle, Money, MonthInYear, Transaction, User,
-}
 import budget_fe/internals/msg
 import budget_fe/internals/msg.{
   type Model, type Msg, type SelectedCategory, type TargetEdit,
 } as _
+import budget_test.{
+  type Allocation, type Category, type Cycle, type Money, type MonthInYear,
+  type Transaction, type User,
+} as m
+import budget_test.{
+  Allocation, Category, Cycle, Money, MonthInYear, Transaction, User,
+}
 import date_utils
 import gleam/int
 import gleam/list

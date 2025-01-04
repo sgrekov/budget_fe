@@ -1,9 +1,7 @@
-import budget_fe/internals/model.{
+import budget_test.{
   type Allocation, type Category, type Cycle, type MonthInYear, type Transaction,
 } as m
-import budget_fe/internals/model.{
-  Allocation, Category, Cycle, MonthInYear, Transaction,
-}
+import budget_test.{Allocation, Category, Cycle, MonthInYear, Transaction}
 import gleam/list
 import gleam/option
 import rada/date as d
