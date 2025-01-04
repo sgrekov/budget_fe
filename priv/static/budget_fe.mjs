@@ -3480,96 +3480,6 @@ function start2(app, selector, flags) {
   );
 }
 
-// build/dev/javascript/lustre/lustre/element/html.mjs
-function text2(content) {
-  return text(content);
-}
-function div(attrs, children2) {
-  return element("div", attrs, children2);
-}
-function p(attrs, children2) {
-  return element("p", attrs, children2);
-}
-function a(attrs, children2) {
-  return element("a", attrs, children2);
-}
-function table(attrs, children2) {
-  return element("table", attrs, children2);
-}
-function tbody(attrs, children2) {
-  return element("tbody", attrs, children2);
-}
-function td(attrs, children2) {
-  return element("td", attrs, children2);
-}
-function th(attrs, children2) {
-  return element("th", attrs, children2);
-}
-function thead(attrs, children2) {
-  return element("thead", attrs, children2);
-}
-function tr(attrs, children2) {
-  return element("tr", attrs, children2);
-}
-function button(attrs, children2) {
-  return element("button", attrs, children2);
-}
-function datalist(attrs, children2) {
-  return element("datalist", attrs, children2);
-}
-function input(attrs) {
-  return element("input", attrs, toList([]));
-}
-function label(attrs, children2) {
-  return element("label", attrs, children2);
-}
-function option(attrs, label2) {
-  return element("option", attrs, toList([text(label2)]));
-}
-function select(attrs, children2) {
-  return element("select", attrs, children2);
-}
-
-// build/dev/javascript/lustre/lustre/event.mjs
-function on2(name, handler) {
-  return on(name, handler);
-}
-function on_click(msg) {
-  return on2("click", (_) => {
-    return new Ok(msg);
-  });
-}
-function value2(event2) {
-  let _pipe = event2;
-  return field("target", field("value", string))(
-    _pipe
-  );
-}
-function on_input(msg) {
-  return on2(
-    "input",
-    (event2) => {
-      let _pipe = value2(event2);
-      return map3(_pipe, msg);
-    }
-  );
-}
-function checked2(event2) {
-  let _pipe = event2;
-  return field("target", field("checked", bool))(
-    _pipe
-  );
-}
-function on_check(msg) {
-  return on2(
-    "change",
-    (event2) => {
-      let _pipe = checked2(event2);
-      return map3(_pipe, msg);
-    }
-  );
-}
-
 // build/dev/javascript/lustre_http/lustre_http.mjs
 var InternalServerError = class extends CustomType {
   constructor(x0) {
@@ -6088,101 +5998,147 @@ function is_zero_int(m) {
   return m.s === 0;
 }
 
-// build/dev/javascript/budget_fe/date_utils.mjs
-function to_date_string(value3) {
-  return format(value3, "dd.MM.yyyy");
+// build/dev/javascript/budget_fe/budget_fe/internals/factories.mjs
+function allocations(cycle) {
+  let c = new Cycle(2024, new Dec());
+  let _pipe = toList([
+    new Allocation("1", int_to_money(80), "1", c),
+    new Allocation("2", int_to_money(120), "2", c),
+    new Allocation("3", int_to_money(150), "3", c),
+    new Allocation("4", float_to_money(100, 2), "4", c),
+    new Allocation("5", float_to_money(150, 2), "5", c),
+    new Allocation("6", float_to_money(500, 2), "6", c)
+  ]);
+  return filter(_pipe, (a2) => {
+    return isEqual(a2.date, cycle);
+  });
 }
-function to_date_string_input(value3) {
-  return format(value3, "yyyy-MM-dd");
+function categories() {
+  return toList([
+    new Category(
+      "1",
+      "Subscriptions",
+      new Some(new Monthly(float_to_money(60, 0))),
+      false
+    ),
+    new Category(
+      "2",
+      "Shopping",
+      new Some(new Monthly(float_to_money(40, 0))),
+      false
+    ),
+    new Category(
+      "3",
+      "Goals",
+      new Some(
+        new Custom(float_to_money(150, 0), new MonthInYear(2, 2025))
+      ),
+      false
+    ),
+    new Category(
+      "4",
+      "Vacation",
+      new Some(new Monthly(float_to_money(100, 0))),
+      false
+    ),
+    new Category(
+      "5",
+      "Entertainment",
+      new Some(new Monthly(float_to_money(200, 0))),
+      false
+    ),
+    new Category(
+      "6",
+      "Groceries",
+      new Some(new Monthly(float_to_money(500, 0))),
+      false
+    ),
+    new Category("7", "Ready to assign", new None(), true)
+  ]);
 }
-function from_date_string(date_str) {
-  return from_iso_string(date_str);
-}
-function month_to_name2(month2) {
-  if (month2 instanceof Jan) {
-    return "January";
-  } else if (month2 instanceof Feb) {
-    return "February";
-  } else if (month2 instanceof Mar) {
-    return "March";
-  } else if (month2 instanceof Apr) {
-    return "April";
-  } else if (month2 instanceof May) {
-    return "May";
-  } else if (month2 instanceof Jun) {
-    return "June";
-  } else if (month2 instanceof Jul) {
-    return "July";
-  } else if (month2 instanceof Aug) {
-    return "August";
-  } else if (month2 instanceof Sep) {
-    return "September";
-  } else if (month2 instanceof Oct) {
-    return "October";
-  } else if (month2 instanceof Nov) {
-    return "November";
-  } else {
-    return "December";
-  }
-}
-function days_in_month2(_, month2) {
-  if (month2 instanceof Jan) {
-    return 31;
-  } else if (month2 instanceof Feb) {
-    return 28;
-  } else if (month2 instanceof Mar) {
-    return 31;
-  } else if (month2 instanceof Apr) {
-    return 30;
-  } else if (month2 instanceof May) {
-    return 31;
-  } else if (month2 instanceof Jun) {
-    return 30;
-  } else if (month2 instanceof Jul) {
-    return 31;
-  } else if (month2 instanceof Aug) {
-    return 31;
-  } else if (month2 instanceof Sep) {
-    return 30;
-  } else if (month2 instanceof Oct) {
-    return 31;
-  } else if (month2 instanceof Nov) {
-    return 30;
-  } else {
-    return 31;
-  }
-}
-function month_by_number(month2) {
-  if (month2 === 1) {
-    return new Jan();
-  } else if (month2 === 2) {
-    return new Feb();
-  } else if (month2 === 3) {
-    return new Mar();
-  } else if (month2 === 4) {
-    return new Apr();
-  } else if (month2 === 5) {
-    return new May();
-  } else if (month2 === 6) {
-    return new Jun();
-  } else if (month2 === 7) {
-    return new Jul();
-  } else if (month2 === 8) {
-    return new Aug();
-  } else if (month2 === 9) {
-    return new Sep();
-  } else if (month2 === 10) {
-    return new Oct();
-  } else if (month2 === 11) {
-    return new Nov();
-  } else if (month2 === 12) {
-    return new Dec();
-  } else {
-    return new Jan();
-  }
+function transactions() {
+  return toList([
+    new Transaction(
+      "1",
+      from_calendar_date(2025, new Jan(), 1),
+      "Amazon",
+      "5",
+      float_to_money(-10, 0)
+    ),
+    new Transaction(
+      "1",
+      from_calendar_date(2024, new Dec(), 2),
+      "Amazon",
+      "5",
+      float_to_money(-50, 0)
+    ),
+    new Transaction(
+      "2",
+      from_calendar_date(2024, new Dec(), 2),
+      "Bauhaus",
+      "5",
+      float_to_money(-50, 0)
+    ),
+    new Transaction(
+      "3",
+      from_calendar_date(2024, new Dec(), 2),
+      "Rewe",
+      "6",
+      float_to_money(-50, 0)
+    ),
+    new Transaction(
+      "4",
+      from_calendar_date(2024, new Dec(), 2),
+      "Vodafone",
+      "1",
+      float_to_money(-50, 0)
+    ),
+    new Transaction(
+      "5",
+      from_calendar_date(2024, new Dec(), 2),
+      "Steam",
+      "5",
+      float_to_money(-50, 0)
+    ),
+    new Transaction(
+      "6",
+      from_calendar_date(2024, new Dec(), 2),
+      "Duo",
+      "1",
+      float_to_money(-50, 60)
+    ),
+    new Transaction(
+      "7",
+      from_calendar_date(2024, new Dec(), 2),
+      "O2",
+      "1",
+      float_to_money(-50, 0)
+    ),
+    new Transaction(
+      "8",
+      from_calendar_date(2024, new Dec(), 2),
+      "Trade Republic",
+      "7",
+      float_to_money(1e3, 0)
+    ),
+    new Transaction(
+      "8",
+      from_calendar_date(2024, new Nov(), 27),
+      "O2",
+      "1",
+      float_to_money(-1, 50)
+    ),
+    new Transaction(
+      "8",
+      from_calendar_date(2024, new Nov(), 26),
+      "O2",
+      "1",
+      float_to_money(-1, 50)
+    )
+  ]);
 }
 
-// build/dev/javascript/budget_fe/budget_fe.mjs
+// build/dev/javascript/budget_fe/budget_fe/internals/msg.mjs
 var Home = class extends CustomType {
 };
 var TransactionsRoute = class extends CustomType {
@@ -6497,53 +6453,154 @@ var AllocationEffectResult = class extends CustomType {
     this.is_created = is_created;
   }
 };
-function prev_month(year2, month2) {
-  let mon_num = month_to_number(month2);
-  if (mon_num === 1) {
-    return [year2 - 1, 12];
+
+// build/dev/javascript/budget_fe/date_utils.mjs
+function to_date_string(value3) {
+  return format(value3, "dd.MM.yyyy");
+}
+function to_date_string_input(value3) {
+  return format(value3, "yyyy-MM-dd");
+}
+function from_date_string(date_str) {
+  return from_iso_string(date_str);
+}
+function month_to_name2(month2) {
+  if (month2 instanceof Jan) {
+    return "January";
+  } else if (month2 instanceof Feb) {
+    return "February";
+  } else if (month2 instanceof Mar) {
+    return "March";
+  } else if (month2 instanceof Apr) {
+    return "April";
+  } else if (month2 instanceof May) {
+    return "May";
+  } else if (month2 instanceof Jun) {
+    return "June";
+  } else if (month2 instanceof Jul) {
+    return "July";
+  } else if (month2 instanceof Aug) {
+    return "August";
+  } else if (month2 instanceof Sep) {
+    return "September";
+  } else if (month2 instanceof Oct) {
+    return "October";
+  } else if (month2 instanceof Nov) {
+    return "November";
   } else {
-    return [year2, mon_num - 1];
+    return "December";
   }
 }
-function cycle_bounds(c, cycle_end_day) {
-  if (cycle_end_day instanceof None) {
-    return [
-      from_calendar_date(c.year, c.month, 1),
-      from_calendar_date(
-        c.year,
-        c.month,
-        days_in_month2(c.year, c.month)
-      )
-    ];
+function days_in_month2(_, month2) {
+  if (month2 instanceof Jan) {
+    return 31;
+  } else if (month2 instanceof Feb) {
+    return 28;
+  } else if (month2 instanceof Mar) {
+    return 31;
+  } else if (month2 instanceof Apr) {
+    return 30;
+  } else if (month2 instanceof May) {
+    return 31;
+  } else if (month2 instanceof Jun) {
+    return 30;
+  } else if (month2 instanceof Jul) {
+    return 31;
+  } else if (month2 instanceof Aug) {
+    return 31;
+  } else if (month2 instanceof Sep) {
+    return 30;
+  } else if (month2 instanceof Oct) {
+    return 31;
+  } else if (month2 instanceof Nov) {
+    return 30;
   } else {
-    let last_day = cycle_end_day[0];
-    let $ = prev_month(c.year, c.month);
-    let prev_year = $[0];
-    let prev_month$1 = $[1];
-    return [
-      from_calendar_date(
-        prev_year,
-        month_by_number(prev_month$1),
-        last_day + 1
-      ),
-      from_calendar_date(c.year, c.month, last_day)
-    ];
+    return 31;
   }
 }
-function cycle_decrease(c) {
-  let mon_num = month_to_number(c.month);
-  if (mon_num === 1) {
-    return new Cycle(c.year - 1, new Dec());
+function month_by_number(month2) {
+  if (month2 === 1) {
+    return new Jan();
+  } else if (month2 === 2) {
+    return new Feb();
+  } else if (month2 === 3) {
+    return new Mar();
+  } else if (month2 === 4) {
+    return new Apr();
+  } else if (month2 === 5) {
+    return new May();
+  } else if (month2 === 6) {
+    return new Jun();
+  } else if (month2 === 7) {
+    return new Jul();
+  } else if (month2 === 8) {
+    return new Aug();
+  } else if (month2 === 9) {
+    return new Sep();
+  } else if (month2 === 10) {
+    return new Oct();
+  } else if (month2 === 11) {
+    return new Nov();
+  } else if (month2 === 12) {
+    return new Dec();
   } else {
-    return new Cycle(c.year, number_to_month(mon_num - 1));
+    return new Jan();
   }
 }
-function cycle_increase(c) {
-  let mon_num = month_to_number(c.month);
-  if (mon_num === 12) {
-    return new Cycle(c.year + 1, new Jan());
+
+// build/dev/javascript/budget_fe/budget_fe/internals/effects.mjs
+function find_alloc_by_id(id2, cycle) {
+  let _pipe = allocations(cycle);
+  return find(_pipe, (a2) => {
+    return a2.id === id2;
+  });
+}
+function save_allocation_eff(alloc_id, allocation, category_id, cycle) {
+  let money = (() => {
+    let _pipe = allocation;
+    return string_to_money(_pipe);
+  })();
+  if (alloc_id instanceof Some) {
+    let id2 = alloc_id[0];
+    let alloc = find_alloc_by_id(id2, cycle);
+    return from(
+      (dispatch) => {
+        return dispatch(
+          (() => {
+            if (alloc.isOk()) {
+              let alloc_entity = alloc[0];
+              return new SaveAllocationResult(
+                new Ok(
+                  new AllocationEffectResult(
+                    alloc_entity.withFields({ amount: money }),
+                    false
+                  )
+                )
+              );
+            } else {
+              return new SaveAllocationResult(
+                new Error(new NotFound())
+              );
+            }
+          })()
+        );
+      }
+    );
   } else {
-    return new Cycle(c.year, number_to_month(mon_num + 1));
+    return from(
+      (dispatch) => {
+        return dispatch(
+          new SaveAllocationResult(
+            new Ok(
+              new AllocationEffectResult(
+                new Allocation(guidv4(), money, category_id, cycle),
+                true
+              )
+            )
+          )
+        );
+      }
+    );
   }
 }
 function delete_category_eff(c_id) {
@@ -6598,18 +6655,6 @@ function delete_transaction_eff(t_id) {
     }
   );
 }
-function date_to_month(d) {
-  return new MonthInYear(
-    (() => {
-      let _pipe = d;
-      return month_number(_pipe);
-    })(),
-    (() => {
-      let _pipe = d;
-      return year(_pipe);
-    })()
-  );
-}
 function save_target_eff(category, target_edit) {
   return from(
     (dispatch) => {
@@ -6632,134 +6677,98 @@ function delete_target_eff(category) {
     }
   );
 }
-function calculate_current_cycle() {
-  let today2 = today();
-  let last_day = 26;
-  let cycle = new Cycle(
-    year(today2),
-    (() => {
-      let _pipe = today2;
-      return month(_pipe);
-    })()
+
+// build/dev/javascript/lustre/lustre/element/html.mjs
+function text2(content) {
+  return text(content);
+}
+function div(attrs, children2) {
+  return element("div", attrs, children2);
+}
+function p(attrs, children2) {
+  return element("p", attrs, children2);
+}
+function a(attrs, children2) {
+  return element("a", attrs, children2);
+}
+function table(attrs, children2) {
+  return element("table", attrs, children2);
+}
+function tbody(attrs, children2) {
+  return element("tbody", attrs, children2);
+}
+function td(attrs, children2) {
+  return element("td", attrs, children2);
+}
+function th(attrs, children2) {
+  return element("th", attrs, children2);
+}
+function thead(attrs, children2) {
+  return element("thead", attrs, children2);
+}
+function tr(attrs, children2) {
+  return element("tr", attrs, children2);
+}
+function button(attrs, children2) {
+  return element("button", attrs, children2);
+}
+function datalist(attrs, children2) {
+  return element("datalist", attrs, children2);
+}
+function input(attrs) {
+  return element("input", attrs, toList([]));
+}
+function label(attrs, children2) {
+  return element("label", attrs, children2);
+}
+function option(attrs, label2) {
+  return element("option", attrs, toList([text(label2)]));
+}
+function select(attrs, children2) {
+  return element("select", attrs, children2);
+}
+
+// build/dev/javascript/lustre/lustre/event.mjs
+function on2(name, handler) {
+  return on(name, handler);
+}
+function on_click(msg) {
+  return on2("click", (_) => {
+    return new Ok(msg);
+  });
+}
+function value2(event2) {
+  let _pipe = event2;
+  return field("target", field("value", string))(
+    _pipe
   );
-  let $ = day(today2) > last_day;
-  if (!$) {
-    return cycle;
-  } else {
-    return cycle_increase(cycle);
-  }
 }
-function uri_to_route(uri) {
-  let $ = path_segments(uri.path);
-  if ($.hasLength(1) && $.head === "transactions") {
-    return new TransactionsRoute();
-  } else if ($.hasLength(1) && $.head === "user") {
-    return new UserRoute();
-  } else {
-    return new Home();
-  }
-}
-function on_route_change(uri) {
-  let route = uri_to_route(uri);
-  return new OnRouteChange(route);
-}
-function initial_eff() {
-  let path = (() => {
-    let $ = do_initial_uri();
-    if ($.isOk()) {
-      let uri = $[0];
-      return uri_to_route(uri);
-    } else {
-      return new Home();
-    }
-  })();
-  return from(
-    (dispatch) => {
-      return dispatch(
-        new Initial(new User("id2", "Sergey"), calculate_current_cycle(), path)
-      );
-    }
-  );
-}
-function init3(_) {
-  return [
-    new Model2(
-      new User("id1", "Sergey"),
-      calculate_current_cycle(),
-      new Home(),
-      new Some(26),
-      true,
-      toList([]),
-      toList([]),
-      toList([]),
-      new None(),
-      false,
-      "",
-      new TransactionForm("", "", new None(), new None(), false),
-      new TargetEdit("", false, new Monthly(int_to_money(0))),
-      new None(),
-      new None()
-    ),
-    batch(toList([init2(on_route_change), initial_eff()]))
-  ];
-}
-function add_transaction_eff(transaction_form) {
-  return from(
-    (dispatch) => {
-      return dispatch(
-        (() => {
-          let $ = transaction_form.category;
-          let $1 = transaction_form.amount;
-          if ($ instanceof Some && $1 instanceof Some) {
-            let cat = $[0];
-            let amount = $1[0];
-            return new AddTransactionResult(
-              new Ok(
-                new Transaction(
-                  guidv4(),
-                  (() => {
-                    let _pipe = transaction_form.date;
-                    let _pipe$1 = from_date_string(_pipe);
-                    return unwrap2(_pipe$1, today());
-                  })(),
-                  transaction_form.payee,
-                  cat.id,
-                  amount
-                )
-              )
-            );
-          } else {
-            return new AddTransactionResult(
-              new Error(new InternalServerError("parse error"))
-            );
-          }
-        })()
-      );
+function on_input(msg) {
+  return on2(
+    "input",
+    (event2) => {
+      let _pipe = value2(event2);
+      return map3(_pipe, msg);
     }
   );
 }
-function add_category(name) {
-  return from(
-    (dispatch) => {
-      return dispatch(
-        new AddCategoryResult(
-          new Ok(new Category(guidv4(), name, new None(), false))
-        )
-      );
+function checked2(event2) {
+  let _pipe = event2;
+  return field("target", field("checked", bool))(
+    _pipe
+  );
+}
+function on_check(msg) {
+  return on2(
+    "change",
+    (event2) => {
+      let _pipe = checked2(event2);
+      return map3(_pipe, msg);
     }
   );
 }
-function current_cycle_transactions(model) {
-  let $ = cycle_bounds(model.cycle, model.cycle_end_day);
-  let start3 = $[0];
-  let end = $[1];
-  return filter(
-    model.transactions,
-    (t) => {
-      return is_between(t.date, start3, end);
-    }
-  );
-}
+
+// build/dev/javascript/budget_fe/budget_fe/internals/view.mjs
 function category_cycle_allocation(allocations2, cycle, c) {
   let _pipe = allocations2;
   let _pipe$1 = filter(_pipe, (a2) => {
@@ -6786,6 +6795,20 @@ function get_selected_category(model) {
     }
   );
   return flatten(_pipe$1);
+}
+function transaction_category_name(t, cats) {
+  let category_name = (() => {
+    let $ = find(cats, (c) => {
+      return c.id === t.category_id;
+    });
+    if ($.isOk()) {
+      let c = $[0];
+      return c.name;
+    } else {
+      return "not found";
+    }
+  })();
+  return category_name;
 }
 function cycle_to_text(c) {
   return (() => {
@@ -6832,6 +6855,63 @@ function user_selection(m) {
         ])
       )
     ])
+  );
+}
+function prev_month(year2, month2) {
+  let mon_num = month_to_number(month2);
+  if (mon_num === 1) {
+    return [year2 - 1, 12];
+  } else {
+    return [year2, mon_num - 1];
+  }
+}
+function cycle_bounds(c, cycle_end_day) {
+  if (cycle_end_day instanceof None) {
+    return [
+      from_calendar_date(c.year, c.month, 1),
+      from_calendar_date(
+        c.year,
+        c.month,
+        days_in_month2(c.year, c.month)
+      )
+    ];
+  } else {
+    let last_day = cycle_end_day[0];
+    let $ = prev_month(c.year, c.month);
+    let prev_year = $[0];
+    let prev_month$1 = $[1];
+    return [
+      from_calendar_date(
+        prev_year,
+        month_by_number(prev_month$1),
+        last_day + 1
+      ),
+      from_calendar_date(c.year, c.month, last_day)
+    ];
+  }
+}
+function current_cycle_transactions(model) {
+  let $ = cycle_bounds(model.cycle, model.cycle_end_day);
+  let start3 = $[0];
+  let end = $[1];
+  return filter(
+    model.transactions,
+    (t) => {
+      return is_between(t.date, start3, end);
+    }
+  );
+}
+function category_activity(cat, transactions2) {
+  let _pipe = transactions2;
+  let _pipe$1 = filter(_pipe, (t) => {
+    return t.category_id === cat.id;
+  });
+  return fold(
+    _pipe$1,
+    int_to_money(0),
+    (m, t) => {
+      return money_sum(m, t.value);
+    }
   );
 }
 function target_switcher_ui(et) {
@@ -6965,7 +7045,9 @@ function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
             );
           } else {
             return button(
-              toList([on_click(new EditTransaction(t, category_name))]),
+              toList([
+                on_click(new EditTransaction(t, category_name))
+              ]),
               toList([text("Edit")])
             );
           }
@@ -6977,20 +7059,6 @@ function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
       ])
     );
   }
-}
-function transaction_category_name(t, cats) {
-  let category_name = (() => {
-    let $ = find(cats, (c) => {
-      return c.id === t.category_id;
-    });
-    if ($.isOk()) {
-      let c = $[0];
-      return c.name;
-    } else {
-      return "not found";
-    }
-  })();
-  return category_name;
 }
 function transaction_list_item_html(t, model) {
   let selected_id = (() => {
@@ -7375,19 +7443,6 @@ function div_context(text3, color) {
       )
     ]),
     toList([text2(text3)])
-  );
-}
-function category_activity(cat, transactions2) {
-  let _pipe = transactions2;
-  let _pipe$1 = filter(_pipe, (t) => {
-    return t.category_id === cat.id;
-  });
-  return fold(
-    _pipe$1,
-    int_to_money(0),
-    (m, t) => {
-      return money_sum(m, t.value);
-    }
   );
 }
 function category_balance(cat, model) {
@@ -7856,7 +7911,9 @@ function view(model) {
                 toList([]),
                 toList([
                   button(
-                    toList([on_click(new CycleShift(new ShiftLeft()))]),
+                    toList([
+                      on_click(new CycleShift(new ShiftLeft()))
+                    ]),
                     toList([text("<")])
                   ),
                   p(
@@ -7871,7 +7928,11 @@ function view(model) {
                     ])
                   ),
                   button(
-                    toList([on_click(new CycleShift(new ShiftRight()))]),
+                    toList([
+                      on_click(
+                        new CycleShift(new ShiftRight())
+                      )
+                    ]),
                     toList([text(">")])
                   )
                 ])
@@ -7936,72 +7997,34 @@ function view(model) {
     ])
   );
 }
-function allocations(cycle) {
-  let c = new Cycle(2024, new Dec());
-  let _pipe = toList([
-    new Allocation("1", int_to_money(80), "1", c),
-    new Allocation("2", int_to_money(120), "2", c),
-    new Allocation("3", int_to_money(150), "3", c),
-    new Allocation("4", float_to_money(100, 2), "4", c),
-    new Allocation("5", float_to_money(150, 2), "5", c),
-    new Allocation("6", float_to_money(500, 2), "6", c)
-  ]);
-  return filter(_pipe, (a2) => {
-    return isEqual(a2.date, cycle);
-  });
+
+// build/dev/javascript/budget_fe/budget_fe.mjs
+function date_to_month(d) {
+  return new MonthInYear(
+    (() => {
+      let _pipe = d;
+      return month_number(_pipe);
+    })(),
+    (() => {
+      let _pipe = d;
+      return year(_pipe);
+    })()
+  );
 }
-function find_alloc_by_id(id2, cycle) {
-  let _pipe = allocations(cycle);
-  return find(_pipe, (a2) => {
-    return a2.id === id2;
-  });
-}
-function save_allocation_eff(alloc_id, allocation, category_id, cycle) {
-  let money = (() => {
-    let _pipe = allocation;
-    return string_to_money(_pipe);
-  })();
-  if (alloc_id instanceof Some) {
-    let id2 = alloc_id[0];
-    let alloc = find_alloc_by_id(id2, cycle);
-    return from(
-      (dispatch) => {
-        return dispatch(
-          (() => {
-            if (alloc.isOk()) {
-              let alloc_entity = alloc[0];
-              return new SaveAllocationResult(
-                new Ok(
-                  new AllocationEffectResult(
-                    alloc_entity.withFields({ amount: money }),
-                    false
-                  )
-                )
-              );
-            } else {
-              return new SaveAllocationResult(
-                new Error(new NotFound())
-              );
-            }
-          })()
-        );
-      }
-    );
+function cycle_decrease(c) {
+  let mon_num = month_to_number(c.month);
+  if (mon_num === 1) {
+    return new Cycle(c.year - 1, new Dec());
   } else {
-    return from(
-      (dispatch) => {
-        return dispatch(
-          new SaveAllocationResult(
-            new Ok(
-              new AllocationEffectResult(
-                new Allocation(guidv4(), money, category_id, cycle),
-                true
-              )
-            )
-          )
-        );
-      }
-    );
+    return new Cycle(c.year, number_to_month(mon_num - 1));
+  }
+}
+function cycle_increase(c) {
+  let mon_num = month_to_number(c.month);
+  if (mon_num === 12) {
+    return new Cycle(c.year + 1, new Jan());
+  } else {
+    return new Cycle(c.year, number_to_month(mon_num + 1));
   }
 }
 function find_alloc_by_cat_id(cat_id, cycle) {
@@ -8013,6 +8036,133 @@ function find_alloc_by_cat_id(cat_id, cycle) {
     }
   );
 }
+function calculate_current_cycle() {
+  let today2 = today();
+  let last_day = 26;
+  let cycle = new Cycle(
+    year(today2),
+    (() => {
+      let _pipe = today2;
+      return month(_pipe);
+    })()
+  );
+  let $ = day(today2) > last_day;
+  if (!$) {
+    return cycle;
+  } else {
+    return cycle_increase(cycle);
+  }
+}
+function uri_to_route(uri) {
+  let $ = path_segments(uri.path);
+  if ($.hasLength(1) && $.head === "transactions") {
+    return new TransactionsRoute();
+  } else if ($.hasLength(1) && $.head === "user") {
+    return new UserRoute();
+  } else {
+    return new Home();
+  }
+}
+function on_route_change(uri) {
+  let route = uri_to_route(uri);
+  return new OnRouteChange(route);
+}
+function initial_eff() {
+  let path = (() => {
+    let $ = do_initial_uri();
+    if ($.isOk()) {
+      let uri = $[0];
+      return uri_to_route(uri);
+    } else {
+      return new Home();
+    }
+  })();
+  return from(
+    (dispatch) => {
+      return dispatch(
+        new Initial(
+          new User("id2", "Sergey"),
+          calculate_current_cycle(),
+          path
+        )
+      );
+    }
+  );
+}
+function init3(_) {
+  return [
+    new Model2(
+      new User("id1", "Sergey"),
+      calculate_current_cycle(),
+      new Home(),
+      new Some(26),
+      true,
+      toList([]),
+      toList([]),
+      toList([]),
+      new None(),
+      false,
+      "",
+      new TransactionForm(
+        "",
+        "",
+        new None(),
+        new None(),
+        false
+      ),
+      new TargetEdit("", false, new Monthly(int_to_money(0))),
+      new None(),
+      new None()
+    ),
+    batch(toList([init2(on_route_change), initial_eff()]))
+  ];
+}
+function add_transaction_eff(transaction_form) {
+  return from(
+    (dispatch) => {
+      return dispatch(
+        (() => {
+          let $ = transaction_form.category;
+          let $1 = transaction_form.amount;
+          if ($ instanceof Some && $1 instanceof Some) {
+            let cat = $[0];
+            let amount = $1[0];
+            return new AddTransactionResult(
+              new Ok(
+                new Transaction(
+                  guidv4(),
+                  (() => {
+                    let _pipe = transaction_form.date;
+                    let _pipe$1 = from_date_string(_pipe);
+                    return unwrap2(_pipe$1, today());
+                  })(),
+                  transaction_form.payee,
+                  cat.id,
+                  amount
+                )
+              )
+            );
+          } else {
+            return new AddTransactionResult(
+              new Error(new InternalServerError("parse error"))
+            );
+          }
+        })()
+      );
+    }
+  );
+}
+function add_category(name) {
+  return from(
+    (dispatch) => {
+      return dispatch(
+        new AddCategoryResult(
+          new Ok(new Category(guidv4(), name, new None(), false))
+        )
+      );
+    }
+  );
+}
 function get_allocations(cycle) {
   return from(
     (dispatch) => {
@@ -8020,136 +8170,12 @@ function get_allocations(cycle) {
     }
   );
 }
-function categories() {
-  return toList([
-    new Category(
-      "1",
-      "Subscriptions",
-      new Some(new Monthly(float_to_money(60, 0))),
-      false
-    ),
-    new Category(
-      "2",
-      "Shopping",
-      new Some(new Monthly(float_to_money(40, 0))),
-      false
-    ),
-    new Category(
-      "3",
-      "Goals",
-      new Some(
-        new Custom(float_to_money(150, 0), new MonthInYear(2, 2025))
-      ),
-      false
-    ),
-    new Category(
-      "4",
-      "Vacation",
-      new Some(new Monthly(float_to_money(100, 0))),
-      false
-    ),
-    new Category(
-      "5",
-      "Entertainment",
-      new Some(new Monthly(float_to_money(200, 0))),
-      false
-    ),
-    new Category(
-      "6",
-      "Groceries",
-      new Some(new Monthly(float_to_money(500, 0))),
-      false
-    ),
-    new Category("7", "Ready to assign", new None(), true)
-  ]);
-}
 function get_categories() {
   return from(
     (dispatch) => {
       return dispatch(new Categories(new Ok(categories())));
     }
   );
-}
-function transactions() {
-  return toList([
-    new Transaction(
-      "1",
-      from_calendar_date(2025, new Jan(), 1),
-      "Amazon",
-      "5",
-      float_to_money(-10, 0)
-    ),
-    new Transaction(
-      "1",
-      from_calendar_date(2024, new Dec(), 2),
-      "Amazon",
-      "5",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "2",
-      from_calendar_date(2024, new Dec(), 2),
-      "Bauhaus",
-      "5",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "3",
-      from_calendar_date(2024, new Dec(), 2),
-      "Rewe",
-      "6",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "4",
-      from_calendar_date(2024, new Dec(), 2),
-      "Vodafone",
-      "1",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "5",
-      from_calendar_date(2024, new Dec(), 2),
-      "Steam",
-      "5",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "6",
-      from_calendar_date(2024, new Dec(), 2),
-      "Duo",
-      "1",
-      float_to_money(-50, 60)
-    ),
-    new Transaction(
-      "7",
-      from_calendar_date(2024, new Dec(), 2),
-      "O2",
-      "1",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "8",
-      from_calendar_date(2024, new Dec(), 2),
-      "Trade Republic",
-      "7",
-      float_to_money(1e3, 0)
-    ),
-    new Transaction(
-      "8",
-      from_calendar_date(2024, new Nov(), 27),
-      "O2",
-      "1",
-      float_to_money(-1, 50)
-    ),
-    new Transaction(
-      "8",
-      from_calendar_date(2024, new Nov(), 26),
-      "O2",
-      "1",
-      float_to_money(-1, 50)
-    )
-  ]);
 }
 function get_transactions() {
   return from(
@@ -8766,7 +8792,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      145,
+      42,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
