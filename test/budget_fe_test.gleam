@@ -1,4 +1,7 @@
-import budget_fe/internals/model as m
+import budget_test.{
+  type Allocation, type Category, type Cycle, type MonthInYear, type Transaction,
+  type User, Allocation, Category, Cycle, MonthInYear, Transaction, User,
+} as m
 import gleeunit
 import gleeunit/should
 

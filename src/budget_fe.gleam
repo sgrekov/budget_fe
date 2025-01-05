@@ -1,24 +1,25 @@
-import budget_fe/internals/factories.{allocations, categories, transactions}
-import budget_test.{
-  type Allocation, type Category, type Cycle, type MonthInYear, type Transaction,
-  type User,
-} as m
-import budget_test.{Allocation, Category, Cycle, MonthInYear, Transaction, User}
-
 import budget_fe/internals/effects as eff
+import budget_fe/internals/factories.{allocations, transactions}
 import budget_fe/internals/msg.{Model} as _
 import budget_fe/internals/msg.{
   type Model, type Msg, type Route, type TransactionForm,
 }
 import budget_fe/internals/view as v
+import budget_test.{
+  type Allocation, type Category, type Cycle, type MonthInYear, type Transaction,
+  type User, Allocation, Category, Cycle, MonthInYear, Transaction, User,
+} as m
 import date_utils
 import gleam/bool
+import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/io
+import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/result
+import gleam/string_tree.{type StringTree}
 import gleam/uri.{type Uri}
 import gluid
 import lustre
@@ -26,6 +27,25 @@ import lustre/effect
 import lustre_http
 import modem.{initial_uri}
 import rada/date.{type Date} as d
+
+pub fn user_decode(json: Dynamic) -> Result(User, dynamic.DecodeErrors) {
+  let decoder =
+    dynamic.decode2(
+      User,
+      dynamic.field("name", dynamic.string),
+      dynamic.field("id", dynamic.string),
+    )
+  decoder(json)
+}
+
+pub fn user_encode(user: User) -> string_tree.StringTree {
+  let object =
+    json.object([
+      #("name", json.string(user.name)),
+      #("id", json.string(user.id)),
+    ])
+  json.to_string_tree(object)
+}
 
 pub fn main() {
   let app = lustre.application(init, update, v.view)
@@ -45,14 +65,14 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       #(
         Model(..model, user: user, cycle: cycle, route: initial_path),
         effect.batch([
-          get_categories(),
-          get_transactions(),
-          get_allocations(cycle),
+          eff.get_categories(),
+          eff.get_transactions(),
+          eff.get_allocations(cycle),
         ]),
       )
     }
     msg.Categories(Ok(cats)) -> {
-      #(Model(..model, categories: cats), get_transactions())
+      #(Model(..model, categories: cats), eff.get_transactions())
     }
     msg.Categories(Error(_)) -> #(model, effect.none())
     msg.Transactions(Ok(t)) -> #(
@@ -86,7 +106,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     )
     msg.AddCategory -> #(
       Model(..model, user_category_name_input: ""),
-      add_category(model.user_category_name_input),
+      eff.add_category(model.user_category_name_input),
     )
     msg.UserUpdatedCategoryName(name) -> #(
       Model(..model, user_category_name_input: name),
@@ -108,7 +128,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           is_inflow: False,
         ),
       ),
-      add_transaction_eff(model.transaction_add_input),
+      eff.add_transaction_eff(model.transaction_add_input),
     )
     msg.AddTransactionResult(Ok(t)) -> #(
       Model(
@@ -405,12 +425,12 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     )
     msg.CycleShift(shift) -> {
       let new_cycle = case shift {
-        msg.ShiftLeft -> cycle_decrease(model.cycle)
-        msg.ShiftRight -> cycle_increase(model.cycle)
+        msg.ShiftLeft -> m.cycle_decrease(model.cycle)
+        msg.ShiftRight -> m.cycle_increase(model.cycle)
       }
       #(
         Model(..model, cycle: new_cycle),
-        effect.batch([get_transactions(), get_allocations(new_cycle)]),
+        effect.batch([eff.get_transactions(), eff.get_allocations(new_cycle)]),
       )
     }
     msg.UserInputShowAllTransactions(show) -> #(
@@ -424,42 +444,16 @@ fn date_to_month(d: Date) -> MonthInYear {
   MonthInYear(d |> d.month_number, d |> d.year)
 }
 
-fn cycle_decrease(c: Cycle) -> Cycle {
-  let mon_num = d.month_to_number(c.month)
-  case mon_num {
-    1 -> Cycle(c.year - 1, d.Dec)
-    _ -> Cycle(c.year, d.number_to_month(mon_num - 1))
-  }
-}
-
-fn cycle_increase(c: Cycle) -> Cycle {
-  let mon_num = d.month_to_number(c.month)
-  case mon_num {
-    12 -> Cycle(c.year + 1, d.Jan)
-    _ -> Cycle(c.year, d.number_to_month(mon_num + 1))
-  }
-}
-
 fn find_alloc_by_cat_id(cat_id: String, cycle: Cycle) -> Result(Allocation, Nil) {
   allocations(cycle)
   |> list.find(fn(a) { a.category_id == cat_id && a.date == cycle })
-}
-
-fn calculate_current_cycle() -> Cycle {
-  let today = d.today()
-  let last_day = 26
-  let cycle = Cycle(d.year(today), today |> d.month)
-  case d.day(today) > last_day {
-    False -> cycle
-    True -> cycle_increase(cycle)
-  }
 }
 
 fn init(_flags) -> #(Model, effect.Effect(Msg)) {
   #(
     msg.Model(
       user: User(id: "id1", name: "Sergey"),
-      cycle: calculate_current_cycle(),
+      cycle: m.calculate_current_cycle(),
       route: msg.Home,
       cycle_end_day: option.Some(26),
       show_all_transactions: True,
@@ -480,90 +474,11 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       selected_transaction: option.None,
       transaction_edit_form: option.None,
     ),
-    effect.batch([modem.init(on_route_change), initial_eff()]),
+    effect.batch([modem.init(eff.on_route_change), eff.initial_eff()]),
   )
 }
-
-fn on_route_change(uri: Uri) -> Msg {
-  let route = uri_to_route(uri)
-  msg.OnRouteChange(route)
-}
-
-fn uri_to_route(uri: Uri) -> Route {
-  case uri.path_segments(uri.path) {
-    ["transactions"] -> msg.TransactionsRoute
-    ["user"] -> msg.UserRoute
-    _ -> msg.Home
-  }
-}
-
 //<!---- Effects ----!>
 
-fn initial_eff() -> effect.Effect(Msg) {
-  let path = case initial_uri() {
-    Ok(uri) -> uri_to_route(uri)
-    _ -> msg.Home
-  }
-  effect.from(fn(dispatch) {
-    dispatch(msg.Initial(
-      User(id: "id2", name: "Sergey"),
-      calculate_current_cycle(),
-      path,
-    ))
-  })
-}
-
-fn add_transaction_eff(transaction_form: TransactionForm) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(case transaction_form.category, transaction_form.amount {
-      option.Some(cat), option.Some(amount) ->
-        msg.AddTransactionResult(
-          Ok(Transaction(
-            id: gluid.guidv4(),
-            date: transaction_form.date
-              |> date_utils.from_date_string
-              |> result.unwrap(d.today()),
-            payee: transaction_form.payee,
-            category_id: cat.id,
-            value: amount,
-          )),
-        )
-      _, _ ->
-        msg.AddTransactionResult(
-          Error(lustre_http.InternalServerError("parse error")),
-        )
-    })
-  })
-}
-
-fn add_category(name: String) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(
-      msg.AddCategoryResult(
-        Ok(Category(
-          id: gluid.guidv4(),
-          name: name,
-          target: option.None,
-          inflow: False,
-        )),
-      ),
-    )
-  })
-}
-
-fn get_allocations(cycle: Cycle) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(msg.Allocations(a: Ok(allocations(cycle))))
-  })
-}
-
-fn get_categories() -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) { dispatch(msg.Categories(cats: Ok(categories()))) })
-}
-
-fn get_transactions() -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) { dispatch(msg.Transactions(Ok(transactions()))) })
-}
 // fn is_equal(date: d.Date, c: Cycle) -> Bool {
 //   let d_mon = date |> d.month |> d.month_to_number()
 //   let d_year = date |> d.year

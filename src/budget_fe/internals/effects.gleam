@@ -1,20 +1,109 @@
-import budget_fe/internals/factories.{allocations}
+import budget_fe/internals/decoders
+import budget_fe/internals/factories.{allocations, transactions}
+import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_test.{
   type Allocation, type Category, type Cycle, type Target, type Transaction,
+  type User, Allocation, Category, Cycle, Transaction, User,
 } as m
-
-import budget_test.{Allocation, Category, Cycle, Transaction}
-
-import budget_fe/internals/msg.{type Msg}
 import date_utils
+import decode/zero
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/result
+import gleam/uri.{type Uri}
 import gluid
 import lustre/effect
 import lustre_http
+import modem.{initial_uri}
 import rada/date as d
+
+pub fn on_route_change(uri: Uri) -> Msg {
+  let route = uri_to_route(uri)
+  msg.OnRouteChange(route)
+}
+
+fn uri_to_route(uri: Uri) -> msg.Route {
+  case uri.path_segments(uri.path) {
+    ["transactions"] -> msg.TransactionsRoute
+    ["user"] -> msg.UserRoute
+    _ -> msg.Home
+  }
+}
+
+pub fn initial_eff() -> effect.Effect(Msg) {
+  let path = case initial_uri() {
+    Ok(uri) -> uri_to_route(uri)
+    _ -> msg.Home
+  }
+  effect.from(fn(dispatch) {
+    dispatch(msg.Initial(
+      User(id: "id2", name: "Sergey"),
+      m.calculate_current_cycle(),
+      path,
+    ))
+  })
+}
+
+pub fn add_transaction_eff(
+  transaction_form: TransactionForm,
+) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    dispatch(case transaction_form.category, transaction_form.amount {
+      option.Some(cat), option.Some(amount) ->
+        msg.AddTransactionResult(
+          Ok(Transaction(
+            id: gluid.guidv4(),
+            date: transaction_form.date
+              |> date_utils.from_date_string
+              |> result.unwrap(d.today()),
+            payee: transaction_form.payee,
+            category_id: cat.id,
+            value: amount,
+          )),
+        )
+      _, _ ->
+        msg.AddTransactionResult(
+          Error(lustre_http.InternalServerError("parse error")),
+        )
+    })
+  })
+}
+
+pub fn add_category(name: String) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    dispatch(
+      msg.AddCategoryResult(
+        Ok(Category(
+          id: gluid.guidv4(),
+          name: name,
+          target: option.None,
+          inflow: False,
+        )),
+      ),
+    )
+  })
+}
+
+pub fn get_allocations(cycle: Cycle) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    dispatch(msg.Allocations(a: Ok(allocations(cycle))))
+  })
+}
+
+pub fn get_categories() -> effect.Effect(Msg) {
+  let url = "http://localho.st:8000/categories"
+
+  let decoder = zero.list(decoders.category_decoder())
+  lustre_http.get(
+    url,
+    lustre_http.expect_json(fn(d) { zero.run(d, decoder) }, msg.Categories),
+  )
+}
+
+pub fn get_transactions() -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) { dispatch(msg.Transactions(Ok(transactions()))) })
+}
 
 pub fn save_allocation_eff(
   alloc_id: Option(String),
