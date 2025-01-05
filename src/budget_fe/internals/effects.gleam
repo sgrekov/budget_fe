@@ -86,9 +86,13 @@ pub fn add_category(name: String) -> effect.Effect(Msg) {
 }
 
 pub fn get_allocations(cycle: Cycle) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(msg.Allocations(a: Ok(allocations(cycle))))
-  })
+  let url = "http://localho.st:8000/allocations"
+
+  let decoder = zero.list(decoders.allocation_decoder())
+  lustre_http.get(
+    url,
+    lustre_http.expect_json(fn(d) { zero.run(d, decoder) }, msg.Allocations),
+  )
 }
 
 pub fn get_categories() -> effect.Effect(Msg) {
@@ -102,7 +106,13 @@ pub fn get_categories() -> effect.Effect(Msg) {
 }
 
 pub fn get_transactions() -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) { dispatch(msg.Transactions(Ok(transactions()))) })
+  let url = "http://localho.st:8000/transactions"
+
+  let decoder = zero.list(decoders.transaction_decoder())
+  lustre_http.get(
+    url,
+    lustre_http.expect_json(fn(d) { zero.run(d, decoder) }, msg.Transactions),
+  )
 }
 
 pub fn save_allocation_eff(

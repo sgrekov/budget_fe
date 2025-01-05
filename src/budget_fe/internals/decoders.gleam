@@ -69,3 +69,41 @@ pub fn category_decoder() -> zero.Decoder(Category) {
     zero.success(Category(id, name, target, inflow))
   }
 }
+
+pub fn transaction_decoder() -> zero.Decoder(Transaction) {
+  let transaction_decoder = {
+    use id <- zero.field("id", zero.string)
+    use date <- zero.field("date", zero.int)
+    use payee <- zero.field("payee", zero.string)
+    use category_id <- zero.field("category_id", zero.string)
+    use value <- zero.field("value", money_decoder())
+    zero.success(Transaction(
+      id,
+      d.from_rata_die(date),
+      payee,
+      category_id,
+      value,
+    ))
+  }
+  transaction_decoder
+}
+
+pub fn cycle_decoder() -> zero.Decoder(Cycle) {
+  let cycle_decoder = {
+    use month <- zero.field("month", zero.int)
+    use year <- zero.field("year", zero.int)
+    zero.success(m.Cycle(year, month |> d.number_to_month))
+  }
+  cycle_decoder
+}
+
+pub fn allocation_decoder() -> zero.Decoder(Allocation) {
+  let allocation_decoder = {
+    use id <- zero.field("id", zero.string)
+    use amount <- zero.field("amount", money_decoder())
+    use category_id <- zero.field("category_id", zero.string)
+    use date <- zero.field("date", cycle_decoder())
+    zero.success(Allocation(id, amount, category_id, date))
+  }
+  allocation_decoder
+}

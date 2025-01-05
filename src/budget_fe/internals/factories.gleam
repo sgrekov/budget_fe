@@ -35,56 +35,6 @@ pub fn allocations(cycle: Cycle) -> List(Allocation) {
   |> list.filter(fn(a) { a.date == cycle })
 }
 
-// pub fn categories() -> List(Category) {
-//   [
-//     Category(
-//       id: "1",
-//       name: "Subscriptions",
-//       target: option.Some(m.Monthly(m.float_to_money(60, 0))),
-//       inflow: False,
-//     ),
-//     Category(
-//       id: "2",
-//       name: "Shopping",
-//       target: option.Some(m.Monthly(m.float_to_money(40, 0))),
-//       inflow: False,
-//     ),
-//     Category(
-//       id: "3",
-//       name: "Goals",
-//       target: option.Some(m.Custom(
-//         m.float_to_money(150, 0),
-//         MonthInYear(2, 2025),
-//       )),
-//       inflow: False,
-//     ),
-//     Category(
-//       id: "4",
-//       name: "Vacation",
-//       target: option.Some(m.Monthly(m.float_to_money(100, 0))),
-//       inflow: False,
-//     ),
-//     Category(
-//       id: "5",
-//       name: "Entertainment",
-//       target: option.Some(m.Monthly(m.float_to_money(200, 0))),
-//       inflow: False,
-//     ),
-//     Category(
-//       id: "6",
-//       name: "Groceries",
-//       target: option.Some(m.Monthly(m.float_to_money(500, 0))),
-//       inflow: False,
-//     ),
-//     Category(
-//       id: "7",
-//       name: "Ready to assign",
-//       target: option.None,
-//       inflow: True,
-//     ),
-//   ]
-// }
-
 pub fn transactions() -> List(Transaction) {
   [
     Transaction(

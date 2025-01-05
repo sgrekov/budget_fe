@@ -3565,6 +3565,9 @@ var Months = class extends CustomType {
 };
 var Weeks = class extends CustomType {
 };
+function from_rata_die(rd) {
+  return new RD(rd);
+}
 function string_take_right(str, count) {
   return slice(str, -1 * count, count);
 }
@@ -7266,87 +7269,6 @@ function allocations(cycle) {
     return isEqual(a2.date, cycle);
   });
 }
-function transactions() {
-  return toList([
-    new Transaction(
-      "1",
-      from_calendar_date(2025, new Jan(), 1),
-      "Amazon",
-      "5",
-      float_to_money(-10, 0)
-    ),
-    new Transaction(
-      "1",
-      from_calendar_date(2024, new Dec(), 2),
-      "Amazon",
-      "5",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "2",
-      from_calendar_date(2024, new Dec(), 2),
-      "Bauhaus",
-      "5",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "3",
-      from_calendar_date(2024, new Dec(), 2),
-      "Rewe",
-      "6",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "4",
-      from_calendar_date(2024, new Dec(), 2),
-      "Vodafone",
-      "1",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "5",
-      from_calendar_date(2024, new Dec(), 2),
-      "Steam",
-      "5",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "6",
-      from_calendar_date(2024, new Dec(), 2),
-      "Duo",
-      "1",
-      float_to_money(-50, 60)
-    ),
-    new Transaction(
-      "7",
-      from_calendar_date(2024, new Dec(), 2),
-      "O2",
-      "1",
-      float_to_money(-50, 0)
-    ),
-    new Transaction(
-      "8",
-      from_calendar_date(2024, new Dec(), 2),
-      "Trade Republic",
-      "7",
-      float_to_money(1e3, 0)
-    ),
-    new Transaction(
-      "8",
-      from_calendar_date(2024, new Nov(), 27),
-      "O2",
-      "1",
-      float_to_money(-1, 50)
-    ),
-    new Transaction(
-      "8",
-      from_calendar_date(2024, new Nov(), 26),
-      "O2",
-      "1",
-      float_to_money(-1, 50)
-    )
-  ]);
-}
 
 // build/dev/javascript/budget_fe/budget_fe/internals/msg.mjs
 var Home = class extends CustomType {
@@ -7859,6 +7781,102 @@ function category_decoder() {
   );
   return category_decoder$1;
 }
+function transaction_decoder() {
+  let transaction_decoder$1 = field3(
+    "id",
+    string3,
+    (id2) => {
+      return field3(
+        "date",
+        int3,
+        (date) => {
+          return field3(
+            "payee",
+            string3,
+            (payee) => {
+              return field3(
+                "category_id",
+                string3,
+                (category_id) => {
+                  return field3(
+                    "value",
+                    money_decoder(),
+                    (value3) => {
+                      return success(
+                        new Transaction(
+                          id2,
+                          from_rata_die(date),
+                          payee,
+                          category_id,
+                          value3
+                        )
+                      );
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
+    }
+  );
+  return transaction_decoder$1;
+}
+function cycle_decoder() {
+  let cycle_decoder$1 = field3(
+    "month",
+    int3,
+    (month2) => {
+      return field3(
+        "year",
+        int3,
+        (year2) => {
+          return success(
+            new Cycle(
+              year2,
+              (() => {
+                let _pipe = month2;
+                return number_to_month(_pipe);
+              })()
+            )
+          );
+        }
+      );
+    }
+  );
+  return cycle_decoder$1;
+}
+function allocation_decoder() {
+  let allocation_decoder$1 = field3(
+    "id",
+    string3,
+    (id2) => {
+      return field3(
+        "amount",
+        money_decoder(),
+        (amount) => {
+          return field3(
+            "category_id",
+            string3,
+            (category_id) => {
+              return field3(
+                "date",
+                cycle_decoder(),
+                (date) => {
+                  return success(
+                    new Allocation(id2, amount, category_id, date)
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
+    }
+  );
+  return allocation_decoder$1;
+}
 
 // build/dev/javascript/budget_fe/budget_fe/internals/effects.mjs
 function uri_to_route(uri) {
@@ -7944,10 +7962,18 @@ function add_category(name) {
   );
 }
 function get_allocations(cycle) {
-  return from(
-    (dispatch) => {
-      return dispatch(new Allocations(new Ok(allocations(cycle))));
-    }
+  let url = "http://localho.st:8000/allocations";
+  let decoder = list2(allocation_decoder());
+  return get(
+    url,
+    expect_json(
+      (d) => {
+        return run3(d, decoder);
+      },
+      (var0) => {
+        return new Allocations(var0);
+      }
+    )
   );
 }
 function get_categories() {
@@ -7966,10 +7992,18 @@ function get_categories() {
   );
 }
 function get_transactions() {
-  return from(
-    (dispatch) => {
-      return dispatch(new Transactions(new Ok(transactions())));
-    }
+  let url = "http://localho.st:8000/transactions";
+  let decoder = list2(transaction_decoder());
+  return get(
+    url,
+    expect_json(
+      (d) => {
+        return run3(d, decoder);
+      },
+      (var0) => {
+        return new Transactions(var0);
+      }
+    )
   );
 }
 function find_alloc_by_id(id2, cycle) {
