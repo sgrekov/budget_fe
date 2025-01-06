@@ -1,4 +1,3 @@
-import budget_fe/internals/factories.{allocations, transactions}
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_test.{
   type Allocation, type Category, type Cycle, type Money, type MonthInYear,
@@ -8,6 +7,7 @@ import budget_test.{
 import date_utils
 import decode/zero
 import gleam/dynamic
+import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
@@ -86,6 +86,24 @@ pub fn transaction_decoder() -> zero.Decoder(Transaction) {
     ))
   }
   transaction_decoder
+}
+
+pub fn transaction_encode(t: m.Transaction) -> json.Json {
+  json.object([
+    #("id", json.string(t.id)),
+    #("date", d.to_rata_die(t.date) |> json.int),
+    #("payee", json.string(t.payee)),
+    #("category_id", json.string(t.category_id)),
+    #("value", money_encode(t.value)),
+  ])
+}
+
+pub fn money_encode(money: Money) -> json.Json {
+  json.object([
+    #("s", json.int(money.s)),
+    #("b", json.int(money.b)),
+    #("inflow", json.bool(money.is_neg)),
+  ])
 }
 
 pub fn cycle_decoder() -> zero.Decoder(Cycle) {

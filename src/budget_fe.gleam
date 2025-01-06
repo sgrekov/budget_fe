@@ -1,5 +1,6 @@
 import budget_fe/internals/effects as eff
-import budget_fe/internals/factories.{allocations, transactions}
+
+// import budget_fe/internals/factories.{allocations, transactions}
 import budget_fe/internals/msg.{Model} as _
 import budget_fe/internals/msg.{
   type Model, type Msg, type Route, type TransactionForm,
@@ -27,25 +28,6 @@ import lustre/effect
 import lustre_http
 import modem.{initial_uri}
 import rada/date.{type Date} as d
-
-pub fn user_decode(json: Dynamic) -> Result(User, dynamic.DecodeErrors) {
-  let decoder =
-    dynamic.decode2(
-      User,
-      dynamic.field("name", dynamic.string),
-      dynamic.field("id", dynamic.string),
-    )
-  decoder(json)
-}
-
-pub fn user_encode(user: User) -> string_tree.StringTree {
-  let object =
-    json.object([
-      #("name", json.string(user.name)),
-      #("id", json.string(user.id)),
-    ])
-  json.to_string_tree(object)
-}
 
 pub fn main() {
   let app = lustre.application(init, update, v.view)
@@ -92,7 +74,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         selected_category: option.Some(msg.SelectedCategory(
           c.id,
           c.name,
-          find_alloc_by_cat_id(c.id, model.cycle)
+          find_alloc_by_cat_id(c.id, model.cycle, model.allocations)
             |> result.map(fn(a) { a.amount |> m.money_to_string_no_sign })
             |> result.unwrap(""),
         )),
@@ -117,19 +99,27 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
     msg.AddCategoryResult(Error(_)) -> #(model, effect.none())
-    msg.AddTransaction -> #(
-      Model(
-        ..model,
-        transaction_add_input: msg.TransactionForm(
-          date: "",
-          payee: "",
-          category: option.None,
-          amount: option.None,
-          is_inflow: False,
-        ),
-      ),
-      eff.add_transaction_eff(model.transaction_add_input),
-    )
+    msg.AddTransaction ->
+      case
+        model.transaction_add_input.category,
+        model.transaction_add_input.amount
+      {
+        Some(cat), Some(money) -> #(
+          Model(
+            ..model,
+            //todo: resett form
+            // transaction_add_input: msg.TransactionForm(
+            //   date: "",
+            //   payee: "",
+            //   category: option.None,
+            //   amount: option.None,
+            //   is_inflow: False,
+            // ),
+          ),
+          eff.add_transaction_eff(model.transaction_add_input, money, cat),
+        )
+        _, _ -> #(model, effect.none())
+      }
     msg.AddTransactionResult(Ok(t)) -> #(
       Model(
         ..model,
@@ -140,14 +130,16 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     )
     msg.AddTransactionResult(Error(_)) -> #(model, effect.none())
     msg.UserUpdatedTransactionCategory(category_name) -> {
+      let category =
+        model.categories
+        |> list.find(fn(c) { c.name == category_name })
+        |> option.from_result      
       #(
         Model(
           ..model,
           transaction_add_input: msg.TransactionForm(
             ..model.transaction_add_input,
-            category: model.categories
-              |> list.find(fn(c) { c.name == category_name })
-              |> option.from_result,
+            category: category,
           ),
         ),
         effect.none(),
@@ -385,7 +377,13 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     msg.CategoryDeleteResult(Error(_)) -> #(model, effect.none())
     msg.SaveAllocation(a) -> #(model, case model.selected_category {
       option.Some(sc) ->
-        eff.save_allocation_eff(a, sc.allocation, sc.id, model.cycle)
+        eff.save_allocation_eff(
+          a,
+          sc.allocation,
+          sc.id,
+          model.allocations,
+          model.cycle,
+        )
       option.None -> effect.none()
     })
     msg.SaveAllocationResult(Ok(aer)) -> {
@@ -444,8 +442,12 @@ fn date_to_month(d: Date) -> MonthInYear {
   MonthInYear(d |> d.month_number, d |> d.year)
 }
 
-fn find_alloc_by_cat_id(cat_id: String, cycle: Cycle) -> Result(Allocation, Nil) {
-  allocations(cycle)
+fn find_alloc_by_cat_id(
+  cat_id: String,
+  cycle: Cycle,
+  allocations: List(Allocation),
+) -> Result(Allocation, Nil) {
+  allocations
   |> list.find(fn(a) { a.category_id == cat_id && a.date == cycle })
 }
 

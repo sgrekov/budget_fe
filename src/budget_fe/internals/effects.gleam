@@ -1,5 +1,4 @@
 import budget_fe/internals/decoders
-import budget_fe/internals/factories.{allocations, transactions}
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_test.{
   type Allocation, type Category, type Cycle, type Target, type Transaction,
@@ -7,6 +6,7 @@ import budget_test.{
 } as m
 import date_utils
 import decode/zero
+import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
@@ -47,27 +47,30 @@ pub fn initial_eff() -> effect.Effect(Msg) {
 
 pub fn add_transaction_eff(
   transaction_form: TransactionForm,
+  amount: m.Money,
+  cat: Category,
 ) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(case transaction_form.category, transaction_form.amount {
-      option.Some(cat), option.Some(amount) ->
-        msg.AddTransactionResult(
-          Ok(Transaction(
-            id: gluid.guidv4(),
-            date: transaction_form.date
-              |> date_utils.from_date_string
-              |> result.unwrap(d.today()),
-            payee: transaction_form.payee,
-            category_id: cat.id,
-            value: amount,
-          )),
-        )
-      _, _ ->
-        msg.AddTransactionResult(
-          Error(lustre_http.InternalServerError("parse error")),
-        )
-    })
-  })
+  let url = "http://localhost:8000/transaction/add"
+
+  let t =
+    Transaction(
+      id: gluid.guidv4(),
+      date: transaction_form.date
+        |> date_utils.from_date_string
+        |> result.unwrap(d.today()),
+      payee: transaction_form.payee,
+      category_id: cat.id,
+      value: amount,
+    )
+  // io.debug(t)
+  lustre_http.post(
+    url,
+    decoders.transaction_encode(t),
+    lustre_http.expect_json(
+      fn(d) { zero.run(d, decoders.transaction_decoder()) },
+      msg.AddTransactionResult,
+    ),
+  )
 }
 
 pub fn add_category(name: String) -> effect.Effect(Msg) {
@@ -119,12 +122,13 @@ pub fn save_allocation_eff(
   alloc_id: Option(String),
   allocation: String,
   category_id: String,
+  allocations: List(Allocation),
   cycle: Cycle,
 ) -> effect.Effect(Msg) {
   let money = allocation |> m.string_to_money
   case alloc_id {
     Some(id) -> {
-      let alloc = find_alloc_by_id(id, cycle)
+      let alloc = find_alloc_by_id(allocations, id)
       effect.from(fn(dispatch) {
         dispatch(case alloc {
           Ok(alloc_entity) ->
@@ -157,8 +161,11 @@ pub fn save_allocation_eff(
   }
 }
 
-fn find_alloc_by_id(id: String, cycle: Cycle) -> Result(Allocation, Nil) {
-  allocations(cycle) |> list.find(fn(a) { a.id == id })
+fn find_alloc_by_id(
+  allocations: List(Allocation),
+  id: String,
+) -> Result(Allocation, Nil) {
+  allocations |> list.find(fn(a) { a.id == id })
 }
 
 pub fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {

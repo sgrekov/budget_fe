@@ -1008,6 +1008,19 @@ function sort(list3, compare4) {
     return merge_all(sequences$1, new Ascending(), compare4);
   }
 }
+function key_set(list3, key, value3) {
+  if (list3.hasLength(0)) {
+    return toList([[key, value3]]);
+  } else if (list3.atLeastLength(1) && isEqual(list3.head[0], key)) {
+    let k = list3.head[0];
+    let rest$1 = list3.tail;
+    return prepend([key, value3], rest$1);
+  } else {
+    let first$1 = list3.head;
+    let rest$1 = list3.tail;
+    return prepend(first$1, key_set(rest$1, key, value3));
+  }
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/string.mjs
 function replace(string4, pattern, substitute) {
@@ -3568,6 +3581,10 @@ var Weeks = class extends CustomType {
 function from_rata_die(rd) {
   return new RD(rd);
 }
+function to_rata_die(date) {
+  let rd = date[0];
+  return rd;
+}
 function string_take_right(str, count) {
   return slice(str, -1 * count, count);
 }
@@ -4856,16 +4873,6 @@ function int_to_money(i) {
 function negate3(m) {
   return m.withFields({ is_neg: true });
 }
-function float_to_money(i, c) {
-  return new Money(
-    (() => {
-      let _pipe = i;
-      return absolute_value(_pipe);
-    })(),
-    c,
-    i < 0
-  );
-}
 function string_to_money(raw) {
   let $ = (() => {
     let $12 = slice(raw, 0, 1);
@@ -4954,6 +4961,15 @@ function is_zero_int(m) {
 }
 
 // build/dev/javascript/gleam_json/gleam_json_ffi.mjs
+function json_to_string(json) {
+  return JSON.stringify(json);
+}
+function object(entries) {
+  return Object.fromEntries(entries);
+}
+function identity2(x) {
+  return x;
+}
 function decode(string4) {
   try {
     const result = JSON.parse(string4);
@@ -5072,6 +5088,21 @@ function do_decode(json, decoder) {
 }
 function decode2(json, decoder) {
   return do_decode(json, decoder);
+}
+function to_string3(json) {
+  return json_to_string(json);
+}
+function string2(input2) {
+  return identity2(input2);
+}
+function bool2(input2) {
+  return identity2(input2);
+}
+function int2(input2) {
+  return identity2(input2);
+}
+function object2(entries) {
+  return object(entries);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
@@ -5536,7 +5567,7 @@ function remove_dot_segments(input2) {
 function path_segments(path) {
   return remove_dot_segments(split2(path, "/"));
 }
-function to_string3(uri) {
+function to_string4(uri) {
   let parts = (() => {
     let $ = uri.fragment;
     if ($ instanceof Some) {
@@ -6675,6 +6706,23 @@ function from_uri(uri) {
     }
   );
 }
+function set_header(request, key, value3) {
+  let headers = key_set(request.headers, lowercase(key), value3);
+  return request.withFields({ headers });
+}
+function set_body(req, body) {
+  let method = req.method;
+  let headers = req.headers;
+  let scheme = req.scheme;
+  let host = req.host;
+  let port = req.port;
+  let path = req.path;
+  let query = req.query;
+  return new Request(method, headers, body, scheme, host, port, path, query);
+}
+function set_method(req, method) {
+  return req.withFields({ method });
+}
 function to(url) {
   let _pipe = url;
   let _pipe$1 = parse(_pipe);
@@ -6761,7 +6809,7 @@ function from_fetch_response(response) {
   );
 }
 function to_fetch_request(request) {
-  let url = to_string3(to_uri(request));
+  let url = to_string4(to_uri(request));
   let method = method_to_string(request.method).toUpperCase();
   let options = {
     headers: make_headers(request.headers),
@@ -6876,6 +6924,27 @@ function get(url, expect) {
       if ($.isOk()) {
         let req = $[0];
         return do_send(req, expect, dispatch);
+      } else {
+        return dispatch(expect.run(new Error(new BadUrl(url))));
+      }
+    }
+  );
+}
+function post(url, body, expect) {
+  return from(
+    (dispatch) => {
+      let $ = to(url);
+      if ($.isOk()) {
+        let req = $[0];
+        let _pipe = req;
+        let _pipe$1 = set_method(_pipe, new Post());
+        let _pipe$2 = set_header(
+          _pipe$1,
+          "Content-Type",
+          "application/json"
+        );
+        let _pipe$3 = set_body(_pipe$2, to_string3(body));
+        return do_send(_pipe$3, expect, dispatch);
       } else {
         return dispatch(expect.run(new Error(new BadUrl(url))));
       }
@@ -7254,22 +7323,6 @@ function field3(field_name, field_decoder, next2) {
   return subfield(toList([field_name]), field_decoder, next2);
 }
 
-// build/dev/javascript/budget_fe/budget_fe/internals/factories.mjs
-function allocations(cycle) {
-  let c = new Cycle(2024, new Dec());
-  let _pipe = toList([
-    new Allocation("1", int_to_money(80), "1", c),
-    new Allocation("2", int_to_money(120), "2", c),
-    new Allocation("3", int_to_money(150), "3", c),
-    new Allocation("4", float_to_money(100, 2), "4", c),
-    new Allocation("5", float_to_money(150, 2), "5", c),
-    new Allocation("6", float_to_money(500, 2), "6", c)
-  ]);
-  return filter(_pipe, (a2) => {
-    return isEqual(a2.date, cycle);
-  });
-}
-
 // build/dev/javascript/budget_fe/budget_fe/internals/msg.mjs
 var Home = class extends CustomType {
 };
@@ -7519,7 +7572,7 @@ var UserInputShowAllTransactions = class extends CustomType {
   }
 };
 var Model2 = class extends CustomType {
-  constructor(user, cycle, route, cycle_end_day, show_all_transactions, categories, transactions2, allocations2, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form) {
+  constructor(user, cycle, route, cycle_end_day, show_all_transactions, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form) {
     super();
     this.user = user;
     this.cycle = cycle;
@@ -7527,8 +7580,8 @@ var Model2 = class extends CustomType {
     this.cycle_end_day = cycle_end_day;
     this.show_all_transactions = show_all_transactions;
     this.categories = categories;
-    this.transactions = transactions2;
-    this.allocations = allocations2;
+    this.transactions = transactions;
+    this.allocations = allocations;
     this.selected_category = selected_category;
     this.show_add_category_ui = show_add_category_ui;
     this.user_category_name_input = user_category_name_input;
@@ -7823,6 +7876,32 @@ function transaction_decoder() {
   );
   return transaction_decoder$1;
 }
+function money_encode(money) {
+  return object2(
+    toList([
+      ["s", int2(money.s)],
+      ["b", int2(money.b)],
+      ["inflow", bool2(money.is_neg)]
+    ])
+  );
+}
+function transaction_encode(t) {
+  return object2(
+    toList([
+      ["id", string2(t.id)],
+      [
+        "date",
+        (() => {
+          let _pipe = to_rata_die(t.date);
+          return int2(_pipe);
+        })()
+      ],
+      ["payee", string2(t.payee)],
+      ["category_id", string2(t.category_id)],
+      ["value", money_encode(t.value)]
+    ])
+  );
+}
 function cycle_decoder() {
   let cycle_decoder$1 = field3(
     "month",
@@ -7915,39 +7994,30 @@ function initial_eff() {
     }
   );
 }
-function add_transaction_eff(transaction_form) {
-  return from(
-    (dispatch) => {
-      return dispatch(
-        (() => {
-          let $ = transaction_form.category;
-          let $1 = transaction_form.amount;
-          if ($ instanceof Some && $1 instanceof Some) {
-            let cat = $[0];
-            let amount = $1[0];
-            return new AddTransactionResult(
-              new Ok(
-                new Transaction(
-                  guidv4(),
-                  (() => {
-                    let _pipe = transaction_form.date;
-                    let _pipe$1 = from_date_string(_pipe);
-                    return unwrap2(_pipe$1, today());
-                  })(),
-                  transaction_form.payee,
-                  cat.id,
-                  amount
-                )
-              )
-            );
-          } else {
-            return new AddTransactionResult(
-              new Error(new InternalServerError("parse error"))
-            );
-          }
-        })()
-      );
-    }
+function add_transaction_eff(transaction_form, amount, cat) {
+  let url = "http://localhost:8000/transaction/add";
+  let t = new Transaction(
+    guidv4(),
+    (() => {
+      let _pipe = transaction_form.date;
+      let _pipe$1 = from_date_string(_pipe);
+      return unwrap2(_pipe$1, today());
+    })(),
+    transaction_form.payee,
+    cat.id,
+    amount
+  );
+  return post(
+    url,
+    transaction_encode(t),
+    expect_json(
+      (d) => {
+        return run3(d, transaction_decoder());
+      },
+      (var0) => {
+        return new AddTransactionResult(var0);
+      }
+    )
   );
 }
 function add_category(name) {
@@ -8006,20 +8076,20 @@ function get_transactions() {
     )
   );
 }
-function find_alloc_by_id(id2, cycle) {
-  let _pipe = allocations(cycle);
+function find_alloc_by_id(allocations, id2) {
+  let _pipe = allocations;
   return find(_pipe, (a2) => {
     return a2.id === id2;
   });
 }
-function save_allocation_eff(alloc_id, allocation, category_id, cycle) {
+function save_allocation_eff(alloc_id, allocation, category_id, allocations, cycle) {
   let money = (() => {
     let _pipe = allocation;
     return string_to_money(_pipe);
   })();
   if (alloc_id instanceof Some) {
     let id2 = alloc_id[0];
-    let alloc = find_alloc_by_id(id2, cycle);
+    let alloc = find_alloc_by_id(allocations, id2);
     return from(
       (dispatch) => {
         return dispatch(
@@ -8226,8 +8296,8 @@ function on_check(msg) {
 }
 
 // build/dev/javascript/budget_fe/budget_fe/internals/view.mjs
-function category_cycle_allocation(allocations2, cycle, c) {
-  let _pipe = allocations2;
+function category_cycle_allocation(allocations, cycle, c) {
+  let _pipe = allocations;
   let _pipe$1 = filter(_pipe, (a2) => {
     return isEqual(a2.date, cycle);
   });
@@ -8358,8 +8428,8 @@ function current_cycle_transactions(model) {
     }
   );
 }
-function category_activity(cat, transactions2) {
-  let _pipe = transactions2;
+function category_activity(cat, transactions) {
+  let _pipe = transactions;
   let _pipe$1 = filter(_pipe, (t) => {
     return t.category_id === cat.id;
   });
@@ -8430,7 +8500,7 @@ function target_money(category) {
     return amount;
   }
 }
-function ready_to_assign(transactions2, allocations2, cycle, categories) {
+function ready_to_assign(transactions, allocations, cycle, categories) {
   let income_cat_ids = (() => {
     let _pipe2 = categories;
     return filter_map(
@@ -8446,7 +8516,7 @@ function ready_to_assign(transactions2, allocations2, cycle, categories) {
     );
   })();
   let income = (() => {
-    let _pipe2 = transactions2;
+    let _pipe2 = transactions;
     let _pipe$1 = filter(
       _pipe2,
       (t) => {
@@ -8463,7 +8533,7 @@ function ready_to_assign(transactions2, allocations2, cycle, categories) {
     );
   })();
   let outcome = (() => {
-    let _pipe2 = allocations2;
+    let _pipe2 = allocations;
     let _pipe$1 = filter_map(
       _pipe2,
       (a2) => {
@@ -8685,7 +8755,7 @@ function transaction_list_item_html(t, model) {
     );
   }
 }
-function add_transaction_ui(transactions2, categories) {
+function add_transaction_ui(transactions, categories) {
   return tr(
     toList([]),
     toList([
@@ -8727,7 +8797,7 @@ function add_transaction_ui(transactions2, categories) {
           datalist(
             toList([id("payees_list")]),
             (() => {
-              let _pipe = transactions2;
+              let _pipe = transactions;
               let _pipe$1 = map2(_pipe, (t) => {
                 return t.payee;
               });
@@ -8875,8 +8945,8 @@ function budget_transactions(model) {
     ])
   );
 }
-function category_assigned(c, allocations2, cycle) {
-  let _pipe = allocations2;
+function category_assigned(c, allocations, cycle) {
+  let _pipe = allocations;
   let _pipe$1 = filter(_pipe, (a2) => {
     return isEqual(a2.date, cycle);
   });
@@ -9468,8 +9538,8 @@ function date_to_month(d) {
     })()
   );
 }
-function find_alloc_by_cat_id(cat_id, cycle) {
-  let _pipe = allocations(cycle);
+function find_alloc_by_cat_id(cat_id, cycle, allocations) {
+  let _pipe = allocations;
   return find(
     _pipe,
     (a2) => {
@@ -9533,7 +9603,11 @@ function update(model, msg) {
             c.id,
             c.name,
             (() => {
-              let _pipe = find_alloc_by_cat_id(c.id, model.cycle);
+              let _pipe = find_alloc_by_cat_id(
+                c.id,
+                model.cycle,
+                model.allocations
+              );
               let _pipe$1 = map3(
                 _pipe,
                 (a2) => {
@@ -9578,18 +9652,18 @@ function update(model, msg) {
   } else if (msg instanceof AddCategoryResult && !msg.c.isOk()) {
     return [model, none()];
   } else if (msg instanceof AddTransaction) {
-    return [
-      model.withFields({
-        transaction_add_input: new TransactionForm(
-          "",
-          "",
-          new None(),
-          new None(),
-          false
-        )
-      }),
-      add_transaction_eff(model.transaction_add_input)
-    ];
+    let $ = model.transaction_add_input.category;
+    let $1 = model.transaction_add_input.amount;
+    if ($ instanceof Some && $1 instanceof Some) {
+      let cat = $[0];
+      let money = $1[0];
+      return [
+        model.withFields({}),
+        add_transaction_eff(model.transaction_add_input, money, cat)
+      ];
+    } else {
+      return [model, none()];
+    }
   } else if (msg instanceof AddTransactionResult && msg.c.isOk()) {
     let t = msg.c[0];
     return [
@@ -9610,19 +9684,20 @@ function update(model, msg) {
     return [model, none()];
   } else if (msg instanceof UserUpdatedTransactionCategory) {
     let category_name = msg.cat;
+    let category = (() => {
+      let _pipe = model.categories;
+      let _pipe$1 = find(
+        _pipe,
+        (c) => {
+          return c.name === category_name;
+        }
+      );
+      return from_result(_pipe$1);
+    })();
     return [
       model.withFields({
         transaction_add_input: model.transaction_add_input.withFields({
-          category: (() => {
-            let _pipe = model.categories;
-            let _pipe$1 = find(
-              _pipe,
-              (c) => {
-                return c.name === category_name;
-              }
-            );
-            return from_result(_pipe$1);
-          })()
+          category
         })
       }),
       none()
@@ -10007,7 +10082,13 @@ function update(model, msg) {
         let $ = model.selected_category;
         if ($ instanceof Some) {
           let sc = $[0];
-          return save_allocation_eff(a2, sc.allocation, sc.id, model.cycle);
+          return save_allocation_eff(
+            a2,
+            sc.allocation,
+            sc.id,
+            model.allocations,
+            model.cycle
+          );
         } else {
           return none();
         }
@@ -10121,7 +10202,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      52,
+      34,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
