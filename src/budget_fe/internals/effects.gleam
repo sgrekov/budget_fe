@@ -6,6 +6,8 @@ import budget_test.{
 } as m
 import date_utils
 import decode/zero
+import gleam/http
+import gleam/http/request
 import gleam/io
 import gleam/json
 import gleam/list
@@ -90,18 +92,6 @@ pub fn add_category(name: String) -> effect.Effect(Msg) {
       msg.AddCategoryResult,
     ),
   )
-  // effect.from(fn(dispatch) {
-  //   dispatch(
-  //     msg.AddCategoryResult(
-  //       Ok(Category(
-  //         id: gluid.guidv4(),
-  //         name: name,
-  //         target: option.None,
-  //         inflow: False,
-  //       )),
-  //     ),
-  //   )
-  // })
 }
 
 pub fn get_allocations(cycle: Cycle) -> effect.Effect(Msg) {
@@ -185,7 +175,23 @@ fn find_alloc_by_id(
 }
 
 pub fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) { dispatch(msg.CategoryDeleteResult(Ok(c_id))) })
+  // effect.from(fn(dispatch) { dispatch(msg.CategoryDeleteResult(Ok(c_id))) })
+  let url = "http://localho.st:8000/category/" <> c_id
+
+  let req =
+    request.to(url)
+    |> result.map(fn(req) { request.Request(..req, method: http.Delete) })
+  case req {
+    Ok(req) ->
+      lustre_http.send(
+        req,
+        lustre_http.expect_json(
+          fn(d) { zero.run(d, decoders.id_decoder()) },
+          msg.CategoryDeleteResult,
+        ),
+      )
+    _ -> effect.none()
+  }
 }
 
 pub fn update_transaction_eff(

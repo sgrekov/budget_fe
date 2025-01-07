@@ -115,6 +115,13 @@ pub fn cycle_decoder() -> zero.Decoder(Cycle) {
   cycle_decoder
 }
 
+pub fn id_decoder() -> zero.Decoder(String) {
+  {
+    use id <- zero.field("id", zero.string)
+    zero.success(id)
+  }
+}
+
 pub fn allocation_decoder() -> zero.Decoder(Allocation) {
   let allocation_decoder = {
     use id <- zero.field("id", zero.string)

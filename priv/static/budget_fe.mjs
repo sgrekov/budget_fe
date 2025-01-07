@@ -6951,6 +6951,11 @@ function post(url, body, expect) {
     }
   );
 }
+function send2(req, expect) {
+  return from((_capture) => {
+    return do_send(req, expect, _capture);
+  });
+}
 function response_to_result(response) {
   if (response instanceof Response && (200 <= response.status && response.status <= 299)) {
     let status = response.status;
@@ -7926,6 +7931,11 @@ function cycle_decoder() {
   );
   return cycle_decoder$1;
 }
+function id_decoder() {
+  return field3("id", string3, (id2) => {
+    return success(id2);
+  });
+}
 function allocation_decoder() {
   let allocation_decoder$1 = field3(
     "id",
@@ -8140,11 +8150,32 @@ function save_allocation_eff(alloc_id, allocation, category_id, allocations, cyc
   }
 }
 function delete_category_eff(c_id) {
-  return from(
-    (dispatch) => {
-      return dispatch(new CategoryDeleteResult(new Ok(c_id)));
-    }
-  );
+  let url = "http://localho.st:8000/category/" + c_id;
+  let req = (() => {
+    let _pipe = to(url);
+    return map3(
+      _pipe,
+      (req2) => {
+        return req2.withFields({ method: new Delete() });
+      }
+    );
+  })();
+  if (req.isOk()) {
+    let req$1 = req[0];
+    return send2(
+      req$1,
+      expect_json(
+        (d) => {
+          return run3(d, id_decoder());
+        },
+        (var0) => {
+          return new CategoryDeleteResult(var0);
+        }
+      )
+    );
+  } else {
+    return none();
+  }
 }
 function update_transaction_eff(tef, categories) {
   let money = string_to_money(tef.amount);
