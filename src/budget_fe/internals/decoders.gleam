@@ -30,12 +30,11 @@ pub fn money_decoder() -> zero.Decoder(Money) {
 }
 
 pub fn month_decoder() -> zero.Decoder(MonthInYear) {
-  let month_decoder = {
+  {
     use month <- zero.field("month", zero.int)
     use year <- zero.field("year", zero.int)
     zero.success(m.MonthInYear(month, year))
   }
-  month_decoder
 }
 
 pub fn target_decoder() -> zero.Decoder(Target) {
@@ -151,5 +150,37 @@ pub fn cycle_encode(cycle: Cycle) -> json.Json {
   json.object([
     #("year", json.int(cycle.year)),
     #("month", cycle.month |> d.month_to_number |> json.int),
+  ])
+}
+
+pub fn category_encode(cat: Category) -> json.Json {
+  json.object([
+    #("id", json.string(cat.id)),
+    #("name", json.string(cat.name)),
+    #("target", json.nullable(cat.target, of: target_encode)),
+    #("inflow", json.bool(cat.inflow)),
+  ])
+}
+
+pub fn target_encode(target: m.Target) -> json.Json {
+  case target {
+    m.Monthly(money) ->
+      json.object([
+        #("type", json.string("monthly")),
+        #("money", money_encode(money)),
+      ])
+    m.Custom(money, month) ->
+      json.object([
+        #("type", json.string("custom")),
+        #("money", money_encode(money)),
+        #("date", month_in_year_encode(month)),
+      ])
+  }
+}
+
+pub fn month_in_year_encode(month: MonthInYear) -> json.Json {
+  json.object([
+    #("month", json.int(month.month)),
+    #("year", json.int(month.year)),
   ])
 }

@@ -7742,7 +7742,7 @@ function money_decoder() {
   return money_decoder$1;
 }
 function month_decoder() {
-  let month_decoder$1 = field3(
+  return field3(
     "month",
     int3,
     (month2) => {
@@ -7755,7 +7755,6 @@ function month_decoder() {
       );
     }
   );
-  return month_decoder$1;
 }
 function target_decoder() {
   let monthly_decoder = field3(
@@ -7968,6 +7967,39 @@ function allocation_encode(id2, amount, cat_id, cycle) {
       ["amount", money_encode(amount)],
       ["category_id", string2(cat_id)],
       ["date", cycle_encode(cycle)]
+    ])
+  );
+}
+function month_in_year_encode(month2) {
+  return object2(
+    toList([["month", int2(month2.month)], ["year", int2(month2.year)]])
+  );
+}
+function target_encode(target) {
+  if (target instanceof Monthly) {
+    let money = target.target;
+    return object2(
+      toList([["type", string2("monthly")], ["money", money_encode(money)]])
+    );
+  } else {
+    let money = target.target;
+    let month2 = target.date;
+    return object2(
+      toList([
+        ["type", string2("custom")],
+        ["money", money_encode(money)],
+        ["date", month_in_year_encode(month2)]
+      ])
+    );
+  }
+}
+function category_encode(cat) {
+  return object2(
+    toList([
+      ["id", string2(cat.id)],
+      ["name", string2(cat.name)],
+      ["target", nullable(cat.target, target_encode)],
+      ["inflow", bool2(cat.inflow)]
     ])
   );
 }
@@ -8256,11 +8288,43 @@ function delete_transaction_eff(t_id) {
   }
 }
 function save_target_eff(category, target_edit) {
-  return from(
-    (dispatch) => {
-      return dispatch(new CategorySaveTarget(new Ok(category.id)));
-    }
-  );
+  let url = "http://localho.st:8000/category/" + category.id;
+  let req = (() => {
+    let _pipe = to(url);
+    return map3(
+      _pipe,
+      (req2) => {
+        return req2.withFields({ method: new Put() });
+      }
+    );
+  })();
+  if (req.isOk()) {
+    let req$1 = req[0];
+    return send2(
+      (() => {
+        let _pipe = req$1;
+        let _pipe$1 = set_body(
+          _pipe,
+          to_string2(
+            category_encode(
+              category.withFields({ target: target_edit })
+            )
+          )
+        );
+        return set_header(_pipe$1, "Content-Type", "application/json");
+      })(),
+      expect_json(
+        (d) => {
+          return run3(d, id_decoder());
+        },
+        (var0) => {
+          return new CategorySaveTarget(var0);
+        }
+      )
+    );
+  } else {
+    return none();
+  }
 }
 function delete_target_eff(category) {
   let url = "http://localho.st:8000/category/target/" + category.id;

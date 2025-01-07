@@ -244,7 +244,29 @@ pub fn save_target_eff(
   category: Category,
   target_edit: Option(Target),
 ) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) { dispatch(msg.CategorySaveTarget(Ok(category.id))) })
+  // effect.from(fn(dispatch) { dispatch(msg.CategorySaveTarget(Ok(category.id))) })
+  let url = "http://localho.st:8000/category/" <> category.id
+
+  let req =
+    request.to(url)
+    |> result.map(fn(req) { request.Request(..req, method: http.Put) })
+  case req {
+    Ok(req) ->
+      lustre_http.send(
+        req
+          |> request.set_body(
+            json.to_string(decoders.category_encode(
+              Category(..category, target: target_edit),
+            )),
+          )
+          |> request.set_header("Content-Type", "application/json"),
+        lustre_http.expect_json(
+          fn(d) { zero.run(d, decoders.id_decoder()) },
+          msg.CategorySaveTarget,
+        ),
+      )
+    _ -> effect.none()
+  }
 }
 
 pub fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
