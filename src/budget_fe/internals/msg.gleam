@@ -42,7 +42,7 @@ pub type Msg {
   UpdateTransaction
   DeleteTransaction(t_id: String)
   TransactionDeleteResult(a: Result(String, lustre_http.HttpError))
-  TransactionEditResult(a: Result(Transaction, lustre_http.HttpError))
+  TransactionEditResult(a: Result(String, lustre_http.HttpError))
   UserTransactionEditPayee(p: String)
   UserTransactionEditDate(d: String)
   UserTransactionEditCategory(c: String)
@@ -51,7 +51,7 @@ pub type Msg {
   UpdateCategoryName(cat: Category)
   DeleteCategory
   CategoryDeleteResult(a: Result(String, lustre_http.HttpError))
-  SaveAllocation(alloc_id: Option(String))
+  SaveAllocation(allocation: Option(Allocation))
   SaveAllocationResult(Result(String, lustre_http.HttpError))
   UserAllocationUpdate(amount: String)
   CycleShift(shift: CycleShift)
@@ -102,7 +102,7 @@ pub type TransactionEditForm {
     id: String,
     date: String,
     payee: String,
-    category: String,
+    category_name: String,
     amount: String,
   )
 }

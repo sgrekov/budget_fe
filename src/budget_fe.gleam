@@ -258,7 +258,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           id: t.id,
           date: t.date |> date_utils.to_date_string_input,
           payee: t.payee,
-          category: category_name,
+          category_name: category_name,
           amount: t.value |> m.money_to_string_no_sign,
         )),
       ),
@@ -266,18 +266,9 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     )
     msg.TransactionDeleteResult(Ok(id)) -> #(model, eff.get_transactions())
     msg.TransactionDeleteResult(Error(_)) -> #(model, effect.none())
-    msg.TransactionEditResult(Ok(transaction)) -> #(
-      Model(
-        ..model,
-        transactions: model.transactions
-          |> list.map(fn(t) {
-            case t.id == transaction.id {
-              True -> transaction
-              False -> t
-            }
-          }),
-      ),
-      effect.none(),
+    msg.TransactionEditResult(Ok(transaction_id)) -> #(
+      model,
+      eff.get_transactions(),
     )
     msg.TransactionEditResult(Error(_)) -> #(model, effect.none())
     msg.UserTransactionEditPayee(payee) -> #(
@@ -308,7 +299,9 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(
         ..model,
         transaction_edit_form: model.transaction_edit_form
-          |> option.map(fn(tef) { msg.TransactionEditForm(..tef, category: c) }),
+          |> option.map(fn(tef) {
+            msg.TransactionEditForm(..tef, category_name: c)
+          }),
       ),
       effect.none(),
     )
@@ -318,9 +311,15 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         selected_transaction: option.None,
         transaction_edit_form: option.None,
       ),
-      case model.transaction_edit_form {
+      case
+        model.transaction_edit_form
+        |> option.map(fn(tef) {
+          transaction_form_to_transaction(tef, model.categories)
+        })
+        |> option.flatten
+      {
         option.None -> effect.none()
-        option.Some(tef) -> eff.update_transaction_eff(tef, model.categories)
+        option.Some(transaction) -> eff.update_transaction_eff(transaction)
       },
     )
     msg.DeleteCategory -> #(Model(..model, selected_category: option.None), case
@@ -354,11 +353,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
     msg.CategoryDeleteResult(Error(_)) -> #(model, effect.none())
-    msg.SaveAllocation(a) -> #(model, case model.selected_category {
+    msg.SaveAllocation(alloc) -> #(model, case model.selected_category {
       option.Some(sc) -> {
-        let alloc = find_alloc_by_id(model.allocations, sc.id)
         eff.save_allocation_eff(
-          alloc |> option.from_result,
+          alloc,
           sc.allocation |> m.string_to_money,
           sc.id,
           model.cycle,
@@ -392,6 +390,30 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, show_all_transactions: show),
       effect.none(),
     )
+  }
+}
+
+fn transaction_form_to_transaction(
+  tef: msg.TransactionEditForm,
+  categories: List(Category),
+) -> Option(Transaction) {
+  let date_option =
+    tef.date |> date_utils.from_date_string |> option.from_result
+  let amount = tef.amount |> m.string_to_money
+  let category =
+    categories
+    |> list.find(fn(c) { c.name == tef.category_name })
+    |> option.from_result
+  case date_option, category {
+    Some(date), Some(category) ->
+      Some(Transaction(
+        id: tef.id,
+        date: date,
+        payee: tef.payee,
+        category_id: category.id,
+        value: amount,
+      ))
+    _, _ -> None
   }
 }
 

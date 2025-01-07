@@ -200,33 +200,25 @@ pub fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
   }
 }
 
-pub fn update_transaction_eff(
-  tef: msg.TransactionEditForm,
-  categories: List(Category),
-) -> effect.Effect(Msg) {
-  let money = m.string_to_money(tef.amount)
-  effect.from(fn(dispatch) {
-    dispatch(
-      msg.TransactionEditResult(
-        Ok(Transaction(
-          id: tef.id,
-          date: tef.date
-            |> date_utils.from_date_string
-            |> result.unwrap(d.today()),
-          payee: tef.payee,
-          category_id: categories
-            |> list.find_map(fn(c) {
-              case c.name == tef.category {
-                True -> Ok(c.id)
-                False -> Error("")
-              }
-            })
-            |> result.unwrap(""),
-          value: money,
-        )),
-      ),
-    )
-  })
+pub fn update_transaction_eff(t: m.Transaction) -> effect.Effect(Msg) {
+  let url = "http://localho.st:8000/transaction/" <> t.id
+
+  let req =
+    request.to(url)
+    |> result.map(fn(req) { request.Request(..req, method: http.Put) })
+  case req {
+    Ok(req) ->
+      lustre_http.send(
+        req
+          |> request.set_body(json.to_string(decoders.transaction_encode(t)))
+          |> request.set_header("Content-Type", "application/json"),
+        lustre_http.expect_json(
+          fn(d) { zero.run(d, decoders.id_decoder()) },
+          msg.TransactionEditResult,
+        ),
+      )
+    _ -> effect.none()
+  }
 }
 
 pub fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {

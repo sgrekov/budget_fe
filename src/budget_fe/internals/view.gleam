@@ -145,7 +145,7 @@ fn category_cycle_allocation(
 ) -> Option(Allocation) {
   allocations
   |> list.filter(fn(a) { a.date == cycle })
-  |> list.find(fn(a) { a.id == c.id })
+  |> list.find(fn(a) { a.category_id == c.id })
   |> option.from_result
 }
 
@@ -279,14 +279,9 @@ fn category_details(
         attribute.style([#("width", "120px")]),
         attribute.value(sc.allocation),
       ]),
-      html.button(
-        [
-          event.on_click(msg.SaveAllocation(
-            alloc_id: allocation |> option.map(fn(a) { a.id }),
-          )),
-        ],
-        [element.text("Save")],
-      ),
+      html.button([event.on_click(msg.SaveAllocation(allocation: allocation))], [
+        element.text("Save"),
+      ]),
     ]),
   ])
 }
@@ -548,7 +543,7 @@ fn transaction_list_item_html(
           html.input([
             event.on_input(msg.UserTransactionEditCategory),
             attribute.placeholder("category"),
-            attribute.value(tef.category),
+            attribute.value(tef.category_name),
             attribute.class("form-control"),
             attribute.type_("text"),
             attribute.style([#("width", "160px")]),

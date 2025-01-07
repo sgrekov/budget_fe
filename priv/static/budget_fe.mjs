@@ -665,26 +665,6 @@ function find(loop$list, loop$is_desired) {
     }
   }
 }
-function find_map(loop$list, loop$fun) {
-  while (true) {
-    let list3 = loop$list;
-    let fun = loop$fun;
-    if (list3.hasLength(0)) {
-      return new Error(void 0);
-    } else {
-      let x = list3.head;
-      let rest$1 = list3.tail;
-      let $ = fun(x);
-      if ($.isOk()) {
-        let x$1 = $[0];
-        return new Ok(x$1);
-      } else {
-        loop$list = rest$1;
-        loop$fun = fun;
-      }
-    }
-  }
-}
 function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$prev, loop$acc) {
   while (true) {
     let list3 = loop$list;
@@ -7554,9 +7534,9 @@ var CategoryDeleteResult = class extends CustomType {
   }
 };
 var SaveAllocation = class extends CustomType {
-  constructor(alloc_id) {
+  constructor(allocation) {
     super();
-    this.alloc_id = alloc_id;
+    this.allocation = allocation;
   }
 };
 var SaveAllocationResult = class extends CustomType {
@@ -7626,12 +7606,12 @@ var ShiftLeft = class extends CustomType {
 var ShiftRight = class extends CustomType {
 };
 var TransactionEditForm = class extends CustomType {
-  constructor(id2, date, payee, category, amount) {
+  constructor(id2, date, payee, category_name, amount) {
     super();
     this.id = id2;
     this.date = date;
     this.payee = payee;
-    this.category = category;
+    this.category_name = category_name;
     this.amount = amount;
   }
 };
@@ -8212,43 +8192,40 @@ function delete_category_eff(c_id) {
     return none();
   }
 }
-function update_transaction_eff(tef, categories) {
-  let money = string_to_money(tef.amount);
-  return from(
-    (dispatch) => {
-      return dispatch(
-        new TransactionEditResult(
-          new Ok(
-            new Transaction(
-              tef.id,
-              (() => {
-                let _pipe = tef.date;
-                let _pipe$1 = from_date_string(_pipe);
-                return unwrap2(_pipe$1, today());
-              })(),
-              tef.payee,
-              (() => {
-                let _pipe = categories;
-                let _pipe$1 = find_map(
-                  _pipe,
-                  (c) => {
-                    let $ = c.name === tef.category;
-                    if ($) {
-                      return new Ok(c.id);
-                    } else {
-                      return new Error("");
-                    }
-                  }
-                );
-                return unwrap2(_pipe$1, "");
-              })(),
-              money
-            )
-          )
-        )
-      );
-    }
-  );
+function update_transaction_eff(t) {
+  let url = "http://localho.st:8000/transaction/" + t.id;
+  let req = (() => {
+    let _pipe = to(url);
+    return map3(
+      _pipe,
+      (req2) => {
+        return req2.withFields({ method: new Put() });
+      }
+    );
+  })();
+  if (req.isOk()) {
+    let req$1 = req[0];
+    return send2(
+      (() => {
+        let _pipe = req$1;
+        let _pipe$1 = set_body(
+          _pipe,
+          to_string2(transaction_encode(t))
+        );
+        return set_header(_pipe$1, "Content-Type", "application/json");
+      })(),
+      expect_json(
+        (d) => {
+          return run3(d, id_decoder());
+        },
+        (var0) => {
+          return new TransactionEditResult(var0);
+        }
+      )
+    );
+  } else {
+    return none();
+  }
 }
 function delete_transaction_eff(t_id) {
   let url = "http://localho.st:8000/transaction/" + t_id;
@@ -8411,7 +8388,7 @@ function category_cycle_allocation(allocations, cycle, c) {
     return isEqual(a2.date, cycle);
   });
   let _pipe$2 = find(_pipe$1, (a2) => {
-    return a2.id === c.id;
+    return a2.category_id === c.id;
   });
   return from_result(_pipe$2);
 }
@@ -8789,7 +8766,7 @@ function transaction_list_item_html(t, model) {
                   }
                 ),
                 placeholder("category"),
-                value(tef.category),
+                value(tef.category_name),
                 class$("form-control"),
                 type_("text"),
                 style(toList([["width", "160px"]])),
@@ -9477,18 +9454,7 @@ function category_details(category, model, sc, allocation) {
             ])
           ),
           button(
-            toList([
-              on_click(
-                new SaveAllocation(
-                  (() => {
-                    let _pipe = allocation;
-                    return map(_pipe, (a2) => {
-                      return a2.id;
-                    });
-                  })()
-                )
-              )
-            ]),
+            toList([on_click(new SaveAllocation(allocation))]),
             toList([text("Save")])
           )
         ])
@@ -9635,11 +9601,35 @@ function view(model) {
 }
 
 // build/dev/javascript/budget_fe/budget_fe.mjs
-function find_alloc_by_id(allocations, id2) {
-  let _pipe = allocations;
-  return find(_pipe, (a2) => {
-    return a2.id === id2;
-  });
+function transaction_form_to_transaction(tef, categories) {
+  let date_option = (() => {
+    let _pipe = tef.date;
+    let _pipe$1 = from_date_string(_pipe);
+    return from_result(_pipe$1);
+  })();
+  let amount = (() => {
+    let _pipe = tef.amount;
+    return string_to_money(_pipe);
+  })();
+  let category = (() => {
+    let _pipe = categories;
+    let _pipe$1 = find(
+      _pipe,
+      (c) => {
+        return c.name === tef.category_name;
+      }
+    );
+    return from_result(_pipe$1);
+  })();
+  if (date_option instanceof Some && category instanceof Some) {
+    let date = date_option[0];
+    let category$1 = category[0];
+    return new Some(
+      new Transaction(tef.id, date, tef.payee, category$1.id, amount)
+    );
+  } else {
+    return new None();
+  }
 }
 function date_to_month(d) {
   return new MonthInYear(
@@ -9993,26 +9983,8 @@ function update(model, msg) {
   } else if (msg instanceof TransactionDeleteResult && !msg.a.isOk()) {
     return [model, none()];
   } else if (msg instanceof TransactionEditResult && msg.a.isOk()) {
-    let transaction = msg.a[0];
-    return [
-      model.withFields({
-        transactions: (() => {
-          let _pipe = model.transactions;
-          return map2(
-            _pipe,
-            (t) => {
-              let $ = t.id === transaction.id;
-              if ($) {
-                return transaction;
-              } else {
-                return t;
-              }
-            }
-          );
-        })()
-      }),
-      none()
-    ];
+    let transaction_id = msg.a[0];
+    return [model, get_transactions()];
   } else if (msg instanceof TransactionEditResult && !msg.a.isOk()) {
     return [model, none()];
   } else if (msg instanceof UserTransactionEditPayee) {
@@ -10072,7 +10044,7 @@ function update(model, msg) {
           return map(
             _pipe,
             (tef) => {
-              return tef.withFields({ category: c });
+              return tef.withFields({ category_name: c });
             }
           );
         })()
@@ -10086,12 +10058,21 @@ function update(model, msg) {
         transaction_edit_form: new None()
       }),
       (() => {
-        let $ = model.transaction_edit_form;
+        let $ = (() => {
+          let _pipe = model.transaction_edit_form;
+          let _pipe$1 = map(
+            _pipe,
+            (tef) => {
+              return transaction_form_to_transaction(tef, model.categories);
+            }
+          );
+          return flatten(_pipe$1);
+        })();
         if ($ instanceof None) {
           return none();
         } else {
-          let tef = $[0];
-          return update_transaction_eff(tef, model.categories);
+          let transaction = $[0];
+          return update_transaction_eff(transaction);
         }
       })()
     ];
@@ -10157,19 +10138,15 @@ function update(model, msg) {
   } else if (msg instanceof CategoryDeleteResult && !msg.a.isOk()) {
     return [model, none()];
   } else if (msg instanceof SaveAllocation) {
-    let a2 = msg.alloc_id;
+    let alloc = msg.allocation;
     return [
       model,
       (() => {
         let $ = model.selected_category;
         if ($ instanceof Some) {
           let sc = $[0];
-          let alloc = find_alloc_by_id(model.allocations, sc.id);
           return save_allocation_eff(
-            (() => {
-              let _pipe = alloc;
-              return from_result(_pipe);
-            })(),
+            alloc,
             (() => {
               let _pipe = sc.allocation;
               return string_to_money(_pipe);
