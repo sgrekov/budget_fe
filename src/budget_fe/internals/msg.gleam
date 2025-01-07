@@ -52,7 +52,7 @@ pub type Msg {
   DeleteCategory
   CategoryDeleteResult(a: Result(String, lustre_http.HttpError))
   SaveAllocation(alloc_id: Option(String))
-  SaveAllocationResult(Result(AllocationEffectResult, lustre_http.HttpError))
+  SaveAllocationResult(Result(String, lustre_http.HttpError))
   UserAllocationUpdate(amount: String)
   CycleShift(shift: CycleShift)
   UserInputShowAllTransactions(show: Bool)
@@ -110,7 +110,6 @@ pub type TransactionEditForm {
 pub type TargetEdit {
   TargetEdit(cat_id: String, enabled: Bool, target: Target)
 }
-
-pub type AllocationEffectResult {
-  AllocationEffectResult(alloc: Allocation, is_created: Bool)
-}
+// pub type AllocationEffectResult {
+//   AllocationEffectResult(alloc: Allocation, is_created: Bool)
+// }

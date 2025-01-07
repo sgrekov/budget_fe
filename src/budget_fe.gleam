@@ -355,41 +355,19 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     )
     msg.CategoryDeleteResult(Error(_)) -> #(model, effect.none())
     msg.SaveAllocation(a) -> #(model, case model.selected_category {
-      option.Some(sc) ->
+      option.Some(sc) -> {
+        let alloc = find_alloc_by_id(model.allocations, sc.id)
         eff.save_allocation_eff(
-          a,
-          sc.allocation,
+          alloc |> option.from_result,
+          sc.allocation |> m.string_to_money,
           sc.id,
-          model.allocations,
           model.cycle,
         )
+      }
       option.None -> effect.none()
     })
     msg.SaveAllocationResult(Ok(aer)) -> {
-      io.debug(
-        "SaveAllocationResult Ok is_created:"
-        <> aer.is_created |> bool.to_string,
-      )
-      #(
-        Model(
-          ..model,
-          allocations: case aer.is_created {
-            True -> list.append(model.allocations, [aer.alloc])
-            False ->
-              model.allocations
-              |> list.map(fn(a) {
-                case a.id == aer.alloc.id {
-                  False -> a
-                  True -> {
-                    io.debug("SaveAllocationResult true")
-                    aer.alloc
-                  }
-                }
-              })
-          },
-        ),
-        effect.none(),
-      )
+      #(model, eff.get_allocations(model.cycle))
     }
     msg.SaveAllocationResult(Error(_)) -> #(model, effect.none())
     msg.UserAllocationUpdate(a) -> #(
@@ -415,6 +393,13 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
   }
+}
+
+fn find_alloc_by_id(
+  allocations: List(Allocation),
+  id: String,
+) -> Result(Allocation, Nil) {
+  allocations |> list.find(fn(a) { a.id == id })
 }
 
 fn date_to_month(d: Date) -> MonthInYear {

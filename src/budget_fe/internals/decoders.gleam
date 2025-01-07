@@ -132,3 +132,24 @@ pub fn allocation_decoder() -> zero.Decoder(Allocation) {
   }
   allocation_decoder
 }
+
+pub fn allocation_encode(
+  id: Option(String),
+  amount: Money,
+  cat_id: String,
+  cycle: Cycle,
+) -> json.Json {
+  json.object([
+    #("id", json.nullable(id, of: json.string)),
+    #("amount", money_encode(amount)),
+    #("category_id", json.string(cat_id)),
+    #("date", cycle_encode(cycle)),
+  ])
+}
+
+pub fn cycle_encode(cycle: Cycle) -> json.Json {
+  json.object([
+    #("year", json.int(cycle.year)),
+    #("month", cycle.month |> d.month_to_number |> json.int),
+  ])
+}

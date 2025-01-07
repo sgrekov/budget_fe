@@ -2479,13 +2479,6 @@ function to_int(bool4) {
     return 1;
   }
 }
-function to_string2(bool4) {
-  if (!bool4) {
-    return "False";
-  } else {
-    return "True";
-  }
-}
 function guard(requirement, consequence, alternative) {
   if (requirement) {
     return consequence;
@@ -4970,6 +4963,9 @@ function object(entries) {
 function identity2(x) {
   return x;
 }
+function do_null() {
+  return null;
+}
 function decode(string4) {
   try {
     const result = JSON.parse(string4);
@@ -5089,7 +5085,7 @@ function do_decode(json, decoder) {
 function decode2(json, decoder) {
   return do_decode(json, decoder);
 }
-function to_string3(json) {
+function to_string2(json) {
   return json_to_string(json);
 }
 function string2(input2) {
@@ -5100,6 +5096,17 @@ function bool2(input2) {
 }
 function int2(input2) {
   return identity2(input2);
+}
+function null$() {
+  return do_null();
+}
+function nullable(input2, inner_type) {
+  if (input2 instanceof Some) {
+    let value3 = input2[0];
+    return inner_type(value3);
+  } else {
+    return null$();
+  }
 }
 function object2(entries) {
   return object(entries);
@@ -5567,7 +5574,7 @@ function remove_dot_segments(input2) {
 function path_segments(path) {
   return remove_dot_segments(split2(path, "/"));
 }
-function to_string4(uri) {
+function to_string3(uri) {
   let parts = (() => {
     let $ = uri.fragment;
     if ($ instanceof Some) {
@@ -6809,7 +6816,7 @@ function from_fetch_response(response) {
   );
 }
 function to_fetch_request(request) {
-  let url = to_string4(to_uri(request));
+  let url = to_string3(to_uri(request));
   let method = method_to_string(request.method).toUpperCase();
   let options = {
     headers: make_headers(request.headers),
@@ -6943,7 +6950,7 @@ function post(url, body, expect) {
           "Content-Type",
           "application/json"
         );
-        let _pipe$3 = set_body(_pipe$2, to_string3(body));
+        let _pipe$3 = set_body(_pipe$2, to_string2(body));
         return do_send(_pipe$3, expect, dispatch);
       } else {
         return dispatch(expect.run(new Error(new BadUrl(url))));
@@ -7636,13 +7643,6 @@ var TargetEdit = class extends CustomType {
     this.target = target;
   }
 };
-var AllocationEffectResult = class extends CustomType {
-  constructor(alloc, is_created) {
-    super();
-    this.alloc = alloc;
-    this.is_created = is_created;
-  }
-};
 
 // build/dev/javascript/budget_fe/date_utils.mjs
 function to_date_string(value3) {
@@ -7966,6 +7966,31 @@ function allocation_decoder() {
   );
   return allocation_decoder$1;
 }
+function cycle_encode(cycle) {
+  return object2(
+    toList([
+      ["year", int2(cycle.year)],
+      [
+        "month",
+        (() => {
+          let _pipe = cycle.month;
+          let _pipe$1 = month_to_number(_pipe);
+          return int2(_pipe$1);
+        })()
+      ]
+    ])
+  );
+}
+function allocation_encode(id2, amount, cat_id, cycle) {
+  return object2(
+    toList([
+      ["id", nullable(id2, string2)],
+      ["amount", money_encode(amount)],
+      ["category_id", string2(cat_id)],
+      ["date", cycle_encode(cycle)]
+    ])
+  );
+}
 
 // build/dev/javascript/budget_fe/budget_fe/internals/effects.mjs
 function uri_to_route(uri) {
@@ -8095,58 +8120,68 @@ function get_transactions() {
     )
   );
 }
-function find_alloc_by_id(allocations, id2) {
-  let _pipe = allocations;
-  return find(_pipe, (a2) => {
-    return a2.id === id2;
-  });
+function create_allocation_eff(money, category_id, cycle) {
+  let url = "http://localhost:8000/allocation/add";
+  return post(
+    url,
+    allocation_encode(new None(), money, category_id, cycle),
+    expect_json(
+      (d) => {
+        return run3(d, id_decoder());
+      },
+      (var0) => {
+        return new SaveAllocationResult(var0);
+      }
+    )
+  );
 }
-function save_allocation_eff(alloc_id, allocation, category_id, allocations, cycle) {
-  let money = (() => {
-    let _pipe = allocation;
-    return string_to_money(_pipe);
-  })();
-  if (alloc_id instanceof Some) {
-    let id2 = alloc_id[0];
-    let alloc = find_alloc_by_id(allocations, id2);
-    return from(
-      (dispatch) => {
-        return dispatch(
-          (() => {
-            if (alloc.isOk()) {
-              let alloc_entity = alloc[0];
-              return new SaveAllocationResult(
-                new Ok(
-                  new AllocationEffectResult(
-                    alloc_entity.withFields({ amount: money }),
-                    false
-                  )
-                )
-              );
-            } else {
-              return new SaveAllocationResult(
-                new Error(new NotFound())
-              );
-            }
-          })()
-        );
+function update_allocation_eff(a2, amount) {
+  let url = "http://localho.st:8000/allocation/" + a2.id;
+  let req = (() => {
+    let _pipe = to(url);
+    return map3(
+      _pipe,
+      (req2) => {
+        return req2.withFields({ method: new Put() });
       }
     );
-  } else {
-    return from(
-      (dispatch) => {
-        return dispatch(
-          new SaveAllocationResult(
-            new Ok(
-              new AllocationEffectResult(
-                new Allocation(guidv4(), money, category_id, cycle),
-                true
-              )
+  })();
+  if (req.isOk()) {
+    let req$1 = req[0];
+    return send2(
+      (() => {
+        let _pipe = req$1;
+        return set_body(
+          _pipe,
+          to_string2(
+            allocation_encode(
+              new Some(a2.id),
+              amount,
+              a2.category_id,
+              a2.date
             )
           )
         );
-      }
+      })(),
+      expect_json(
+        (d) => {
+          return run3(d, id_decoder());
+        },
+        (var0) => {
+          return new SaveAllocationResult(var0);
+        }
+      )
     );
+  } else {
+    return none();
+  }
+}
+function save_allocation_eff(alloc, money, category_id, cycle) {
+  if (alloc instanceof Some) {
+    let allocation = alloc[0];
+    return update_allocation_eff(allocation, money);
+  } else {
+    return create_allocation_eff(money, category_id, cycle);
   }
 }
 function delete_category_eff(c_id) {
@@ -9600,6 +9635,12 @@ function view(model) {
 }
 
 // build/dev/javascript/budget_fe/budget_fe.mjs
+function find_alloc_by_id(allocations, id2) {
+  let _pipe = allocations;
+  return find(_pipe, (a2) => {
+    return a2.id === id2;
+  });
+}
 function date_to_month(d) {
   return new MonthInYear(
     (() => {
@@ -10123,11 +10164,17 @@ function update(model, msg) {
         let $ = model.selected_category;
         if ($ instanceof Some) {
           let sc = $[0];
+          let alloc = find_alloc_by_id(model.allocations, sc.id);
           return save_allocation_eff(
-            a2,
-            sc.allocation,
+            (() => {
+              let _pipe = alloc;
+              return from_result(_pipe);
+            })(),
+            (() => {
+              let _pipe = sc.allocation;
+              return string_to_money(_pipe);
+            })(),
             sc.id,
-            model.allocations,
             model.cycle
           );
         } else {
@@ -10137,37 +10184,7 @@ function update(model, msg) {
     ];
   } else if (msg instanceof SaveAllocationResult && msg[0].isOk()) {
     let aer = msg[0][0];
-    debug(
-      "SaveAllocationResult Ok is_created:" + (() => {
-        let _pipe = aer.is_created;
-        return to_string2(_pipe);
-      })()
-    );
-    return [
-      model.withFields({
-        allocations: (() => {
-          let $ = aer.is_created;
-          if ($) {
-            return append(model.allocations, toList([aer.alloc]));
-          } else {
-            let _pipe = model.allocations;
-            return map2(
-              _pipe,
-              (a2) => {
-                let $1 = a2.id === aer.alloc.id;
-                if (!$1) {
-                  return a2;
-                } else {
-                  debug("SaveAllocationResult true");
-                  return aer.alloc;
-                }
-              }
-            );
-          }
-        })()
-      }),
-      none()
-    ];
+    return [model, get_allocations(model.cycle)];
   } else if (msg instanceof SaveAllocationResult && !msg[0].isOk()) {
     return [model, none()];
   } else if (msg instanceof UserAllocationUpdate) {

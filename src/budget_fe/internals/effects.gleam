@@ -125,53 +125,60 @@ pub fn get_transactions() -> effect.Effect(Msg) {
 }
 
 pub fn save_allocation_eff(
-  alloc_id: Option(String),
-  allocation: String,
+  alloc: Option(Allocation),
+  money: m.Money,
   category_id: String,
-  allocations: List(Allocation),
   cycle: Cycle,
 ) -> effect.Effect(Msg) {
-  let money = allocation |> m.string_to_money
-  case alloc_id {
-    Some(id) -> {
-      let alloc = find_alloc_by_id(allocations, id)
-      effect.from(fn(dispatch) {
-        dispatch(case alloc {
-          Ok(alloc_entity) ->
-            msg.SaveAllocationResult(
-              Ok(msg.AllocationEffectResult(
-                Allocation(..alloc_entity, amount: money),
-                False,
-              )),
-            )
-          _ -> msg.SaveAllocationResult(Error(lustre_http.NotFound))
-        })
-      })
-    }
-    None ->
-      effect.from(fn(dispatch) {
-        dispatch(
-          msg.SaveAllocationResult(
-            Ok(msg.AllocationEffectResult(
-              Allocation(
-                id: gluid.guidv4(),
-                amount: money,
-                category_id: category_id,
-                date: cycle,
-              ),
-              True,
-            )),
-          ),
-        )
-      })
+  case alloc {
+    Some(allocation) -> update_allocation_eff(allocation, money)
+    None -> create_allocation_eff(money, category_id, cycle)
   }
 }
 
-fn find_alloc_by_id(
-  allocations: List(Allocation),
-  id: String,
-) -> Result(Allocation, Nil) {
-  allocations |> list.find(fn(a) { a.id == id })
+fn create_allocation_eff(
+  money: m.Money,
+  category_id: String,
+  cycle: Cycle,
+) -> effect.Effect(Msg) {
+  let url = "http://localhost:8000/allocation/add"
+
+  // io.debug(t)
+  lustre_http.post(
+    url,
+    decoders.allocation_encode(None, money, category_id, cycle),
+    lustre_http.expect_json(
+      fn(d) { zero.run(d, decoders.id_decoder()) },
+      msg.SaveAllocationResult,
+    ),
+  )
+}
+
+fn update_allocation_eff(a: Allocation, amount: m.Money) -> effect.Effect(Msg) {
+  let url = "http://localho.st:8000/allocation/" <> a.id
+
+  let req =
+    request.to(url)
+    |> result.map(fn(req) { request.Request(..req, method: http.Put) })
+  case req {
+    Ok(req) ->
+      lustre_http.send(
+        req
+          |> request.set_body(
+            json.to_string(decoders.allocation_encode(
+              option.Some(a.id),
+              amount,
+              a.category_id,
+              a.date,
+            )),
+          ),
+        lustre_http.expect_json(
+          fn(d) { zero.run(d, decoders.id_decoder()) },
+          msg.SaveAllocationResult,
+        ),
+      )
+    _ -> effect.none()
+  }
 }
 
 pub fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
@@ -249,9 +256,6 @@ pub fn save_target_eff(
 }
 
 pub fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
-  // effect.from(fn(dispatch) {
-  //   dispatch(msg.CategorySaveTarget(Ok(Category(..category, target: None))))
-  // })
   let url = "http://localho.st:8000/category/target/" <> category.id
 
   let req =
