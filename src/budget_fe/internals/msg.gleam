@@ -36,7 +36,7 @@ pub type Msg {
   UserTargetUpdateAmount(amount: String)
   EditTargetCadence(is_monthly: Bool)
   UserTargetUpdateCustomDate(date: String)
-  CategorySaveTarget(a: Result(Category, lustre_http.HttpError))
+  CategorySaveTarget(a: Result(String, lustre_http.HttpError))
   SelectTransaction(t: Transaction)
   EditTransaction(t: Transaction, category_name: String)
   UpdateTransaction

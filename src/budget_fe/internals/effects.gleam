@@ -175,7 +175,6 @@ fn find_alloc_by_id(
 }
 
 pub fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
-  // effect.from(fn(dispatch) { dispatch(msg.CategoryDeleteResult(Ok(c_id))) })
   let url = "http://localho.st:8000/category/" <> c_id
 
   let req =
@@ -224,22 +223,49 @@ pub fn update_transaction_eff(
 }
 
 pub fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) { dispatch(msg.TransactionDeleteResult(Ok(t_id))) })
+  let url = "http://localho.st:8000/transaction/" <> t_id
+
+  let req =
+    request.to(url)
+    |> result.map(fn(req) { request.Request(..req, method: http.Delete) })
+  case req {
+    Ok(req) ->
+      lustre_http.send(
+        req,
+        lustre_http.expect_json(
+          fn(d) { zero.run(d, decoders.id_decoder()) },
+          msg.TransactionDeleteResult,
+        ),
+      )
+    _ -> effect.none()
+  }
 }
 
 pub fn save_target_eff(
   category: Category,
   target_edit: Option(Target),
 ) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(
-      msg.CategorySaveTarget(Ok(Category(..category, target: target_edit))),
-    )
-  })
+  effect.from(fn(dispatch) { dispatch(msg.CategorySaveTarget(Ok(category.id))) })
 }
 
 pub fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(msg.CategorySaveTarget(Ok(Category(..category, target: None))))
-  })
+  // effect.from(fn(dispatch) {
+  //   dispatch(msg.CategorySaveTarget(Ok(Category(..category, target: None))))
+  // })
+  let url = "http://localho.st:8000/category/target/" <> category.id
+
+  let req =
+    request.to(url)
+    |> result.map(fn(req) { request.Request(..req, method: http.Put) })
+  case req {
+    Ok(req) ->
+      lustre_http.send(
+        req,
+        lustre_http.expect_json(
+          fn(d) { zero.run(d, decoders.id_decoder()) },
+          msg.CategorySaveTarget,
+        ),
+      )
+    _ -> effect.none()
+  }
 }

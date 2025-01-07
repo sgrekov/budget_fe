@@ -8216,33 +8216,67 @@ function update_transaction_eff(tef, categories) {
   );
 }
 function delete_transaction_eff(t_id) {
-  return from(
-    (dispatch) => {
-      return dispatch(new TransactionDeleteResult(new Ok(t_id)));
-    }
-  );
+  let url = "http://localho.st:8000/transaction/" + t_id;
+  let req = (() => {
+    let _pipe = to(url);
+    return map3(
+      _pipe,
+      (req2) => {
+        return req2.withFields({ method: new Delete() });
+      }
+    );
+  })();
+  if (req.isOk()) {
+    let req$1 = req[0];
+    return send2(
+      req$1,
+      expect_json(
+        (d) => {
+          return run3(d, id_decoder());
+        },
+        (var0) => {
+          return new TransactionDeleteResult(var0);
+        }
+      )
+    );
+  } else {
+    return none();
+  }
 }
 function save_target_eff(category, target_edit) {
   return from(
     (dispatch) => {
-      return dispatch(
-        new CategorySaveTarget(
-          new Ok(category.withFields({ target: target_edit }))
-        )
-      );
+      return dispatch(new CategorySaveTarget(new Ok(category.id)));
     }
   );
 }
 function delete_target_eff(category) {
-  return from(
-    (dispatch) => {
-      return dispatch(
-        new CategorySaveTarget(
-          new Ok(category.withFields({ target: new None() }))
-        )
-      );
-    }
-  );
+  let url = "http://localho.st:8000/category/target/" + category.id;
+  let req = (() => {
+    let _pipe = to(url);
+    return map3(
+      _pipe,
+      (req2) => {
+        return req2.withFields({ method: new Put() });
+      }
+    );
+  })();
+  if (req.isOk()) {
+    let req$1 = req[0];
+    return send2(
+      req$1,
+      expect_json(
+        (d) => {
+          return run3(d, id_decoder());
+        },
+        (var0) => {
+          return new CategorySaveTarget(var0);
+        }
+      )
+    );
+  } else {
+    return none();
+  }
 }
 
 // build/dev/javascript/lustre/lustre/element/html.mjs
@@ -9873,26 +9907,8 @@ function update(model, msg) {
       none()
     ];
   } else if (msg instanceof CategorySaveTarget && msg.a.isOk()) {
-    let cat = msg.a[0];
-    return [
-      model.withFields({
-        categories: (() => {
-          let _pipe = model.categories;
-          return map2(
-            _pipe,
-            (c) => {
-              let $ = c.id === cat.id;
-              if (!$) {
-                return c;
-              } else {
-                return cat;
-              }
-            }
-          );
-        })()
-      }),
-      none()
-    ];
+    let cat_id = msg.a[0];
+    return [model, get_categories()];
   } else if (msg instanceof CategorySaveTarget && !msg.a.isOk()) {
     return [model, none()];
   } else if (msg instanceof SelectTransaction) {
@@ -9932,17 +9948,7 @@ function update(model, msg) {
     ];
   } else if (msg instanceof TransactionDeleteResult && msg.a.isOk()) {
     let id2 = msg.a[0];
-    return [
-      model.withFields({
-        transactions: (() => {
-          let _pipe = model.transactions;
-          return filter(_pipe, (t) => {
-            return t.id !== id2;
-          });
-        })()
-      }),
-      none()
-    ];
+    return [model, get_transactions()];
   } else if (msg instanceof TransactionDeleteResult && !msg.a.isOk()) {
     return [model, none()];
   } else if (msg instanceof TransactionEditResult && msg.a.isOk()) {

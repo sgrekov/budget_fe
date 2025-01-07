@@ -241,19 +241,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         effect.none(),
       )
     }
-    msg.CategorySaveTarget(Ok(cat)) -> #(
-      Model(
-        ..model,
-        categories: model.categories
-          |> list.map(fn(c) {
-            case c.id == cat.id {
-              False -> c
-              True -> cat
-            }
-          }),
-      ),
-      effect.none(),
-    )
+    msg.CategorySaveTarget(Ok(cat_id)) -> #(model, eff.get_categories())
     msg.CategorySaveTarget(Error(_)) -> #(model, effect.none())
     msg.SelectTransaction(t) -> #(
       Model(..model, selected_transaction: option.Some(t.id)),
@@ -276,13 +264,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
-    msg.TransactionDeleteResult(Ok(id)) -> #(
-      Model(
-        ..model,
-        transactions: model.transactions |> list.filter(fn(t) { t.id != id }),
-      ),
-      effect.none(),
-    )
+    msg.TransactionDeleteResult(Ok(id)) -> #(model, eff.get_transactions())
     msg.TransactionDeleteResult(Error(_)) -> #(model, effect.none())
     msg.TransactionEditResult(Ok(transaction)) -> #(
       Model(
