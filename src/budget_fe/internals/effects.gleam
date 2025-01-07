@@ -7,6 +7,7 @@ import budget_test.{
 import date_utils
 import decode/zero
 import gleam/io
+import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
@@ -74,18 +75,33 @@ pub fn add_transaction_eff(
 }
 
 pub fn add_category(name: String) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    dispatch(
-      msg.AddCategoryResult(
-        Ok(Category(
-          id: gluid.guidv4(),
-          name: name,
-          target: option.None,
-          inflow: False,
-        )),
-      ),
-    )
-  })
+  let url = "http://localhost:8000/category/add"
+
+  lustre_http.post(
+    url,
+    json.object([#("name", json.string(name))]),
+    lustre_http.expect_json(
+      fn(d) {
+        zero.run(d, {
+          use id <- zero.field("id", zero.string)
+          zero.success(id)
+        })
+      },
+      msg.AddCategoryResult,
+    ),
+  )
+  // effect.from(fn(dispatch) {
+  //   dispatch(
+  //     msg.AddCategoryResult(
+  //       Ok(Category(
+  //         id: gluid.guidv4(),
+  //         name: name,
+  //         target: option.None,
+  //         inflow: False,
+  //       )),
+  //     ),
+  //   )
+  // })
 }
 
 pub fn get_allocations(cycle: Cycle) -> effect.Effect(Msg) {

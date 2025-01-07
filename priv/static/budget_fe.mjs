@@ -8021,14 +8021,23 @@ function add_transaction_eff(transaction_form, amount, cat) {
   );
 }
 function add_category(name) {
-  return from(
-    (dispatch) => {
-      return dispatch(
-        new AddCategoryResult(
-          new Ok(new Category(guidv4(), name, new None(), false))
-        )
-      );
-    }
+  let url = "http://localhost:8000/category/add";
+  return post(
+    url,
+    object2(toList([["name", string2(name)]])),
+    expect_json(
+      (d) => {
+        return run3(
+          d,
+          field3("id", string3, (id2) => {
+            return success(id2);
+          })
+        );
+      },
+      (var0) => {
+        return new AddCategoryResult(var0);
+      }
+    )
   );
 }
 function get_allocations(cycle) {
@@ -9642,13 +9651,8 @@ function update(model, msg) {
       none()
     ];
   } else if (msg instanceof AddCategoryResult && msg.c.isOk()) {
-    let c = msg.c[0];
-    return [
-      model.withFields({
-        categories: flatten2(toList([model.categories, toList([c])]))
-      }),
-      none()
-    ];
+    let cat_id = msg.c[0];
+    return [model, get_categories()];
   } else if (msg instanceof AddCategoryResult && !msg.c.isOk()) {
     return [model, none()];
   } else if (msg instanceof AddTransaction) {

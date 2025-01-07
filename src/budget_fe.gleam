@@ -94,10 +94,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, user_category_name_input: name),
       effect.none(),
     )
-    msg.AddCategoryResult(Ok(c)) -> #(
-      Model(..model, categories: list.flatten([model.categories, [c]])),
-      effect.none(),
-    )
+    msg.AddCategoryResult(Ok(cat_id)) -> #(model, eff.get_categories())
     msg.AddCategoryResult(Error(_)) -> #(model, effect.none())
     msg.AddTransaction ->
       case
@@ -133,7 +130,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       let category =
         model.categories
         |> list.find(fn(c) { c.name == category_name })
-        |> option.from_result      
+        |> option.from_result
       #(
         Model(
           ..model,

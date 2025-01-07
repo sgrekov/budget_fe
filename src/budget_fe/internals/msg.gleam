@@ -23,7 +23,7 @@ pub type Msg {
   ShowAddCategoryUI
   UserUpdatedCategoryName(cat_name: String)
   AddCategory
-  AddCategoryResult(c: Result(Category, lustre_http.HttpError))
+  AddCategoryResult(c: Result(String, lustre_http.HttpError))
   AddTransaction
   UserUpdatedTransactionDate(date: String)
   UserUpdatedTransactionPayee(payee: String)
