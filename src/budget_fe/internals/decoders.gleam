@@ -23,8 +23,8 @@ pub fn money_decoder() -> zero.Decoder(Money) {
   let money_decoder = {
     use s <- zero.field("s", zero.int)
     use b <- zero.field("b", zero.int)
-    use inflow <- zero.field("inflow", zero.bool)
-    zero.success(m.Money(s, b, inflow))
+    use is_neg <- zero.field("is_neg", zero.bool)
+    zero.success(m.Money(s, b, is_neg))
   }
   money_decoder
 }
@@ -101,7 +101,7 @@ pub fn money_encode(money: Money) -> json.Json {
   json.object([
     #("s", json.int(money.s)),
     #("b", json.int(money.b)),
-    #("inflow", json.bool(money.is_neg)),
+    #("is_neg", json.bool(money.is_neg)),
   ])
 }
 

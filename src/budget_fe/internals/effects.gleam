@@ -171,7 +171,7 @@ fn update_allocation_eff(a: Allocation, amount: m.Money) -> effect.Effect(Msg) {
               a.category_id,
               a.date,
             )),
-          ),
+          ) |> request.set_header("Content-Type", "application/json"),
         lustre_http.expect_json(
           fn(d) { zero.run(d, decoders.id_decoder()) },
           msg.SaveAllocationResult,
@@ -243,8 +243,7 @@ pub fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {
 pub fn save_target_eff(
   category: Category,
   target_edit: Option(Target),
-) -> effect.Effect(Msg) {
-  // effect.from(fn(dispatch) { dispatch(msg.CategorySaveTarget(Ok(category.id))) })
+) -> effect.Effect(Msg) {  
   let url = "http://localho.st:8000/category/" <> category.id
 
   let req =

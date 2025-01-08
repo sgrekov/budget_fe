@@ -160,11 +160,10 @@ fn get_selected_category(model: Model) -> Option(Category) {
 }
 
 fn transaction_category_name(t: Transaction, cats: List(Category)) -> String {
-  let category_name = case list.find(cats, fn(c) { c.id == t.category_id }) {
+  case list.find(cats, fn(c) { c.id == t.category_id }) {
     Ok(c) -> c.name
     _ -> "not found"
   }
-  category_name
 }
 
 fn cycle_to_text(c: Cycle) -> String {
@@ -249,7 +248,7 @@ fn category_details(
         attribute.placeholder("category name"),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "90px")]),
+        attribute.style([#("width", "200px")]),
         attribute.value(sc.input_name),
       ]),
       html.button([event.on_click(msg.UpdateCategoryName(category))], [
@@ -481,7 +480,6 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
             case model.show_all_transactions {
               False ->
                 current_cycle_transactions(model)
-                // |> list.map(fn(t) { transaction_list_item_html(t, model) })
                 |> list.map(transaction_list_item_html(_, model))
               True ->
                 model.transactions
@@ -511,63 +509,7 @@ fn transaction_list_item_html(
   let category_name = transaction_category_name(t, model.categories)
   case is_edit_mode, model.transaction_edit_form {
     True, option.Some(tef) ->
-      html.tr([attribute.class(active_class)], [
-        html.td([], [
-          html.input([
-            event.on_input(msg.UserTransactionEditDate),
-            attribute.placeholder("date"),
-            attribute.value(tef.date),
-            attribute.class("form-control"),
-            attribute.type_("date"),
-            attribute.style([#("width", "140px")]),
-          ]),
-        ]),
-        html.td([], [
-          html.input([
-            event.on_input(msg.UserTransactionEditPayee),
-            attribute.placeholder("payee"),
-            attribute.value(tef.payee),
-            attribute.class("form-control"),
-            attribute.type_("text"),
-            attribute.style([#("width", "160px")]),
-            attribute.attribute("list", "payees_list"),
-          ]),
-          html.datalist(
-            [attribute.id("payees_list")],
-            model.transactions
-              |> list.map(fn(t) { t.payee })
-              |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
-          ),
-        ]),
-        html.td([], [
-          html.input([
-            event.on_input(msg.UserTransactionEditCategory),
-            attribute.placeholder("category"),
-            attribute.value(tef.category_name),
-            attribute.class("form-control"),
-            attribute.type_("text"),
-            attribute.style([#("width", "160px")]),
-            attribute.attribute("list", "categories_list"),
-          ]),
-          html.datalist(
-            [attribute.id("categories_list")],
-            model.categories
-              |> list.map(fn(c) { c.name })
-              |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
-          ),
-        ]),
-        html.td([], [
-          html.input([
-            event.on_input(msg.UserTransactionEditAmount),
-            attribute.placeholder("amount"),
-            attribute.value(tef.amount),
-            attribute.class("form-control"),
-            attribute.type_("text"),
-            attribute.style([#("width", "160px")]),
-          ]),
-          manage_transaction_buttons(t, selected_id, category_name, True),
-        ]),
-      ])
+      transaction_edit_ui(t, category_name, active_class, tef, model)
     _, _ ->
       html.tr(
         [
@@ -585,6 +527,80 @@ fn transaction_list_item_html(
         ],
       )
   }
+}
+
+fn transaction_edit_ui(
+  transaction: Transaction,
+  category_name: String,
+  active_class: String,
+  tef: msg.TransactionEditForm,
+  model: Model,
+) -> element.Element(Msg) {
+  html.tr([attribute.class(active_class)], [
+    html.td([], [
+      html.input([
+        event.on_input(msg.UserTransactionEditDate),
+        attribute.placeholder("date"),
+        attribute.value(tef.date),
+        attribute.class("form-control"),
+        attribute.type_("date"),
+        attribute.style([#("width", "140px")]),
+      ]),
+    ]),
+    html.td([], [
+      html.input([
+        event.on_input(msg.UserTransactionEditPayee),
+        attribute.placeholder("payee"),
+        attribute.value(tef.payee),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+        attribute.style([#("width", "160px")]),
+        attribute.attribute("list", "payees_list"),
+      ]),
+      html.datalist(
+        [attribute.id("payees_list")],
+        model.transactions
+          |> list.map(fn(t) { t.payee })
+          |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
+      ),
+    ]),
+    html.td([], [
+      html.input([
+        event.on_input(msg.UserTransactionEditCategory),
+        attribute.placeholder("category"),
+        attribute.value(tef.category_name),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+        attribute.style([#("width", "160px")]),
+        attribute.attribute("list", "categories_list"),
+      ]),
+      html.datalist(
+        [attribute.id("categories_list")],
+        model.categories
+          |> list.map(fn(c) { c.name })
+          |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
+      ),
+    ]),
+    html.td([], [
+      html.input([
+        event.on_input(msg.UserTransactionEditAmount),
+        attribute.placeholder("amount"),
+        attribute.value(tef.amount),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+        attribute.style([#("width", "160px")]),
+      ]),
+      {
+        let selected_id = model.selected_transaction |> option.unwrap("")
+        manage_transaction_buttons(
+          transaction,
+          selected_id,
+          category_name,
+          True,
+        )
+      },
+    ]),
+  ])
 }
 
 fn manage_transaction_buttons(

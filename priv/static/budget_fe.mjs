@@ -7729,10 +7729,10 @@ function money_decoder() {
         int3,
         (b) => {
           return field3(
-            "inflow",
+            "is_neg",
             bool3,
-            (inflow) => {
-              return success(new Money(s, b, inflow));
+            (is_neg2) => {
+              return success(new Money(s, b, is_neg2));
             }
           );
         }
@@ -7865,7 +7865,7 @@ function money_encode(money) {
     toList([
       ["s", int2(money.s)],
       ["b", int2(money.b)],
-      ["inflow", bool2(money.is_neg)]
+      ["is_neg", bool2(money.is_neg)]
     ])
   );
 }
@@ -8163,7 +8163,7 @@ function update_allocation_eff(a2, amount) {
     return send2(
       (() => {
         let _pipe = req$1;
-        return set_body(
+        let _pipe$1 = set_body(
           _pipe,
           to_string2(
             allocation_encode(
@@ -8174,6 +8174,7 @@ function update_allocation_eff(a2, amount) {
             )
           )
         );
+        return set_header(_pipe$1, "Content-Type", "application/json");
       })(),
       expect_json(
         (d) => {
@@ -8474,18 +8475,15 @@ function get_selected_category(model) {
   return flatten(_pipe$1);
 }
 function transaction_category_name(t, cats) {
-  let category_name = (() => {
-    let $ = find(cats, (c) => {
-      return c.id === t.category_id;
-    });
-    if ($.isOk()) {
-      let c = $[0];
-      return c.name;
-    } else {
-      return "not found";
-    }
-  })();
-  return category_name;
+  let $ = find(cats, (c) => {
+    return c.id === t.category_id;
+  });
+  if ($.isOk()) {
+    let c = $[0];
+    return c.name;
+  } else {
+    return "not found";
+  }
 }
 function cycle_to_text(c) {
   return (() => {
@@ -8737,6 +8735,133 @@ function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
     );
   }
 }
+function transaction_edit_ui(transaction, category_name, active_class, tef, model) {
+  return tr(
+    toList([class$(active_class)]),
+    toList([
+      td(
+        toList([]),
+        toList([
+          input(
+            toList([
+              on_input(
+                (var0) => {
+                  return new UserTransactionEditDate(var0);
+                }
+              ),
+              placeholder("date"),
+              value(tef.date),
+              class$("form-control"),
+              type_("date"),
+              style(toList([["width", "140px"]]))
+            ])
+          )
+        ])
+      ),
+      td(
+        toList([]),
+        toList([
+          input(
+            toList([
+              on_input(
+                (var0) => {
+                  return new UserTransactionEditPayee(var0);
+                }
+              ),
+              placeholder("payee"),
+              value(tef.payee),
+              class$("form-control"),
+              type_("text"),
+              style(toList([["width", "160px"]])),
+              attribute("list", "payees_list")
+            ])
+          ),
+          datalist(
+            toList([id("payees_list")]),
+            (() => {
+              let _pipe = model.transactions;
+              let _pipe$1 = map2(_pipe, (t) => {
+                return t.payee;
+              });
+              return map2(
+                _pipe$1,
+                (p2) => {
+                  return option(toList([value(p2)]), "");
+                }
+              );
+            })()
+          )
+        ])
+      ),
+      td(
+        toList([]),
+        toList([
+          input(
+            toList([
+              on_input(
+                (var0) => {
+                  return new UserTransactionEditCategory(var0);
+                }
+              ),
+              placeholder("category"),
+              value(tef.category_name),
+              class$("form-control"),
+              type_("text"),
+              style(toList([["width", "160px"]])),
+              attribute("list", "categories_list")
+            ])
+          ),
+          datalist(
+            toList([id("categories_list")]),
+            (() => {
+              let _pipe = model.categories;
+              let _pipe$1 = map2(_pipe, (c) => {
+                return c.name;
+              });
+              return map2(
+                _pipe$1,
+                (p2) => {
+                  return option(toList([value(p2)]), "");
+                }
+              );
+            })()
+          )
+        ])
+      ),
+      td(
+        toList([]),
+        toList([
+          input(
+            toList([
+              on_input(
+                (var0) => {
+                  return new UserTransactionEditAmount(var0);
+                }
+              ),
+              placeholder("amount"),
+              value(tef.amount),
+              class$("form-control"),
+              type_("text"),
+              style(toList([["width", "160px"]]))
+            ])
+          ),
+          (() => {
+            let selected_id = (() => {
+              let _pipe = model.selected_transaction;
+              return unwrap(_pipe, "");
+            })();
+            return manage_transaction_buttons(
+              transaction,
+              selected_id,
+              category_name,
+              true
+            );
+          })()
+        ])
+      )
+    ])
+  );
+}
 function transaction_list_item_html(t, model) {
   let selected_id = (() => {
     let _pipe = model.selected_transaction;
@@ -8762,120 +8887,7 @@ function transaction_list_item_html(t, model) {
   let $ = model.transaction_edit_form;
   if (is_edit_mode && $ instanceof Some) {
     let tef = $[0];
-    return tr(
-      toList([class$(active_class)]),
-      toList([
-        td(
-          toList([]),
-          toList([
-            input(
-              toList([
-                on_input(
-                  (var0) => {
-                    return new UserTransactionEditDate(var0);
-                  }
-                ),
-                placeholder("date"),
-                value(tef.date),
-                class$("form-control"),
-                type_("date"),
-                style(toList([["width", "140px"]]))
-              ])
-            )
-          ])
-        ),
-        td(
-          toList([]),
-          toList([
-            input(
-              toList([
-                on_input(
-                  (var0) => {
-                    return new UserTransactionEditPayee(var0);
-                  }
-                ),
-                placeholder("payee"),
-                value(tef.payee),
-                class$("form-control"),
-                type_("text"),
-                style(toList([["width", "160px"]])),
-                attribute("list", "payees_list")
-              ])
-            ),
-            datalist(
-              toList([id("payees_list")]),
-              (() => {
-                let _pipe = model.transactions;
-                let _pipe$1 = map2(_pipe, (t2) => {
-                  return t2.payee;
-                });
-                return map2(
-                  _pipe$1,
-                  (p2) => {
-                    return option(toList([value(p2)]), "");
-                  }
-                );
-              })()
-            )
-          ])
-        ),
-        td(
-          toList([]),
-          toList([
-            input(
-              toList([
-                on_input(
-                  (var0) => {
-                    return new UserTransactionEditCategory(var0);
-                  }
-                ),
-                placeholder("category"),
-                value(tef.category_name),
-                class$("form-control"),
-                type_("text"),
-                style(toList([["width", "160px"]])),
-                attribute("list", "categories_list")
-              ])
-            ),
-            datalist(
-              toList([id("categories_list")]),
-              (() => {
-                let _pipe = model.categories;
-                let _pipe$1 = map2(_pipe, (c) => {
-                  return c.name;
-                });
-                return map2(
-                  _pipe$1,
-                  (p2) => {
-                    return option(toList([value(p2)]), "");
-                  }
-                );
-              })()
-            )
-          ])
-        ),
-        td(
-          toList([]),
-          toList([
-            input(
-              toList([
-                on_input(
-                  (var0) => {
-                    return new UserTransactionEditAmount(var0);
-                  }
-                ),
-                placeholder("amount"),
-                value(tef.amount),
-                class$("form-control"),
-                type_("text"),
-                style(toList([["width", "160px"]]))
-              ])
-            ),
-            manage_transaction_buttons(t, selected_id, category_name, true)
-          ])
-        )
-      ])
-    );
+    return transaction_edit_ui(t, category_name, active_class, tef, model);
   } else {
     return tr(
       toList([
@@ -9459,7 +9471,7 @@ function category_details(category, model, sc, allocation) {
               placeholder("category name"),
               class$("form-control"),
               type_("text"),
-              style(toList([["width", "90px"]])),
+              style(toList([["width", "200px"]])),
               value(sc.input_name)
             ])
           ),
