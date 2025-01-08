@@ -2544,9 +2544,9 @@ var Span = class extends CustomType {
   }
 };
 var NoMatchFound = class extends CustomType {
-  constructor(row, col, lexeme) {
+  constructor(row2, col, lexeme) {
     super();
-    this.row = row;
+    this.row = row2;
     this.col = col;
     this.lexeme = lexeme;
   }
@@ -2558,12 +2558,12 @@ var Lexer = class extends CustomType {
   }
 };
 var State = class extends CustomType {
-  constructor(source, tokens, current, row, col) {
+  constructor(source, tokens, current, row2, col) {
     super();
     this.source = source;
     this.tokens = tokens;
     this.current = current;
-    this.row = row;
+    this.row = row2;
     this.col = col;
   }
 };
@@ -2616,11 +2616,11 @@ function next_col(col, str) {
     return col + 1;
   }
 }
-function next_row(row, str) {
+function next_row(row2, str) {
   if (str === "\n") {
-    return row + 1;
+    return row2 + 1;
   } else {
-    return row;
+    return row2;
   }
 }
 function do_run(loop$lexer, loop$mode, loop$state) {
@@ -2656,7 +2656,7 @@ function do_run(loop$lexer, loop$mode, loop$state) {
       let start_row = $1[0];
       let start_col = $1[1];
       let lexeme = $1[2];
-      let row = next_row(state.row, lookahead);
+      let row2 = next_row(state.row, lookahead);
       let col = next_col(state.col, lookahead);
       let $2 = do_match(mode, lexeme, lookahead, matchers);
       if ($2 instanceof Keep) {
@@ -2670,7 +2670,7 @@ function do_run(loop$lexer, loop$mode, loop$state) {
           rest,
           prepend(token$1, state.tokens),
           [state.row, state.col, lookahead],
-          row,
+          row2,
           col
         );
       } else if ($2 instanceof Skip) {
@@ -2680,7 +2680,7 @@ function do_run(loop$lexer, loop$mode, loop$state) {
           rest,
           state.tokens,
           [start_row, start_col, lexeme + lookahead],
-          row,
+          row2,
           col
         );
       } else if ($2 instanceof Drop) {
@@ -2691,7 +2691,7 @@ function do_run(loop$lexer, loop$mode, loop$state) {
           rest,
           state.tokens,
           [state.row, state.col, lookahead],
-          row,
+          row2,
           col
         );
       } else {
@@ -2701,7 +2701,7 @@ function do_run(loop$lexer, loop$mode, loop$state) {
           rest,
           state.tokens,
           [start_row, start_col, lexeme + lookahead],
-          row,
+          row2,
           col
         );
       }
@@ -5000,8 +5000,8 @@ function spidermonkeyUnexpectedByteError(err, json) {
   if (!match)
     return null;
   const line = Number(match[2]);
-  const column = Number(match[3]);
-  const position = getPositionFromMultiline(line, column, json);
+  const column2 = Number(match[3]);
+  const position = getPositionFromMultiline(line, column2, json);
   const byte = toHex(json[position]);
   return new UnexpectedByte(byte, position);
 }
@@ -5016,16 +5016,16 @@ function jsCoreUnexpectedByteError(err) {
 function toHex(char) {
   return "0x" + char.charCodeAt(0).toString(16).toUpperCase();
 }
-function getPositionFromMultiline(line, column, string4) {
+function getPositionFromMultiline(line, column2, string4) {
   if (line === 1)
-    return column - 1;
+    return column2 - 1;
   let currentLn = 1;
   let position = 0;
   string4.split("").find((char, idx) => {
     if (char === "\n")
       currentLn += 1;
     if (currentLn === line) {
-      position = idx + column;
+      position = idx + column2;
       return true;
     }
     return false;
@@ -8447,6 +8447,18 @@ function on_check(msg) {
 }
 
 // build/dev/javascript/budget_fe/budget_fe/internals/view.mjs
+function row(fun) {
+  return div(toList([class$("d-flex flex-row")]), fun());
+}
+function column(fun) {
+  return div(
+    toList([
+      class$("d-flex flex-column border border-dark"),
+      class$("p-1")
+    ]),
+    fun()
+  );
+}
 function category_cycle_allocation(allocations, cycle, c) {
   let _pipe = allocations;
   let _pipe$1 = filter(_pipe, (a2) => {
@@ -8564,6 +8576,55 @@ function cycle_bounds(c, cycle_end_day) {
       from_calendar_date(c.year, c.month, last_day)
     ];
   }
+}
+function current_cycle_bounds(model) {
+  let $ = cycle_bounds(model.cycle, model.cycle_end_day);
+  let start3 = $[0];
+  let end = $[1];
+  return (() => {
+    let _pipe = start3;
+    return to_date_string(_pipe);
+  })() + " - " + (() => {
+    let _pipe = end;
+    return to_date_string(_pipe);
+  })();
+}
+function cycle_display(model) {
+  return row(
+    () => {
+      return toList([
+        button(
+          toList([on_click(new CycleShift(new ShiftLeft()))]),
+          toList([text("<")])
+        ),
+        column(
+          () => {
+            return toList([
+              p(
+                toList([class$("text-start fs-5")]),
+                toList([
+                  text(
+                    (() => {
+                      let _pipe = model.cycle;
+                      return cycle_to_text(_pipe);
+                    })()
+                  )
+                ])
+              ),
+              p(
+                toList([class$("text-start fs-10")]),
+                toList([text(current_cycle_bounds(model))])
+              )
+            ]);
+          }
+        ),
+        button(
+          toList([on_click(new CycleShift(new ShiftRight()))]),
+          toList([text(">")])
+        )
+      ]);
+    }
+  );
 }
 function current_cycle_transactions(model) {
   let $ = cycle_bounds(model.cycle, model.cycle_end_day);
@@ -9585,36 +9646,7 @@ function view(model) {
                   )
                 ])
               ),
-              div(
-                toList([]),
-                toList([
-                  button(
-                    toList([
-                      on_click(new CycleShift(new ShiftLeft()))
-                    ]),
-                    toList([text("<")])
-                  ),
-                  p(
-                    toList([class$("text-start fs-4")]),
-                    toList([
-                      text(
-                        (() => {
-                          let _pipe = model.cycle;
-                          return cycle_to_text(_pipe);
-                        })()
-                      )
-                    ])
-                  ),
-                  button(
-                    toList([
-                      on_click(
-                        new CycleShift(new ShiftRight())
-                      )
-                    ]),
-                    toList([text(">")])
-                  )
-                ])
-              ),
+              cycle_display(model),
               div(
                 toList([
                   class$("bg-success text-white"),
@@ -10200,17 +10232,7 @@ function update(model, msg) {
     ];
   } else if (msg instanceof CategoryDeleteResult && msg.a.isOk()) {
     let id2 = msg.a[0];
-    return [
-      model.withFields({
-        categories: (() => {
-          let _pipe = model.categories;
-          return filter(_pipe, (c) => {
-            return c.id !== id2;
-          });
-        })()
-      }),
-      none()
-    ];
+    return [model, get_categories()];
   } else if (msg instanceof CategoryDeleteResult && !msg.a.isOk()) {
     return [model, none()];
   } else if (msg instanceof SaveAllocation) {

@@ -22,32 +22,6 @@ import lustre/event
 import rada/date.{type Date} as d
 
 pub fn view(model: Model) -> element.Element(Msg) {
-  // html.div([attribute.class("container-fluid bg-dark")], [
-  //   html.div([attribute.class("col")], [
-  //     html.div([attribute.class("d-flex flex-row")], [
-  //       html.div(
-  //         [
-  //           attribute.class("bg-warning border border-5"),
-  //           attribute.style([#("width", "120px")]),
-  //         ],
-  //         [html.text("TEST1")],
-  //       ),
-  //       html.div(
-  //         [
-  //           attribute.class("w-25"),
-  //           attribute.style([
-  //             #("width", "200px"),
-  //             #("background-color", "rgba(64,185,78,1)"),
-  //           ]),
-  //         ],
-  //         [html.text("TEST2")],
-  //       ),
-  //       html.div([attribute.class("ms-auto w-25 rounded-3 bg-danger")], [
-  //         html.text("TEST3"),
-  //       ]),
-  //     ]),
-  //   ]),
-  // ])
   html.div([attribute.class("container-fluid")], [
     html.div([attribute.class("col")], [
       html.div([attribute.class("d-flex flex-row")], [
@@ -68,17 +42,7 @@ pub fn view(model: Model) -> element.Element(Msg) {
             [html.text("Transactions")],
           ),
         ]),
-        html.div([], [
-          html.button([event.on_click(msg.CycleShift(msg.ShiftLeft))], [
-            element.text("<"),
-          ]),
-          html.p([attribute.class("text-start fs-4")], [
-            element.text(model.cycle |> cycle_to_text()),
-          ]),
-          html.button([event.on_click(msg.CycleShift(msg.ShiftRight))], [
-            element.text(">"),
-          ]),
-        ]),
+        cycle_display(model),
         html.div(
           [
             attribute.class("bg-success text-white"),
@@ -122,6 +86,50 @@ pub fn view(model: Model) -> element.Element(Msg) {
       ]),
     ]),
   ])
+}
+
+fn row(fun: fn() -> List(element.Element(Msg))) -> element.Element(Msg) {
+  html.div([attribute.class("d-flex flex-row")], fun())
+}
+
+fn column(fun: fn() -> List(element.Element(Msg))) -> element.Element(Msg) {
+  html.div(
+    [
+      attribute.class("d-flex flex-column border border-dark"),
+      attribute.class("p-1"),
+    ],
+    fun(),
+  )
+}
+
+fn cycle_display(model: Model) -> element.Element(Msg) {
+  row(fn() {
+    [
+      html.button([event.on_click(msg.CycleShift(msg.ShiftLeft))], [
+        element.text("<"),
+      ]),
+      column(fn() {
+        [
+          html.p([attribute.class("text-start fs-5")], [
+            element.text(model.cycle |> cycle_to_text()),
+          ]),
+          html.p([attribute.class("text-start fs-10")], [
+            element.text(current_cycle_bounds(model)),
+          ]),
+        ]
+      }),
+      html.button([event.on_click(msg.CycleShift(msg.ShiftRight))], [
+        element.text(">"),
+      ]),
+    ]
+  })
+}
+
+fn current_cycle_bounds(model: Model) -> String {
+  let #(start, end) = cycle_bounds(model.cycle, model.cycle_end_day)
+  start |> date_utils.to_date_string
+  <> " - "
+  <> end |> date_utils.to_date_string
 }
 
 fn category_details_ui(model: Model) -> element.Element(Msg) {
@@ -729,12 +737,7 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
             ],
             [
               html.td([], [html.text(c.name)]),
-              html.td(
-                [
-                  // attribute.style([#("background-color", "rgba(64,185,78,1)")])
-                ],
-                [category_balance(c, model)],
-              ),
+              html.td([], [category_balance(c, model)]),
             ],
           )
         })
@@ -825,3 +828,29 @@ pub fn month_to_string(value: MonthInYear) -> String {
     |> string.pad_start(2, "0")
   }
 }
+// html.div([attribute.class("container-fluid bg-dark")], [
+//   html.div([attribute.class("col")], [
+//     html.div([attribute.class("d-flex flex-row")], [
+//       html.div(
+//         [
+//           attribute.class("bg-warning border border-5"),
+//           attribute.style([#("width", "120px")]),
+//         ],
+//         [html.text("TEST1")],
+//       ),
+//       html.div(
+//         [
+//           attribute.class("w-25"),
+//           attribute.style([
+//             #("width", "200px"),
+//             #("background-color", "rgba(64,185,78,1)"),
+//           ]),
+//         ],
+//         [html.text("TEST2")],
+//       ),
+//       html.div([attribute.class("ms-auto w-25 rounded-3 bg-danger")], [
+//         html.text("TEST3"),
+//       ]),
+//     ]),
+//   ]),
+// ])

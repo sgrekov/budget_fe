@@ -344,14 +344,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
-    msg.CategoryDeleteResult(Ok(id)) -> #(
-      Model(
-        ..model,
-        categories: model.categories
-          |> list.filter(fn(c) { c.id != id }),
-      ),
-      effect.none(),
-    )
+    msg.CategoryDeleteResult(Ok(id)) -> #(model, eff.get_categories())
     msg.CategoryDeleteResult(Error(_)) -> #(model, effect.none())
     msg.SaveAllocation(alloc) -> #(model, case model.selected_category {
       option.Some(sc) -> {
