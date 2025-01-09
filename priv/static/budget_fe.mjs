@@ -102,11 +102,21 @@ var BitArray = class _BitArray {
   }
   // @internal
   binaryFromSlice(start3, end) {
-    return new _BitArray(this.buffer.slice(start3, end));
+    const buffer = new Uint8Array(
+      this.buffer.buffer,
+      this.buffer.byteOffset + start3,
+      end - start3
+    );
+    return new _BitArray(buffer);
   }
   // @internal
   sliceAfter(index4) {
-    return new _BitArray(this.buffer.slice(index4));
+    const buffer = new Uint8Array(
+      this.buffer.buffer,
+      this.buffer.byteOffset + index4,
+      this.buffer.byteLength - index4
+    );
+    return new _BitArray(buffer);
   }
 };
 var UtfCodepoint = class {
@@ -193,10 +203,10 @@ var Error = class extends Result {
   }
 };
 function isEqual(x, y) {
-  let values = [x, y];
-  while (values.length) {
-    let a2 = values.pop();
-    let b = values.pop();
+  let values2 = [x, y];
+  while (values2.length) {
+    let a2 = values2.pop();
+    let b = values2.pop();
     if (a2 === b)
       continue;
     if (!isObject(a2) || !isObject(b))
@@ -214,9 +224,9 @@ function isEqual(x, y) {
       } catch {
       }
     }
-    let [keys2, get2] = getters(a2);
+    let [keys2, get4] = getters(a2);
     for (let k of keys2(a2)) {
-      values.push(get2(a2, k), get2(b, k));
+      values2.push(get4(a2, k), get4(b, k));
     }
   }
   return true;
@@ -287,14 +297,6 @@ function makeError(variant, module, line, fn, message, extra) {
   return error;
 }
 
-// build/dev/javascript/gleam_stdlib/gleam/order.mjs
-var Lt = class extends CustomType {
-};
-var Eq = class extends CustomType {
-};
-var Gt = class extends CustomType {
-};
-
 // build/dev/javascript/gleam_stdlib/gleam/option.mjs
 var Some = class extends CustomType {
   constructor(x0) {
@@ -345,57 +347,85 @@ function flatten(option2) {
   }
 }
 
-// build/dev/javascript/gleam_stdlib/gleam/regex.mjs
-var CompileError = class extends CustomType {
-  constructor(error, byte_index) {
-    super();
-    this.error = error;
-    this.byte_index = byte_index;
-  }
+// build/dev/javascript/gleam_stdlib/gleam/order.mjs
+var Lt = class extends CustomType {
 };
-var Options = class extends CustomType {
-  constructor(case_insensitive, multi_line) {
-    super();
-    this.case_insensitive = case_insensitive;
-    this.multi_line = multi_line;
-  }
+var Eq = class extends CustomType {
+};
+var Gt = class extends CustomType {
 };
 
-// build/dev/javascript/gleam_stdlib/gleam/dict.mjs
-function insert(dict2, key, value3) {
-  return map_insert(key, value3, dict2);
+// build/dev/javascript/gleam_stdlib/gleam/float.mjs
+function negate(x) {
+  return -1 * x;
 }
-function reverse_and_concat(loop$remaining, loop$accumulator) {
-  while (true) {
-    let remaining = loop$remaining;
-    let accumulator = loop$accumulator;
-    if (remaining.hasLength(0)) {
-      return accumulator;
+function round2(x) {
+  let $ = x >= 0;
+  if ($) {
+    return round(x);
+  } else {
+    return 0 - round(negate(x));
+  }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/int.mjs
+function absolute_value(x) {
+  let $ = x >= 0;
+  if ($) {
+    return x;
+  } else {
+    return x * -1;
+  }
+}
+function to_base16(x) {
+  return int_to_base_string(x, 16);
+}
+function compare(a2, b) {
+  let $ = a2 === b;
+  if ($) {
+    return new Eq();
+  } else {
+    let $1 = a2 < b;
+    if ($1) {
+      return new Lt();
     } else {
-      let item = remaining.head;
-      let rest = remaining.tail;
-      loop$remaining = rest;
-      loop$accumulator = prepend(item, accumulator);
+      return new Gt();
     }
   }
 }
-function do_keys_loop(loop$list, loop$acc) {
-  while (true) {
-    let list3 = loop$list;
-    let acc = loop$acc;
-    if (list3.hasLength(0)) {
-      return reverse_and_concat(acc, toList([]));
-    } else {
-      let first2 = list3.head;
-      let rest = list3.tail;
-      loop$list = rest;
-      loop$acc = prepend(first2[0], acc);
-    }
+function min(a2, b) {
+  let $ = a2 < b;
+  if ($) {
+    return a2;
+  } else {
+    return b;
   }
 }
-function keys(dict2) {
-  let list_of_pairs = map_to_list(dict2);
-  return do_keys_loop(list_of_pairs, toList([]));
+function max(a2, b) {
+  let $ = a2 > b;
+  if ($) {
+    return a2;
+  } else {
+    return b;
+  }
+}
+function clamp(x, min_bound, max_bound) {
+  let _pipe = x;
+  let _pipe$1 = min(_pipe, max_bound);
+  return max(_pipe$1, min_bound);
+}
+function random(max2) {
+  let _pipe = random_uniform() * identity(max2);
+  let _pipe$1 = floor(_pipe);
+  return round2(_pipe$1);
+}
+function divide(dividend, divisor) {
+  if (divisor === 0) {
+    return new Error(void 0);
+  } else {
+    let divisor$1 = divisor;
+    return new Ok(divideInt(dividend, divisor$1));
+  }
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
@@ -417,10 +447,10 @@ var Descending = class extends CustomType {
 };
 function length_loop(loop$list, loop$count) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let count = loop$count;
-    if (list3.atLeastLength(1)) {
-      let list$1 = list3.tail;
+    if (list4.atLeastLength(1)) {
+      let list$1 = list4.tail;
       loop$list = list$1;
       loop$count = count + 1;
     } else {
@@ -428,8 +458,8 @@ function length_loop(loop$list, loop$count) {
     }
   }
 }
-function length(list3) {
-  return length_loop(list3, 0);
+function length(list4) {
+  return length_loop(list4, 0);
 }
 function reverse_loop(loop$remaining, loop$accumulator) {
   while (true) {
@@ -445,20 +475,20 @@ function reverse_loop(loop$remaining, loop$accumulator) {
     }
   }
 }
-function reverse(list3) {
-  return reverse_loop(list3, toList([]));
+function reverse(list4) {
+  return reverse_loop(list4, toList([]));
 }
 function contains(loop$list, loop$elem) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let elem = loop$elem;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return false;
-    } else if (list3.atLeastLength(1) && isEqual(list3.head, elem)) {
-      let first$1 = list3.head;
+    } else if (list4.atLeastLength(1) && isEqual(list4.head, elem)) {
+      let first$1 = list4.head;
       return true;
     } else {
-      let rest$1 = list3.tail;
+      let rest$1 = list4.tail;
       loop$list = rest$1;
       loop$elem = elem;
     }
@@ -466,14 +496,14 @@ function contains(loop$list, loop$elem) {
 }
 function filter_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       let new_acc = (() => {
         let $ = fun(first$1);
         if ($) {
@@ -488,19 +518,19 @@ function filter_loop(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter(list3, predicate) {
-  return filter_loop(list3, predicate, toList([]));
+function filter(list4, predicate) {
+  return filter_loop(list4, predicate, toList([]));
 }
 function filter_map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       let new_acc = (() => {
         let $ = fun(first$1);
         if ($.isOk()) {
@@ -516,27 +546,27 @@ function filter_map_loop(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter_map(list3, fun) {
-  return filter_map_loop(list3, fun, toList([]));
+function filter_map(list4, fun) {
+  return filter_map_loop(list4, fun, toList([]));
 }
 function map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       loop$list = rest$1;
       loop$fun = fun;
       loop$acc = prepend(fun(first$1), acc);
     }
   }
 }
-function map2(list3, fun) {
-  return map_loop(list3, fun, toList([]));
+function map2(list4, fun) {
+  return map_loop(list4, fun, toList([]));
 }
 function append_loop(loop$first, loop$second) {
   while (true) {
@@ -569,33 +599,33 @@ function reverse_and_prepend(loop$prefix, loop$suffix) {
     }
   }
 }
-function concat_loop(loop$lists, loop$acc) {
+function flatten_loop(loop$lists, loop$acc) {
   while (true) {
     let lists = loop$lists;
     let acc = loop$acc;
     if (lists.hasLength(0)) {
       return reverse(acc);
     } else {
-      let list3 = lists.head;
+      let list4 = lists.head;
       let further_lists = lists.tail;
       loop$lists = further_lists;
-      loop$acc = reverse_and_prepend(list3, acc);
+      loop$acc = reverse_and_prepend(list4, acc);
     }
   }
 }
 function flatten2(lists) {
-  return concat_loop(lists, toList([]));
+  return flatten_loop(lists, toList([]));
 }
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return initial;
     } else {
-      let x = list3.head;
-      let rest$1 = list3.tail;
+      let x = list4.head;
+      let rest$1 = list4.tail;
       loop$list = rest$1;
       loop$initial = fun(initial, x);
       loop$fun = fun;
@@ -620,19 +650,19 @@ function index_fold_loop(loop$over, loop$acc, loop$with, loop$index) {
     }
   }
 }
-function index_fold(list3, initial, fun) {
-  return index_fold_loop(list3, initial, fun, 0);
+function index_fold(list4, initial, fun) {
+  return index_fold_loop(list4, initial, fun, 0);
 }
 function fold_until(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return initial;
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       let $ = fun(initial, first$1);
       if ($ instanceof Continue) {
         let next_accumulator = $[0];
@@ -648,13 +678,13 @@ function fold_until(loop$list, loop$initial, loop$fun) {
 }
 function find(loop$list, loop$is_desired) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let is_desired = loop$is_desired;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return new Error(void 0);
     } else {
-      let x = list3.head;
-      let rest$1 = list3.tail;
+      let x = list4.head;
+      let rest$1 = list4.tail;
       let $ = is_desired(x);
       if ($) {
         return new Ok(x);
@@ -667,22 +697,22 @@ function find(loop$list, loop$is_desired) {
 }
 function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$prev, loop$acc) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let compare4 = loop$compare;
     let growing = loop$growing;
     let direction = loop$direction;
     let prev = loop$prev;
     let acc = loop$acc;
     let growing$1 = prepend(prev, growing);
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       if (direction instanceof Ascending) {
         return prepend(reverse_loop(growing$1, toList([])), acc);
       } else {
         return prepend(growing$1, acc);
       }
     } else {
-      let new$1 = list3.head;
-      let rest$1 = list3.tail;
+      let new$1 = list4.head;
+      let rest$1 = list4.tail;
       let $ = compare4(prev, new$1);
       if ($ instanceof Gt && direction instanceof Descending) {
         loop$list = rest$1;
@@ -806,11 +836,11 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
     let compare4 = loop$compare;
     let acc = loop$acc;
     if (list1.hasLength(0)) {
-      let list3 = list22;
-      return reverse_loop(list3, acc);
+      let list4 = list22;
+      return reverse_loop(list4, acc);
     } else if (list22.hasLength(0)) {
-      let list3 = list1;
-      return reverse_loop(list3, acc);
+      let list4 = list1;
+      return reverse_loop(list4, acc);
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
@@ -872,11 +902,11 @@ function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
     let compare4 = loop$compare;
     let acc = loop$acc;
     if (list1.hasLength(0)) {
-      let list3 = list22;
-      return reverse_loop(list3, acc);
+      let list4 = list22;
+      return reverse_loop(list4, acc);
     } else if (list22.hasLength(0)) {
-      let list3 = list1;
-      return reverse_loop(list3, acc);
+      let list4 = list1;
+      return reverse_loop(list4, acc);
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
@@ -957,16 +987,16 @@ function merge_all(loop$sequences, loop$direction, loop$compare) {
     }
   }
 }
-function sort(list3, compare4) {
-  if (list3.hasLength(0)) {
+function sort(list4, compare4) {
+  if (list4.hasLength(0)) {
     return toList([]);
-  } else if (list3.hasLength(1)) {
-    let x = list3.head;
+  } else if (list4.hasLength(1)) {
+    let x = list4.head;
     return toList([x]);
   } else {
-    let x = list3.head;
-    let y = list3.tail.head;
-    let rest$1 = list3.tail.tail;
+    let x = list4.head;
+    let y = list4.tail.head;
+    let rest$1 = list4.tail.tail;
     let direction = (() => {
       let $ = compare4(x, y);
       if ($ instanceof Lt) {
@@ -988,16 +1018,16 @@ function sort(list3, compare4) {
     return merge_all(sequences$1, new Ascending(), compare4);
   }
 }
-function key_set(list3, key, value3) {
-  if (list3.hasLength(0)) {
+function key_set(list4, key, value3) {
+  if (list4.hasLength(0)) {
     return toList([[key, value3]]);
-  } else if (list3.atLeastLength(1) && isEqual(list3.head[0], key)) {
-    let k = list3.head[0];
-    let rest$1 = list3.tail;
+  } else if (list4.atLeastLength(1) && isEqual(list4.head[0], key)) {
+    let k = list4.head[0];
+    let rest$1 = list4.tail;
     return prepend([key, value3], rest$1);
   } else {
-    let first$1 = list3.head;
-    let rest$1 = list3.tail;
+    let first$1 = list4.head;
+    let rest$1 = list4.tail;
     return prepend(first$1, key_set(rest$1, key, value3));
   }
 }
@@ -1211,7 +1241,7 @@ function any(decoders) {
 function push_path(error, name) {
   let name$1 = identity(name);
   let decoder = any(
-    toList([string, (x) => {
+    toList([decode_string, (x) => {
       return map3(int(x), to_string);
     }])
   );
@@ -1226,7 +1256,12 @@ function push_path(error, name) {
       return identity(_pipe$1);
     }
   })();
-  return error.withFields({ path: prepend(name$2, error.path) });
+  let _record = error;
+  return new DecodeError(
+    _record.expected,
+    _record.found,
+    prepend(name$2, error.path)
+  );
 }
 function map_errors(result, f) {
   return map_error(
@@ -1235,9 +1270,6 @@ function map_errors(result, f) {
       return map2(_capture, f);
     }
   );
-}
-function string(data) {
-  return decode_string(data);
 }
 function field(name, inner_type) {
   return (value3) => {
@@ -1573,7 +1605,7 @@ function assocIndex(root, shift, hash, key, val, addedLeaf) {
         array: nodes
       };
     } else {
-      const newArray = spliceIn(root.array, idx, {
+      const newArray2 = spliceIn(root.array, idx, {
         type: ENTRY,
         k: key,
         v: val
@@ -1582,7 +1614,7 @@ function assocIndex(root, shift, hash, key, val, addedLeaf) {
       return {
         type: INDEX_NODE,
         bitmap: root.bitmap | bit,
-        array: newArray
+        array: newArray2
       };
     }
   }
@@ -2142,23 +2174,6 @@ function random_uniform() {
   }
   return random_uniform_result;
 }
-function regex_check(regex, string4) {
-  regex.lastIndex = 0;
-  return regex.test(string4);
-}
-function compile_regex(pattern, options) {
-  try {
-    let flags = "gu";
-    if (options.case_insensitive)
-      flags += "i";
-    if (options.multi_line)
-      flags += "m";
-    return new Ok(new RegExp(pattern, flags));
-  } catch (error) {
-    const number = (error.columnNumber || 0) | 0;
-    return new Error(new CompileError(error.message, number));
-  }
-}
 function new_map() {
   return Dict.new();
 }
@@ -2245,9 +2260,9 @@ function decode_field(value3, name) {
     return try_get_field(value3, name, not_a_map_error);
   }
 }
-function try_get_field(value3, field4, or_else) {
+function try_get_field(value3, field5, or_else) {
   try {
-    return field4 in value3 ? new Ok(new Some(value3[field4])) : or_else();
+    return field5 in value3 ? new Ok(new Some(value3[field5])) : or_else();
   } catch {
     return or_else();
   }
@@ -2368,8 +2383,8 @@ function inspectCustomType(record) {
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
-function inspectList(list3) {
-  return `[${list3.toArray().map(inspect).join(", ")}]`;
+function inspectList(list4) {
+  return `[${list4.toArray().map(inspect).join(", ")}]`;
 }
 function inspectBitArray(bits) {
   return `<<${Array.from(bits.buffer).join(", ")}>>`;
@@ -2378,87 +2393,44 @@ function inspectUtfCodepoint(codepoint2) {
   return `//utfcodepoint(${String.fromCodePoint(codepoint2.value)})`;
 }
 
-// build/dev/javascript/gleam_stdlib/gleam/float.mjs
-function negate(x) {
-  return -1 * x;
+// build/dev/javascript/gleam_stdlib/gleam/dict.mjs
+function insert(dict3, key, value3) {
+  return map_insert(key, value3, dict3);
 }
-function round2(x) {
-  let $ = x >= 0;
-  if ($) {
-    return round(x);
-  } else {
-    return 0 - round(negate(x));
-  }
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/int.mjs
-function absolute_value(x) {
-  let $ = x >= 0;
-  if ($) {
-    return x;
-  } else {
-    return x * -1;
-  }
-}
-function to_base16(x) {
-  return int_to_base_string(x, 16);
-}
-function compare2(a2, b) {
-  let $ = a2 === b;
-  if ($) {
-    return new Eq();
-  } else {
-    let $1 = a2 < b;
-    if ($1) {
-      return new Lt();
+function reverse_and_concat(loop$remaining, loop$accumulator) {
+  while (true) {
+    let remaining = loop$remaining;
+    let accumulator = loop$accumulator;
+    if (remaining.hasLength(0)) {
+      return accumulator;
     } else {
-      return new Gt();
+      let item = remaining.head;
+      let rest = remaining.tail;
+      loop$remaining = rest;
+      loop$accumulator = prepend(item, accumulator);
     }
   }
 }
-function min(a2, b) {
-  let $ = a2 < b;
-  if ($) {
-    return a2;
-  } else {
-    return b;
+function do_keys_loop(loop$list, loop$acc) {
+  while (true) {
+    let list4 = loop$list;
+    let acc = loop$acc;
+    if (list4.hasLength(0)) {
+      return reverse_and_concat(acc, toList([]));
+    } else {
+      let first2 = list4.head;
+      let rest = list4.tail;
+      loop$list = rest;
+      loop$acc = prepend(first2[0], acc);
+    }
   }
 }
-function max(a2, b) {
-  let $ = a2 > b;
-  if ($) {
-    return a2;
-  } else {
-    return b;
-  }
-}
-function clamp(x, min_bound, max_bound) {
-  let _pipe = x;
-  let _pipe$1 = min(_pipe, max_bound);
-  return max(_pipe$1, min_bound);
-}
-function random(max2) {
-  let _pipe = random_uniform() * identity(max2);
-  let _pipe$1 = floor(_pipe);
-  return round2(_pipe$1);
-}
-function divide(dividend, divisor) {
-  if (divisor === 0) {
-    return new Error(void 0);
-  } else {
-    let divisor$1 = divisor;
-    return new Ok(divideInt(dividend, divisor$1));
-  }
+function keys(dict3) {
+  let list_of_pairs = map_to_list(dict3);
+  return do_keys_loop(list_of_pairs, toList([]));
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
-function to_int(bool4) {
-  if (!bool4) {
-    return 0;
-  } else {
-    return 1;
-  }
-}
 function guard(requirement, consequence, alternative) {
   if (requirement) {
     return consequence;
@@ -2475,38 +2447,79 @@ function debug(term) {
   return term;
 }
 
+// build/dev/javascript/gleam_regexp/gleam_regexp_ffi.mjs
+function check(regex, string4) {
+  regex.lastIndex = 0;
+  return regex.test(string4);
+}
+function compile(pattern, options) {
+  try {
+    let flags = "gu";
+    if (options.case_insensitive)
+      flags += "i";
+    if (options.multi_line)
+      flags += "m";
+    return new Ok(new RegExp(pattern, flags));
+  } catch (error) {
+    const number = (error.columnNumber || 0) | 0;
+    return new Error(new CompileError(error.message, number));
+  }
+}
+
+// build/dev/javascript/gleam_regexp/gleam/regexp.mjs
+var CompileError = class extends CustomType {
+  constructor(error, byte_index) {
+    super();
+    this.error = error;
+    this.byte_index = byte_index;
+  }
+};
+var Options = class extends CustomType {
+  constructor(case_insensitive, multi_line) {
+    super();
+    this.case_insensitive = case_insensitive;
+    this.multi_line = multi_line;
+  }
+};
+function compile2(pattern, options) {
+  return compile(pattern, options);
+}
+function check2(regexp, string4) {
+  return check(regexp, string4);
+}
+
 // build/dev/javascript/gleam_stdlib/gleam/set.mjs
 var Set2 = class extends CustomType {
-  constructor(dict2) {
+  constructor(dict3) {
     super();
-    this.dict = dict2;
+    this.dict = dict3;
   }
 };
 function new$() {
   return new Set2(new_map());
 }
-function contains2(set, member) {
-  let _pipe = set.dict;
+function contains2(set2, member) {
+  let _pipe = set2.dict;
   let _pipe$1 = map_get(_pipe, member);
   return is_ok(_pipe$1);
 }
 var token = void 0;
 function from_list2(members) {
-  let dict2 = fold(
+  let dict3 = fold(
     members,
     new_map(),
     (m, k) => {
       return insert(m, k, token);
     }
   );
-  return new Set2(dict2);
+  return new Set2(dict3);
 }
 
 // build/dev/javascript/nibble/nibble/lexer.mjs
 var Matcher = class extends CustomType {
-  constructor(run4) {
+  constructor(run5) {
     super();
-    this.run = run4;
+    this.run = run5;
   }
 };
 var Keep = class extends CustomType {
@@ -2716,6 +2729,30 @@ function run(source, lexer2) {
   })(_pipe$1);
 }
 
+// build/dev/javascript/nibble/glearray_ffi.mjs
+function fromList(list4) {
+  return list4.toArray();
+}
+function arrayLength(array3) {
+  return array3.length;
+}
+function get(array3, index4) {
+  return array3[index4];
+}
+
+// build/dev/javascript/nibble/nibble/vendor/glearray.mjs
+function is_valid_index(array3, index4) {
+  return index4 >= 0 && index4 < arrayLength(array3);
+}
+function get2(array3, index4) {
+  let $ = is_valid_index(array3, index4);
+  if ($) {
+    return new Ok(get(array3, index4));
+  } else {
+    return new Error(void 0);
+  }
+}
+
 // build/dev/javascript/nibble/nibble.mjs
 var Parser = class extends CustomType {
   constructor(x0) {
@@ -2797,7 +2834,7 @@ function runwrap(state, parser3) {
   return parse3(state);
 }
 function next(state) {
-  let $ = map_get(state.src, state.idx);
+  let $ = get2(state.src, state.idx);
   if (!$.isOk()) {
     return [new None(), state];
   } else {
@@ -2805,7 +2842,10 @@ function next(state) {
     let tok = $[0].value;
     return [
       new Some(tok),
-      state.withFields({ idx: state.idx + 1, pos: span$1 })
+      (() => {
+        let _record = state;
+        return new State2(_record.src, state.idx + 1, span$1, _record.ctx);
+      })()
     ];
   }
 }
@@ -3023,14 +3063,12 @@ function to_deadends(loop$bag, loop$acc) {
   }
 }
 function run2(src, parser3) {
-  let src$1 = index_fold(
-    src,
-    new_map(),
-    (dict2, tok, idx) => {
-      return insert(dict2, idx, tok);
-    }
+  let init4 = new State2(
+    fromList(src),
+    0,
+    new Span(1, 1, 1, 1),
+    toList([])
   );
-  let init4 = new State2(src$1, 0, new Span(1, 1, 1, 1), toList([]));
   let $ = runwrap(init4, parser3);
   if ($ instanceof Cont) {
     let a2 = $[1];
@@ -3107,7 +3145,7 @@ var Other = class extends CustomType {
 };
 function lexer() {
   let options = new Options(false, true);
-  let $ = compile_regex("^[0-9]+$", options);
+  let $ = compile2("^[0-9]+$", options);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
@@ -3120,7 +3158,7 @@ function lexer() {
   }
   let digits_regex = $[0];
   let is_digits = (str) => {
-    return regex_check(digits_regex, str);
+    return check2(digits_regex, str);
   };
   return simple(
     toList([
@@ -3645,7 +3683,7 @@ function int_4() {
                   throw makeError(
                     "let_assert",
                     "rada/date",
-                    1091,
+                    1090,
                     "",
                     "Pattern match failed, no pattern matched the value.",
                     { value: token3 }
@@ -3662,7 +3700,7 @@ function int_4() {
             throw makeError(
               "let_assert",
               "rada/date",
-              1096,
+              1095,
               "",
               "Pattern match failed, no pattern matched the value.",
               { value: $ }
@@ -3690,7 +3728,7 @@ function int_3() {
               throw makeError(
                 "let_assert",
                 "rada/date",
-                1109,
+                1108,
                 "",
                 "Pattern match failed, no pattern matched the value.",
                 { value: token3 }
@@ -3707,7 +3745,7 @@ function int_3() {
         throw makeError(
           "let_assert",
           "rada/date",
-          1114,
+          1113,
           "",
           "Pattern match failed, no pattern matched the value.",
           { value: $ }
@@ -3741,7 +3779,7 @@ function int_2() {
               throw makeError(
                 "let_assert",
                 "rada/date",
-                1127,
+                1126,
                 "",
                 "Pattern match failed, no pattern matched the value.",
                 { value: token3 }
@@ -3758,7 +3796,7 @@ function int_2() {
         throw makeError(
           "let_assert",
           "rada/date",
-          1132,
+          1131,
           "",
           "Pattern match failed, no pattern matched the value.",
           { value: $ }
@@ -3766,38 +3804,6 @@ function int_2() {
       }
       let int4 = $[0];
       return return$(int4);
-    }
-  );
-}
-function parse_month_and_day(extended) {
-  return do$(
-    int_2(),
-    (month2) => {
-      let dash_count = to_int(extended);
-      return do$(
-        one_of(
-          toList([
-            (() => {
-              let _pipe = take_exactly(
-                token2(new Dash()),
-                dash_count
-              );
-              return then$3(_pipe, (_) => {
-                return int_2();
-              });
-            })(),
-            (() => {
-              let _pipe = eof();
-              return then$3(_pipe, (_) => {
-                return succeed(1);
-              });
-            })()
-          ])
-        ),
-        (day2) => {
-          return return$(new MonthAndDay(month2, day2));
-        }
-      );
     }
   );
 }
@@ -3812,7 +3818,7 @@ function int_1() {
         throw makeError(
           "let_assert",
           "rada/date",
-          1143,
+          1142,
           "",
           "Pattern match failed, no pattern matched the value.",
           { value: tokens }
@@ -3824,7 +3830,7 @@ function int_1() {
         throw makeError(
           "let_assert",
           "rada/date",
-          1145,
+          1144,
           "",
           "Pattern match failed, no pattern matched the value.",
           { value: $ }
@@ -3835,67 +3841,10 @@ function int_1() {
     }
   );
 }
-function parse_week_and_weekday(extended) {
-  return do$(
-    token2(new WeekToken()),
-    (_) => {
-      return do$(
-        int_2(),
-        (week) => {
-          let dash_count = to_int(extended);
-          return do$(
-            one_of(
-              toList([
-                (() => {
-                  let _pipe = take_exactly(
-                    token2(new Dash()),
-                    dash_count
-                  );
-                  return then$3(_pipe, (_2) => {
-                    return int_1();
-                  });
-                })(),
-                succeed(1)
-              ])
-            ),
-            (day2) => {
-              return return$(new WeekAndWeekday(week, day2));
-            }
-          );
-        }
-      );
-    }
-  );
-}
-function parse_day_of_year() {
-  return one_of(
-    toList([
-      (() => {
-        let _pipe = token2(new Dash());
-        return then$3(
-          _pipe,
-          (_) => {
-            return one_of(
-              toList([
-                backtrackable(parse_ordinal_day()),
-                parse_month_and_day(true),
-                parse_week_and_weekday(true)
-              ])
-            );
-          }
-        );
-      })(),
-      backtrackable(parse_month_and_day(false)),
-      parse_ordinal_day(),
-      parse_week_and_weekday(false),
-      succeed(new OrdinalDay(1))
-    ])
-  );
-}
 function compare3(date1, date2) {
   let rd_1 = date1[0];
   let rd_2 = date2[0];
-  return compare2(rd_1, rd_2);
+  return compare(rd_1, rd_2);
 }
 function month_to_number(month2) {
   if (month2 instanceof Jan) {
@@ -4139,50 +4088,6 @@ function to_calendar_date_helper(loop$year, loop$month, loop$ordinal_day) {
       return new CalendarDate(year2, month2, ordinal_day2);
     }
   }
-}
-function days_before_month(year2, month2) {
-  let leap_days = to_int(is_leap_year(year2));
-  if (month2 instanceof Jan) {
-    return 0;
-  } else if (month2 instanceof Feb) {
-    return 31;
-  } else if (month2 instanceof Mar) {
-    return 59 + leap_days;
-  } else if (month2 instanceof Apr) {
-    return 90 + leap_days;
-  } else if (month2 instanceof May) {
-    return 120 + leap_days;
-  } else if (month2 instanceof Jun) {
-    return 151 + leap_days;
-  } else if (month2 instanceof Jul) {
-    return 181 + leap_days;
-  } else if (month2 instanceof Aug) {
-    return 212 + leap_days;
-  } else if (month2 instanceof Sep) {
-    return 243 + leap_days;
-  } else if (month2 instanceof Oct) {
-    return 273 + leap_days;
-  } else if (month2 instanceof Nov) {
-    return 304 + leap_days;
-  } else {
-    return 334 + leap_days;
-  }
-}
-function from_calendar_date(year2, month2, day2) {
-  return new RD(
-    days_before_year(year2) + days_before_month(year2, month2) + clamp(
-      day2,
-      1,
-      days_in_month(year2, month2)
-    )
-  );
-}
-function today() {
-  let $ = get_year_month_day();
-  let year$1 = $[0];
-  let month_number$1 = $[1];
-  let day$1 = $[2];
-  return from_calendar_date(year$1, number_to_month(month_number$1), day$1);
 }
 function div_with_remainder(a2, b) {
   return [floor_div(a2, b), modulo_unwrap(a2, b)];
@@ -4520,6 +4425,182 @@ function from_ordinal_parts(year2, ordinal) {
     return new Ok(new RD(days_before_year(year2) + ordinal));
   }
 }
+function from_week_parts(week_year2, week_number2, weekday_number2) {
+  let weeks_in_year = (() => {
+    let $2 = is_53_week_year(week_year2);
+    if ($2) {
+      return 53;
+    } else {
+      return 52;
+    }
+  })();
+  let $ = is_between_int(week_number2, 1, weeks_in_year);
+  let $1 = is_between_int(weekday_number2, 1, 7);
+  if (!$) {
+    return new Error(
+      "Invalid week date: " + ("week " + to_string(week_number2) + " is out of range") + (" (1 to " + to_string(
+        weeks_in_year
+      ) + ")") + (" for " + to_string(week_year2)) + ("; received (year " + to_string(
+        week_year2
+      ) + ", week " + to_string(week_number2) + ", weekday " + to_string(
+        weekday_number2
+      ) + ")")
+    );
+  } else if ($ && !$1) {
+    return new Error(
+      "Invalid week date: " + ("weekday " + to_string(weekday_number2) + " is out of range") + " (1 to 7)" + ("; received (year " + to_string(
+        week_year2
+      ) + ", week " + to_string(week_number2) + ", weekday " + to_string(
+        weekday_number2
+      ) + ")")
+    );
+  } else {
+    return new Ok(
+      new RD(
+        days_before_week_year(week_year2) + (week_number2 - 1) * 7 + weekday_number2
+      )
+    );
+  }
+}
+function is_between(value3, lower, upper) {
+  let value_rd = value3[0];
+  let lower_rd = lower[0];
+  let upper_rd = upper[0];
+  return is_between_int(value_rd, lower_rd, upper_rd);
+}
+function to_int(bool4) {
+  if (!bool4) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+function parse_month_and_day(extended) {
+  return do$(
+    int_2(),
+    (month2) => {
+      let dash_count = to_int(extended);
+      return do$(
+        one_of(
+          toList([
+            (() => {
+              let _pipe = take_exactly(
+                token2(new Dash()),
+                dash_count
+              );
+              return then$3(_pipe, (_) => {
+                return int_2();
+              });
+            })(),
+            (() => {
+              let _pipe = eof();
+              return then$3(_pipe, (_) => {
+                return succeed(1);
+              });
+            })()
+          ])
+        ),
+        (day2) => {
+          return return$(new MonthAndDay(month2, day2));
+        }
+      );
+    }
+  );
+}
+function parse_week_and_weekday(extended) {
+  return do$(
+    token2(new WeekToken()),
+    (_) => {
+      return do$(
+        int_2(),
+        (week) => {
+          let dash_count = to_int(extended);
+          return do$(
+            one_of(
+              toList([
+                (() => {
+                  let _pipe = take_exactly(
+                    token2(new Dash()),
+                    dash_count
+                  );
+                  return then$3(_pipe, (_2) => {
+                    return int_1();
+                  });
+                })(),
+                succeed(1)
+              ])
+            ),
+            (day2) => {
+              return return$(new WeekAndWeekday(week, day2));
+            }
+          );
+        }
+      );
+    }
+  );
+}
+function parse_day_of_year() {
+  return one_of(
+    toList([
+      (() => {
+        let _pipe = token2(new Dash());
+        return then$3(
+          _pipe,
+          (_) => {
+            return one_of(
+              toList([
+                backtrackable(parse_ordinal_day()),
+                parse_month_and_day(true),
+                parse_week_and_weekday(true)
+              ])
+            );
+          }
+        );
+      })(),
+      backtrackable(parse_month_and_day(false)),
+      parse_ordinal_day(),
+      parse_week_and_weekday(false),
+      succeed(new OrdinalDay(1))
+    ])
+  );
+}
+function days_before_month(year2, month2) {
+  let leap_days = to_int(is_leap_year(year2));
+  if (month2 instanceof Jan) {
+    return 0;
+  } else if (month2 instanceof Feb) {
+    return 31;
+  } else if (month2 instanceof Mar) {
+    return 59 + leap_days;
+  } else if (month2 instanceof Apr) {
+    return 90 + leap_days;
+  } else if (month2 instanceof May) {
+    return 120 + leap_days;
+  } else if (month2 instanceof Jun) {
+    return 151 + leap_days;
+  } else if (month2 instanceof Jul) {
+    return 181 + leap_days;
+  } else if (month2 instanceof Aug) {
+    return 212 + leap_days;
+  } else if (month2 instanceof Sep) {
+    return 243 + leap_days;
+  } else if (month2 instanceof Oct) {
+    return 273 + leap_days;
+  } else if (month2 instanceof Nov) {
+    return 304 + leap_days;
+  } else {
+    return 334 + leap_days;
+  }
+}
+function from_calendar_date(year2, month2, day2) {
+  return new RD(
+    days_before_year(year2) + days_before_month(year2, month2) + clamp(
+      day2,
+      1,
+      days_in_month(year2, month2)
+    )
+  );
+}
 function from_calendar_parts(year2, month_number2, day2) {
   let $ = is_between_int(month_number2, 1, 12);
   let $1 = is_between_int(
@@ -4565,43 +4646,6 @@ function from_calendar_parts(year2, month_number2, day2) {
     );
   }
 }
-function from_week_parts(week_year2, week_number2, weekday_number2) {
-  let weeks_in_year = (() => {
-    let $2 = is_53_week_year(week_year2);
-    if ($2) {
-      return 53;
-    } else {
-      return 52;
-    }
-  })();
-  let $ = is_between_int(week_number2, 1, weeks_in_year);
-  let $1 = is_between_int(weekday_number2, 1, 7);
-  if (!$) {
-    return new Error(
-      "Invalid week date: " + ("week " + to_string(week_number2) + " is out of range") + (" (1 to " + to_string(
-        weeks_in_year
-      ) + ")") + (" for " + to_string(week_year2)) + ("; received (year " + to_string(
-        week_year2
-      ) + ", week " + to_string(week_number2) + ", weekday " + to_string(
-        weekday_number2
-      ) + ")")
-    );
-  } else if ($ && !$1) {
-    return new Error(
-      "Invalid week date: " + ("weekday " + to_string(weekday_number2) + " is out of range") + " (1 to 7)" + ("; received (year " + to_string(
-        week_year2
-      ) + ", week " + to_string(week_number2) + ", weekday " + to_string(
-        weekday_number2
-      ) + ")")
-    );
-  } else {
-    return new Ok(
-      new RD(
-        days_before_week_year(week_year2) + (week_number2 - 1) * 7 + weekday_number2
-      )
-    );
-  }
-}
 function from_year_and_day_of_year(year2, day_of_year) {
   if (day_of_year instanceof MonthAndDay) {
     let month_number$1 = day_of_year[0];
@@ -4635,7 +4679,7 @@ function from_iso_string(str) {
     throw makeError(
       "let_assert",
       "rada/date",
-      950,
+      949,
       "from_iso_string",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -4688,11 +4732,12 @@ function from_iso_string(str) {
     return new Error("Expected a date in ISO 8601 format");
   }
 }
-function is_between(value3, lower, upper) {
-  let value_rd = value3[0];
-  let lower_rd = lower[0];
-  let upper_rd = upper[0];
-  return is_between_int(value_rd, lower_rd, upper_rd);
+function today() {
+  let $ = get_year_month_day();
+  let year$1 = $[0];
+  let month_number$1 = $[1];
+  let day$1 = $[2];
+  return from_calendar_date(year$1, number_to_month(month_number$1), day$1);
 }
 
 // build/dev/javascript/budget_test/budget_test.mjs
@@ -4844,7 +4889,8 @@ function int_to_money(i) {
   );
 }
 function negate3(m) {
-  return m.withFields({ is_neg: true });
+  let _record = m;
+  return new Money(_record.s, _record.b, true);
 }
 function string_to_money(raw) {
   let $ = (() => {
@@ -5109,7 +5155,20 @@ function is_valid_host_within_brackets_char(char) {
   return 48 >= char && char <= 57 || 65 >= char && char <= 90 || 97 >= char && char <= 122 || char === 58 || char === 46;
 }
 function parse_fragment(rest, pieces) {
-  return new Ok(pieces.withFields({ fragment: new Some(rest) }));
+  return new Ok(
+    (() => {
+      let _record = pieces;
+      return new Uri(
+        _record.scheme,
+        _record.userinfo,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query,
+        new Some(rest)
+      );
+    })()
+  );
 }
 function parse_query_with_question_mark_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
   while (true) {
@@ -5123,10 +5182,34 @@ function parse_query_with_question_mark_loop(loop$original, loop$uri_string, loo
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
       let query = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ query: new Some(query) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          _record.host,
+          _record.port,
+          _record.path,
+          new Some(query),
+          _record.fragment
+        );
+      })();
       return parse_fragment(rest, pieces$1);
     } else if (uri_string === "") {
-      return new Ok(pieces.withFields({ query: new Some(original) }));
+      return new Ok(
+        (() => {
+          let _record = pieces;
+          return new Uri(
+            _record.scheme,
+            _record.userinfo,
+            _record.host,
+            _record.port,
+            _record.path,
+            new Some(original),
+            _record.fragment
+          );
+        })()
+      );
     } else {
       let $ = pop_codeunit(uri_string);
       let rest = $[1];
@@ -5149,15 +5232,50 @@ function parse_path_loop(loop$original, loop$uri_string, loop$pieces, loop$size)
     if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
       let path = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ path });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          _record.host,
+          _record.port,
+          path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
       let path = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ path });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          _record.host,
+          _record.port,
+          path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_fragment(rest, pieces$1);
     } else if (uri_string === "") {
-      return new Ok(pieces.withFields({ path: original }));
+      return new Ok(
+        (() => {
+          let _record = pieces;
+          return new Uri(
+            _record.scheme,
+            _record.userinfo,
+            _record.host,
+            _record.port,
+            original,
+            _record.query,
+            _record.fragment
+          );
+        })()
+      );
     } else {
       let $ = pop_codeunit(uri_string);
       let rest = $[1];
@@ -5228,17 +5346,63 @@ function parse_port_loop(loop$uri_string, loop$pieces, loop$port) {
       loop$port = port * 10 + 9;
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
-      let pieces$1 = pieces.withFields({ port: new Some(port) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          _record.host,
+          new Some(port),
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
-      let pieces$1 = pieces.withFields({ port: new Some(port) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          _record.host,
+          new Some(port),
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_fragment(rest, pieces$1);
     } else if (uri_string.startsWith("/")) {
-      let pieces$1 = pieces.withFields({ port: new Some(port) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          _record.host,
+          new Some(port),
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_path(uri_string, pieces$1);
     } else if (uri_string === "") {
-      return new Ok(pieces.withFields({ port: new Some(port) }));
+      return new Ok(
+        (() => {
+          let _record = pieces;
+          return new Uri(
+            _record.scheme,
+            _record.userinfo,
+            _record.host,
+            new Some(port),
+            _record.path,
+            _record.query,
+            _record.fragment
+          );
+        })()
+      );
     } else {
       return new Error(void 0);
     }
@@ -5298,24 +5462,81 @@ function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loo
     let pieces = loop$pieces;
     let size = loop$size;
     if (uri_string === "") {
-      return new Ok(pieces.withFields({ host: new Some(original) }));
+      return new Ok(
+        (() => {
+          let _record = pieces;
+          return new Uri(
+            _record.scheme,
+            _record.userinfo,
+            new Some(original),
+            _record.port,
+            _record.path,
+            _record.query,
+            _record.fragment
+          );
+        })()
+      );
     } else if (uri_string.startsWith(":")) {
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          new Some(host),
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_port(uri_string, pieces$1);
     } else if (uri_string.startsWith("/")) {
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          new Some(host),
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_path(uri_string, pieces$1);
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          new Some(host),
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          new Some(host),
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_fragment(rest, pieces$1);
     } else {
       let $ = pop_codeunit(uri_string);
@@ -5334,20 +5555,55 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
     let pieces = loop$pieces;
     let size = loop$size;
     if (uri_string === "") {
-      return new Ok(pieces.withFields({ host: new Some(uri_string) }));
+      return new Ok(
+        (() => {
+          let _record = pieces;
+          return new Uri(
+            _record.scheme,
+            _record.userinfo,
+            new Some(uri_string),
+            _record.port,
+            _record.path,
+            _record.query,
+            _record.fragment
+          );
+        })()
+      );
     } else if (uri_string.startsWith("]") && size === 0) {
       let rest = uri_string.slice(1);
       return parse_port(rest, pieces);
     } else if (uri_string.startsWith("]")) {
       let rest = uri_string.slice(1);
       let host = string_codeunit_slice(original, 0, size + 1);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          new Some(host),
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_port(rest, pieces$1);
     } else if (uri_string.startsWith("/") && size === 0) {
       return parse_path(uri_string, pieces);
     } else if (uri_string.startsWith("/")) {
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          new Some(host),
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_path(uri_string, pieces$1);
     } else if (uri_string.startsWith("?") && size === 0) {
       let rest = uri_string.slice(1);
@@ -5355,7 +5611,18 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          new Some(host),
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#") && size === 0) {
       let rest = uri_string.slice(1);
@@ -5363,7 +5630,18 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ host: new Some(host) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          new Some(host),
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_fragment(rest, pieces$1);
     } else {
       let $ = pop_codeunit(uri_string);
@@ -5396,10 +5674,34 @@ function parse_host(uri_string, pieces) {
   if (uri_string.startsWith("[")) {
     return parse_host_within_brackets(uri_string, pieces);
   } else if (uri_string.startsWith(":")) {
-    let pieces$1 = pieces.withFields({ host: new Some("") });
+    let pieces$1 = (() => {
+      let _record = pieces;
+      return new Uri(
+        _record.scheme,
+        _record.userinfo,
+        new Some(""),
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+    })();
     return parse_port(uri_string, pieces$1);
   } else if (uri_string === "") {
-    return new Ok(pieces.withFields({ host: new Some("") }));
+    return new Ok(
+      (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          new Some(""),
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })()
+    );
   } else {
     return parse_host_outside_of_brackets(uri_string, pieces);
   }
@@ -5416,7 +5718,18 @@ function parse_userinfo_loop(loop$original, loop$uri_string, loop$pieces, loop$s
     } else if (uri_string.startsWith("@")) {
       let rest = uri_string.slice(1);
       let userinfo = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({ userinfo: new Some(userinfo) });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          new Some(userinfo),
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_host(rest, pieces$1);
     } else if (uri_string === "") {
       return parse_host(original, pieces);
@@ -5441,7 +5754,20 @@ function parse_authority_pieces(string4, pieces) {
 }
 function parse_authority_with_slashes(uri_string, pieces) {
   if (uri_string === "//") {
-    return new Ok(pieces.withFields({ host: new Some("") }));
+    return new Ok(
+      (() => {
+        let _record = pieces;
+        return new Uri(
+          _record.scheme,
+          _record.userinfo,
+          new Some(""),
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })()
+    );
   } else if (uri_string.startsWith("//")) {
     let rest = uri_string.slice(2);
     return parse_authority_pieces(rest, pieces);
@@ -5459,9 +5785,18 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
       return parse_authority_with_slashes(uri_string, pieces);
     } else if (uri_string.startsWith("/")) {
       let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({
-        scheme: new Some(lowercase(scheme))
-      });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          new Some(lowercase(scheme)),
+          _record.userinfo,
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_authority_with_slashes(uri_string, pieces$1);
     } else if (uri_string.startsWith("?") && size === 0) {
       let rest = uri_string.slice(1);
@@ -5469,9 +5804,18 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
       let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({
-        scheme: new Some(lowercase(scheme))
-      });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          new Some(lowercase(scheme)),
+          _record.userinfo,
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#") && size === 0) {
       let rest = uri_string.slice(1);
@@ -5479,21 +5823,52 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
       let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({
-        scheme: new Some(lowercase(scheme))
-      });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          new Some(lowercase(scheme)),
+          _record.userinfo,
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_fragment(rest, pieces$1);
     } else if (uri_string.startsWith(":") && size === 0) {
       return new Error(void 0);
     } else if (uri_string.startsWith(":")) {
       let rest = uri_string.slice(1);
       let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = pieces.withFields({
-        scheme: new Some(lowercase(scheme))
-      });
+      let pieces$1 = (() => {
+        let _record = pieces;
+        return new Uri(
+          new Some(lowercase(scheme)),
+          _record.userinfo,
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query,
+          _record.fragment
+        );
+      })();
       return parse_authority_with_slashes(rest, pieces$1);
     } else if (uri_string === "") {
-      return new Ok(pieces.withFields({ path: original }));
+      return new Ok(
+        (() => {
+          let _record = pieces;
+          return new Uri(
+            _record.scheme,
+            _record.userinfo,
+            _record.host,
+            _record.port,
+            original,
+            _record.query,
+            _record.fragment
+          );
+        })()
+      );
     } else {
       let $ = pop_codeunit(uri_string);
       let rest = $[1];
@@ -5678,11 +6053,11 @@ var Effect = class extends CustomType {
     this.all = all;
   }
 };
-function custom2(run4) {
+function custom2(run5) {
   return new Effect(
     toList([
       (actions) => {
-        return run4(actions.dispatch, actions.emit, actions.select, actions.root);
+        return run5(actions.dispatch, actions.emit, actions.select, actions.root);
       }
     ])
   );
@@ -6695,7 +7070,17 @@ function from_uri(uri) {
 }
 function set_header(request, key, value3) {
   let headers = key_set(request.headers, lowercase(key), value3);
-  return request.withFields({ headers });
+  let _record = request;
+  return new Request(
+    _record.method,
+    headers,
+    _record.body,
+    _record.scheme,
+    _record.host,
+    _record.port,
+    _record.path,
+    _record.query
+  );
 }
 function set_body(req, body) {
   let method = req.method;
@@ -6708,7 +7093,17 @@ function set_body(req, body) {
   return new Request(method, headers, body, scheme, host, port, path, query);
 }
 function set_method(req, method) {
-  return req.withFields({ method });
+  let _record = req;
+  return new Request(
+    method,
+    _record.headers,
+    _record.body,
+    _record.scheme,
+    _record.host,
+    _record.port,
+    _record.path,
+    _record.query
+  );
 }
 function to(url) {
   let _pipe = url;
@@ -6876,9 +7271,9 @@ var OtherError = class extends CustomType {
 var Unauthorized = class extends CustomType {
 };
 var ExpectTextResponse = class extends CustomType {
-  constructor(run4) {
+  constructor(run5) {
     super();
-    this.run = run4;
+    this.run = run5;
   }
 };
 function do_send(req, expect, dispatch) {
@@ -6904,7 +7299,7 @@ function do_send(req, expect, dispatch) {
   tap(_pipe$3, dispatch);
   return void 0;
 }
-function get(url, expect) {
+function get3(url, expect) {
   return from(
     (dispatch) => {
       let $ = to(url);
@@ -7092,7 +7487,7 @@ function init2(handler) {
 }
 
 // build/dev/javascript/decode/decode_ffi.mjs
-function strict_index(data, key) {
+function strict_index2(data, key) {
   const int4 = Number.isInteger(key);
   if (data instanceof Dict || data instanceof WeakMap || data instanceof Map) {
     const token3 = {};
@@ -7117,7 +7512,7 @@ function strict_index(data, key) {
   }
   return new Error(int4 ? "Indexable" : "Dict");
 }
-function list(data, decode3, pushPath, index4, emptyList) {
+function list2(data, decode3, pushPath, index4, emptyList) {
   if (!(data instanceof List || Array.isArray(data))) {
     let error = new DecodeError("List", classify_dynamic(data), emptyList);
     return [emptyList, List.fromArray([error])];
@@ -7143,7 +7538,7 @@ var Decoder = class extends CustomType {
     this.function = function$;
   }
 };
-function run3(data, decoder) {
+function run4(data, decoder) {
   let $ = decoder.function(data);
   let maybe_invalid_data = $[0];
   let errors = $[1];
@@ -7153,7 +7548,7 @@ function run3(data, decoder) {
     return new Error(errors);
   }
 }
-function success(data) {
+function success2(data) {
   return new Decoder((_) => {
     return [data, toList([])];
   });
@@ -7169,7 +7564,7 @@ function run_dynamic_function(data, zero, f) {
   }
 }
 function decode_string2(data) {
-  return run_dynamic_function(data, "", string);
+  return run_dynamic_function(data, "", decode_string);
 }
 function decode_bool2(data) {
   return run_dynamic_function(data, false, bool);
@@ -7203,10 +7598,10 @@ function optional3(inner) {
 var string3 = /* @__PURE__ */ new Decoder(decode_string2);
 var bool3 = /* @__PURE__ */ new Decoder(decode_bool2);
 var int3 = /* @__PURE__ */ new Decoder(decode_int2);
-function list2(inner) {
+function list3(inner) {
   return new Decoder(
     (data) => {
-      return list(
+      return list2(
         data,
         inner.function,
         (p2, k) => {
@@ -7221,7 +7616,7 @@ function list2(inner) {
 function push_path2(layer, path) {
   let decoder = any(
     toList([
-      string,
+      decode_string,
       (x) => {
         return map3(int(x), to_string);
       }
@@ -7243,7 +7638,12 @@ function push_path2(layer, path) {
   let errors = map2(
     layer[1],
     (error) => {
-      return error.withFields({ path: append(path$1, error.path) });
+      let _record = error;
+      return new DecodeError(
+        _record.expected,
+        _record.found,
+        append(path$1, error.path)
+      );
     }
   );
   return [layer[0], errors];
@@ -7261,7 +7661,7 @@ function index3(loop$path, loop$position, loop$inner, loop$data, loop$handle_mis
     } else {
       let key = path.head;
       let path$1 = path.tail;
-      let $ = strict_index(data, key);
+      let $ = strict_index2(data, key);
       if ($.isOk() && $[0] instanceof Some) {
         let data$1 = $[0][0];
         loop$path = path$1;
@@ -7311,7 +7711,7 @@ function subfield(field_path, field_decoder, next2) {
     }
   );
 }
-function field3(field_name, field_decoder, next2) {
+function field4(field_name, field_decoder, next2) {
   return subfield(toList([field_name]), field_decoder, next2);
 }
 
@@ -7720,19 +8120,19 @@ function month_by_number(month2) {
 
 // build/dev/javascript/budget_fe/budget_fe/internals/decoders.mjs
 function money_decoder() {
-  let money_decoder$1 = field3(
+  let money_decoder$1 = field4(
     "s",
     int3,
     (s) => {
-      return field3(
+      return field4(
         "b",
         int3,
         (b) => {
-          return field3(
+          return field4(
             "is_neg",
             bool3,
             (is_neg2) => {
-              return success(new Money(s, b, is_neg2));
+              return success2(new Money(s, b, is_neg2));
             }
           );
         }
@@ -7742,42 +8142,42 @@ function money_decoder() {
   return money_decoder$1;
 }
 function month_decoder() {
-  return field3(
+  return field4(
     "month",
     int3,
     (month2) => {
-      return field3(
+      return field4(
         "year",
         int3,
         (year2) => {
-          return success(new MonthInYear(month2, year2));
+          return success2(new MonthInYear(month2, year2));
         }
       );
     }
   );
 }
 function target_decoder() {
-  let monthly_decoder = field3(
+  let monthly_decoder = field4(
     "money",
     money_decoder(),
     (money) => {
-      return success(new Monthly(money));
+      return success2(new Monthly(money));
     }
   );
-  let custom_decoder = field3(
+  let custom_decoder = field4(
     "money",
     money_decoder(),
     (money) => {
-      return field3(
+      return field4(
         "date",
         month_decoder(),
         (date) => {
-          return success(new Custom(money, date));
+          return success2(new Custom(money, date));
         }
       );
     }
   );
-  let target_decoder$1 = field3(
+  let target_decoder$1 = field4(
     "type",
     string3,
     (tag) => {
@@ -7791,23 +8191,23 @@ function target_decoder() {
   return target_decoder$1;
 }
 function category_decoder() {
-  let category_decoder$1 = field3(
+  let category_decoder$1 = field4(
     "id",
     string3,
     (id2) => {
-      return field3(
+      return field4(
         "name",
         string3,
         (name) => {
-          return field3(
+          return field4(
             "target",
             optional3(target_decoder()),
             (target) => {
-              return field3(
+              return field4(
                 "inflow",
                 bool3,
                 (inflow) => {
-                  return success(new Category(id2, name, target, inflow));
+                  return success2(new Category(id2, name, target, inflow));
                 }
               );
             }
@@ -7819,27 +8219,27 @@ function category_decoder() {
   return category_decoder$1;
 }
 function transaction_decoder() {
-  let transaction_decoder$1 = field3(
+  let transaction_decoder$1 = field4(
     "id",
     string3,
     (id2) => {
-      return field3(
+      return field4(
         "date",
         int3,
         (date) => {
-          return field3(
+          return field4(
             "payee",
             string3,
             (payee) => {
-              return field3(
+              return field4(
                 "category_id",
                 string3,
                 (category_id) => {
-                  return field3(
+                  return field4(
                     "value",
                     money_decoder(),
                     (value3) => {
-                      return success(
+                      return success2(
                         new Transaction(
                           id2,
                           from_rata_die(date),
@@ -7887,15 +8287,15 @@ function transaction_encode(t) {
   );
 }
 function cycle_decoder() {
-  let cycle_decoder$1 = field3(
+  let cycle_decoder$1 = field4(
     "month",
     int3,
     (month2) => {
-      return field3(
+      return field4(
         "year",
         int3,
         (year2) => {
-          return success(
+          return success2(
             new Cycle(
               year2,
               (() => {
@@ -7911,28 +8311,28 @@ function cycle_decoder() {
   return cycle_decoder$1;
 }
 function id_decoder() {
-  return field3("id", string3, (id2) => {
-    return success(id2);
+  return field4("id", string3, (id2) => {
+    return success2(id2);
   });
 }
 function allocation_decoder() {
-  let allocation_decoder$1 = field3(
+  let allocation_decoder$1 = field4(
     "id",
     string3,
     (id2) => {
-      return field3(
+      return field4(
         "amount",
         money_decoder(),
         (amount) => {
-          return field3(
+          return field4(
             "category_id",
             string3,
             (category_id) => {
-              return field3(
+              return field4(
                 "date",
                 cycle_decoder(),
                 (date) => {
-                  return success(
+                  return success2(
                     new Allocation(id2, amount, category_id, date)
                   );
                 }
@@ -8059,7 +8459,7 @@ function add_transaction_eff(transaction_form, amount, cat) {
     transaction_encode(t),
     expect_json(
       (d) => {
-        return run3(d, transaction_decoder());
+        return run4(d, transaction_decoder());
       },
       (var0) => {
         return new AddTransactionResult(var0);
@@ -8074,10 +8474,10 @@ function add_category(name) {
     object2(toList([["name", string2(name)]])),
     expect_json(
       (d) => {
-        return run3(
+        return run4(
           d,
-          field3("id", string3, (id2) => {
-            return success(id2);
+          field4("id", string3, (id2) => {
+            return success2(id2);
           })
         );
       },
@@ -8089,12 +8489,12 @@ function add_category(name) {
 }
 function get_allocations(cycle) {
   let url = "http://localho.st:8000/allocations";
-  let decoder = list2(allocation_decoder());
-  return get(
+  let decoder = list3(allocation_decoder());
+  return get3(
     url,
     expect_json(
       (d) => {
-        return run3(d, decoder);
+        return run4(d, decoder);
       },
       (var0) => {
         return new Allocations(var0);
@@ -8104,12 +8504,12 @@ function get_allocations(cycle) {
 }
 function get_categories() {
   let url = "http://localho.st:8000/categories";
-  let decoder = list2(category_decoder());
-  return get(
+  let decoder = list3(category_decoder());
+  return get3(
     url,
     expect_json(
       (d) => {
-        return run3(d, decoder);
+        return run4(d, decoder);
       },
       (var0) => {
         return new Categories(var0);
@@ -8119,12 +8519,12 @@ function get_categories() {
 }
 function get_transactions() {
   let url = "http://localho.st:8000/transactions";
-  let decoder = list2(transaction_decoder());
-  return get(
+  let decoder = list3(transaction_decoder());
+  return get3(
     url,
     expect_json(
       (d) => {
-        return run3(d, decoder);
+        return run4(d, decoder);
       },
       (var0) => {
         return new Transactions(var0);
@@ -8139,7 +8539,7 @@ function create_allocation_eff(money, category_id, cycle) {
     allocation_encode(new None(), money, category_id, cycle),
     expect_json(
       (d) => {
-        return run3(d, id_decoder());
+        return run4(d, id_decoder());
       },
       (var0) => {
         return new SaveAllocationResult(var0);
@@ -8154,7 +8554,17 @@ function update_allocation_eff(a2, amount) {
     return map3(
       _pipe,
       (req2) => {
-        return req2.withFields({ method: new Put() });
+        let _record = req2;
+        return new Request(
+          new Put(),
+          _record.headers,
+          _record.body,
+          _record.scheme,
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query
+        );
       }
     );
   })();
@@ -8178,7 +8588,7 @@ function update_allocation_eff(a2, amount) {
       })(),
       expect_json(
         (d) => {
-          return run3(d, id_decoder());
+          return run4(d, id_decoder());
         },
         (var0) => {
           return new SaveAllocationResult(var0);
@@ -8204,7 +8614,17 @@ function delete_category_eff(c_id) {
     return map3(
       _pipe,
       (req2) => {
-        return req2.withFields({ method: new Delete() });
+        let _record = req2;
+        return new Request(
+          new Delete(),
+          _record.headers,
+          _record.body,
+          _record.scheme,
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query
+        );
       }
     );
   })();
@@ -8214,7 +8634,7 @@ function delete_category_eff(c_id) {
       req$1,
       expect_json(
         (d) => {
-          return run3(d, id_decoder());
+          return run4(d, id_decoder());
         },
         (var0) => {
           return new CategoryDeleteResult(var0);
@@ -8232,7 +8652,17 @@ function update_transaction_eff(t) {
     return map3(
       _pipe,
       (req2) => {
-        return req2.withFields({ method: new Put() });
+        let _record = req2;
+        return new Request(
+          new Put(),
+          _record.headers,
+          _record.body,
+          _record.scheme,
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query
+        );
       }
     );
   })();
@@ -8249,7 +8679,7 @@ function update_transaction_eff(t) {
       })(),
       expect_json(
         (d) => {
-          return run3(d, id_decoder());
+          return run4(d, id_decoder());
         },
         (var0) => {
           return new TransactionEditResult(var0);
@@ -8267,7 +8697,17 @@ function delete_transaction_eff(t_id) {
     return map3(
       _pipe,
       (req2) => {
-        return req2.withFields({ method: new Delete() });
+        let _record = req2;
+        return new Request(
+          new Delete(),
+          _record.headers,
+          _record.body,
+          _record.scheme,
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query
+        );
       }
     );
   })();
@@ -8277,7 +8717,7 @@ function delete_transaction_eff(t_id) {
       req$1,
       expect_json(
         (d) => {
-          return run3(d, id_decoder());
+          return run4(d, id_decoder());
         },
         (var0) => {
           return new TransactionDeleteResult(var0);
@@ -8295,7 +8735,17 @@ function save_target_eff(category, target_edit) {
     return map3(
       _pipe,
       (req2) => {
-        return req2.withFields({ method: new Put() });
+        let _record = req2;
+        return new Request(
+          new Put(),
+          _record.headers,
+          _record.body,
+          _record.scheme,
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query
+        );
       }
     );
   })();
@@ -8308,7 +8758,15 @@ function save_target_eff(category, target_edit) {
           _pipe,
           to_string2(
             category_encode(
-              category.withFields({ target: target_edit })
+              (() => {
+                let _record = category;
+                return new Category(
+                  _record.id,
+                  _record.name,
+                  target_edit,
+                  _record.inflow
+                );
+              })()
             )
           )
         );
@@ -8316,7 +8774,7 @@ function save_target_eff(category, target_edit) {
       })(),
       expect_json(
         (d) => {
-          return run3(d, id_decoder());
+          return run4(d, id_decoder());
         },
         (var0) => {
           return new CategorySaveTarget(var0);
@@ -8334,7 +8792,17 @@ function delete_target_eff(category) {
     return map3(
       _pipe,
       (req2) => {
-        return req2.withFields({ method: new Put() });
+        let _record = req2;
+        return new Request(
+          new Put(),
+          _record.headers,
+          _record.body,
+          _record.scheme,
+          _record.host,
+          _record.port,
+          _record.path,
+          _record.query
+        );
       }
     );
   })();
@@ -8344,7 +8812,7 @@ function delete_target_eff(category) {
       req$1,
       expect_json(
         (d) => {
-          return run3(d, id_decoder());
+          return run4(d, id_decoder());
         },
         (var0) => {
           return new CategorySaveTarget(var0);
@@ -8417,7 +8885,7 @@ function on_click(msg) {
 }
 function value2(event2) {
   let _pipe = event2;
-  return field("target", field("value", string))(
+  return field("target", field("value", decode_string))(
     _pipe
   );
 }
@@ -9709,6 +10177,36 @@ function view(model) {
 }
 
 // build/dev/javascript/budget_fe/budget_fe.mjs
+function init3(_) {
+  return [
+    new Model2(
+      new User("id1", "Sergey"),
+      calculate_current_cycle(),
+      new Home(),
+      new Some(26),
+      false,
+      toList([]),
+      toList([]),
+      toList([]),
+      new None(),
+      false,
+      "",
+      new TransactionForm(
+        "",
+        "",
+        new None(),
+        new None(),
+        false
+      ),
+      new TargetEdit("", false, new Monthly(int_to_money(0))),
+      new None(),
+      new None()
+    ),
+    batch(
+      toList([init2(on_route_change), initial_eff()])
+    )
+  ];
+}
 function transaction_form_to_transaction(tef, categories) {
   let date_option = (() => {
     let _pipe = tef.date;
@@ -9764,13 +10262,54 @@ function update(model, msg) {
   debug(msg);
   if (msg instanceof OnRouteChange) {
     let route = msg.route;
-    return [model.withFields({ route }), none()];
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
+      none()
+    ];
   } else if (msg instanceof Initial) {
     let user = msg.user;
     let cycle = msg.cycle;
     let initial_path = msg.initial_route;
     return [
-      model.withFields({ user, cycle, route: initial_path }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          user,
+          cycle,
+          initial_path,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       batch(
         toList([
           get_categories(),
@@ -9781,77 +10320,234 @@ function update(model, msg) {
     ];
   } else if (msg instanceof Categories && msg.cats.isOk()) {
     let cats = msg.cats[0];
-    return [model.withFields({ categories: cats }), get_transactions()];
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          cats,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
+      get_transactions()
+    ];
   } else if (msg instanceof Categories && !msg.cats.isOk()) {
     return [model, none()];
   } else if (msg instanceof Transactions && msg.trans.isOk()) {
     let t = msg.trans[0];
     return [
-      model.withFields({
-        transactions: (() => {
-          let _pipe = t;
-          return sort(
-            _pipe,
-            (t1, t2) => {
-              return compare3(t2.date, t1.date);
-            }
-          );
-        })()
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          (() => {
+            let _pipe = t;
+            return sort(
+              _pipe,
+              (t1, t2) => {
+                return compare3(t2.date, t1.date);
+              }
+            );
+          })(),
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof Transactions && !msg.trans.isOk()) {
     return [model, none()];
   } else if (msg instanceof Allocations && msg.a.isOk()) {
     let a2 = msg.a[0];
-    return [model.withFields({ allocations: a2 }), none()];
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          a2,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
+      none()
+    ];
   } else if (msg instanceof Allocations && !msg.a.isOk()) {
     return [model, none()];
   } else if (msg instanceof SelectCategory) {
     let c = msg.c;
     return [
-      model.withFields({
-        selected_category: new Some(
-          new SelectedCategory(
-            c.id,
-            c.name,
-            (() => {
-              let _pipe = find_alloc_by_cat_id(
-                c.id,
-                model.cycle,
-                model.allocations
-              );
-              let _pipe$1 = map3(
-                _pipe,
-                (a2) => {
-                  let _pipe$12 = a2.amount;
-                  return money_to_string_no_sign(_pipe$12);
-                }
-              );
-              return unwrap2(_pipe$1, "");
-            })()
-          )
-        )
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          new Some(
+            new SelectedCategory(
+              c.id,
+              c.name,
+              (() => {
+                let _pipe = find_alloc_by_cat_id(
+                  c.id,
+                  model.cycle,
+                  model.allocations
+                );
+                let _pipe$1 = map3(
+                  _pipe,
+                  (a2) => {
+                    let _pipe$12 = a2.amount;
+                    return money_to_string_no_sign(_pipe$12);
+                  }
+                );
+                return unwrap2(_pipe$1, "");
+              })()
+            )
+          ),
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof SelectUser) {
     let user = msg.u;
-    return [model.withFields({ user }), none()];
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
+      none()
+    ];
   } else if (msg instanceof ShowAddCategoryUI) {
     return [
-      model.withFields({ show_add_category_ui: !model.show_add_category_ui }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          !model.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof AddCategory) {
     return [
-      model.withFields({ user_category_name_input: "" }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          "",
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       add_category(model.user_category_name_input)
     ];
   } else if (msg instanceof UserUpdatedCategoryName) {
     let name = msg.cat_name;
     return [
-      model.withFields({ user_category_name_input: name }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          name,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof AddCategoryResult && msg.c.isOk()) {
@@ -9866,7 +10562,32 @@ function update(model, msg) {
       let cat = $[0];
       let money = $1[0];
       return [
-        model.withFields({}),
+        (() => {
+          let _record = model;
+          return new Model2(
+            _record.user,
+            _record.cycle,
+            _record.route,
+            _record.cycle_end_day,
+            _record.show_all_transactions,
+            _record.categories,
+            _record.transactions,
+            _record.allocations,
+            _record.selected_category,
+            _record.show_add_category_ui,
+            _record.user_category_name_input,
+            new TransactionForm(
+              "",
+              "",
+              new None(),
+              new None(),
+              false
+            ),
+            _record.target_edit,
+            _record.selected_transaction,
+            _record.transaction_edit_form
+          );
+        })(),
         add_transaction_eff(model.transaction_add_input, money, cat)
       ];
     } else {
@@ -9875,17 +10596,34 @@ function update(model, msg) {
   } else if (msg instanceof AddTransactionResult && msg.c.isOk()) {
     let t = msg.c[0];
     return [
-      model.withFields({
-        transactions: (() => {
-          let _pipe = flatten2(toList([model.transactions, toList([t])]));
-          return sort(
-            _pipe,
-            (t1, t2) => {
-              return compare3(t2.date, t1.date);
-            }
-          );
-        })()
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          (() => {
+            let _pipe = flatten2(toList([model.transactions, toList([t])]));
+            return sort(
+              _pipe,
+              (t1, t2) => {
+                return compare3(t2.date, t1.date);
+              }
+            );
+          })(),
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof AddTransactionResult && !msg.c.isOk()) {
@@ -9903,65 +10641,205 @@ function update(model, msg) {
       return from_result(_pipe$1);
     })();
     return [
-      model.withFields({
-        transaction_add_input: model.transaction_add_input.withFields({
-          category
-        })
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          (() => {
+            let _record$1 = model.transaction_add_input;
+            return new TransactionForm(
+              _record$1.date,
+              _record$1.payee,
+              category,
+              _record$1.amount,
+              _record$1.is_inflow
+            );
+          })(),
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof UserUpdatedTransactionDate) {
     let date = msg.date;
     return [
-      model.withFields({
-        transaction_add_input: model.transaction_add_input.withFields({
-          date
-        })
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          (() => {
+            let _record$1 = model.transaction_add_input;
+            return new TransactionForm(
+              date,
+              _record$1.payee,
+              _record$1.category,
+              _record$1.amount,
+              _record$1.is_inflow
+            );
+          })(),
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof UserUpdatedTransactionPayee) {
     let payee = msg.payee;
     return [
-      model.withFields({
-        transaction_add_input: model.transaction_add_input.withFields({
-          payee
-        })
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          (() => {
+            let _record$1 = model.transaction_add_input;
+            return new TransactionForm(
+              _record$1.date,
+              payee,
+              _record$1.category,
+              _record$1.amount,
+              _record$1.is_inflow
+            );
+          })(),
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof UserUpdatedTransactionAmount) {
     let amount = msg.amount;
     return [
-      model.withFields({
-        transaction_add_input: model.transaction_add_input.withFields({
-          amount: (() => {
-            let _pipe = parse_int(amount);
-            let _pipe$1 = map3(
-              _pipe,
-              (amount2) => {
-                return int_to_money(amount2);
-              }
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          (() => {
+            let _record$1 = model.transaction_add_input;
+            return new TransactionForm(
+              _record$1.date,
+              _record$1.payee,
+              _record$1.category,
+              (() => {
+                let _pipe = parse_int(amount);
+                let _pipe$1 = map3(
+                  _pipe,
+                  (amount2) => {
+                    return int_to_money(amount2);
+                  }
+                );
+                return from_result(_pipe$1);
+              })(),
+              _record$1.is_inflow
             );
-            return from_result(_pipe$1);
-          })()
-        })
-      }),
+          })(),
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof EditTarget) {
     return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ enabled: true })
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          (() => {
+            let _record$1 = model.target_edit;
+            return new TargetEdit(_record$1.cat_id, true, _record$1.target);
+          })(),
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof SaveTarget) {
     let c = msg.c;
     return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ enabled: false })
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          (() => {
+            let _record$1 = model.target_edit;
+            return new TargetEdit(
+              _record$1.cat_id,
+              false,
+              _record$1.target
+            );
+          })(),
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       save_target_eff(
         c,
         (() => {
@@ -9973,9 +10851,33 @@ function update(model, msg) {
   } else if (msg instanceof DeleteTarget) {
     let c = msg.c;
     return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ enabled: false })
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          (() => {
+            let _record$1 = model.target_edit;
+            return new TargetEdit(
+              _record$1.cat_id,
+              false,
+              _record$1.target
+            );
+          })(),
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       delete_target_eff(c)
     ];
   } else if (msg instanceof UserTargetUpdateAmount) {
@@ -9995,9 +10897,33 @@ function update(model, msg) {
       }
     })();
     return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ target })
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          (() => {
+            let _record$1 = model.target_edit;
+            return new TargetEdit(
+              _record$1.cat_id,
+              _record$1.enabled,
+              target
+            );
+          })(),
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof EditTargetCadence) {
@@ -10016,9 +10942,33 @@ function update(model, msg) {
       }
     })();
     return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ target })
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          (() => {
+            let _record$1 = model.target_edit;
+            return new TargetEdit(
+              _record$1.cat_id,
+              _record$1.enabled,
+              target
+            );
+          })(),
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof UserTargetUpdateCustomDate) {
@@ -10040,9 +10990,33 @@ function update(model, msg) {
       }
     })();
     return [
-      model.withFields({
-        target_edit: model.target_edit.withFields({ target })
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          (() => {
+            let _record$1 = model.target_edit;
+            return new TargetEdit(
+              _record$1.cat_id,
+              _record$1.enabled,
+              target
+            );
+          })(),
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof CategorySaveTarget && msg.a.isOk()) {
@@ -10053,36 +11027,91 @@ function update(model, msg) {
   } else if (msg instanceof SelectTransaction) {
     let t = msg.t;
     return [
-      model.withFields({ selected_transaction: new Some(t.id) }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          new Some(t.id),
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof DeleteTransaction) {
     let id2 = msg.t_id;
     return [
-      model.withFields({ selected_transaction: new None() }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          new None(),
+          _record.transaction_edit_form
+        );
+      })(),
       delete_transaction_eff(id2)
     ];
   } else if (msg instanceof EditTransaction) {
     let t = msg.t;
     let category_name = msg.category_name;
     return [
-      model.withFields({
-        transaction_edit_form: new Some(
-          new TransactionEditForm(
-            t.id,
-            (() => {
-              let _pipe = t.date;
-              return to_date_string_input(_pipe);
-            })(),
-            t.payee,
-            category_name,
-            (() => {
-              let _pipe = t.value;
-              return money_to_string_no_sign(_pipe);
-            })()
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          new Some(
+            new TransactionEditForm(
+              t.id,
+              (() => {
+                let _pipe = t.date;
+                return to_date_string_input(_pipe);
+              })(),
+              t.payee,
+              category_name,
+              (() => {
+                let _pipe = t.value;
+                return money_to_string_no_sign(_pipe);
+              })()
+            )
           )
-        )
-      }),
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof TransactionDeleteResult && msg.a.isOk()) {
@@ -10098,73 +11127,185 @@ function update(model, msg) {
   } else if (msg instanceof UserTransactionEditPayee) {
     let payee = msg.p;
     return [
-      model.withFields({
-        transaction_edit_form: (() => {
-          let _pipe = model.transaction_edit_form;
-          return map(
-            _pipe,
-            (tef) => {
-              return tef.withFields({ payee });
-            }
-          );
-        })()
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          (() => {
+            let _pipe = model.transaction_edit_form;
+            return map(
+              _pipe,
+              (tef) => {
+                let _record$1 = tef;
+                return new TransactionEditForm(
+                  _record$1.id,
+                  _record$1.date,
+                  payee,
+                  _record$1.category_name,
+                  _record$1.amount
+                );
+              }
+            );
+          })()
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof UserTransactionEditDate) {
     let d = msg.d;
     return [
-      model.withFields({
-        transaction_edit_form: (() => {
-          let _pipe = model.transaction_edit_form;
-          return map(
-            _pipe,
-            (tef) => {
-              return tef.withFields({ date: d });
-            }
-          );
-        })()
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          (() => {
+            let _pipe = model.transaction_edit_form;
+            return map(
+              _pipe,
+              (tef) => {
+                let _record$1 = tef;
+                return new TransactionEditForm(
+                  _record$1.id,
+                  d,
+                  _record$1.payee,
+                  _record$1.category_name,
+                  _record$1.amount
+                );
+              }
+            );
+          })()
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof UserTransactionEditAmount) {
     let a2 = msg.a;
     return [
-      model.withFields({
-        transaction_edit_form: (() => {
-          let _pipe = model.transaction_edit_form;
-          return map(
-            _pipe,
-            (tef) => {
-              return tef.withFields({ amount: a2 });
-            }
-          );
-        })()
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          (() => {
+            let _pipe = model.transaction_edit_form;
+            return map(
+              _pipe,
+              (tef) => {
+                let _record$1 = tef;
+                return new TransactionEditForm(
+                  _record$1.id,
+                  _record$1.date,
+                  _record$1.payee,
+                  _record$1.category_name,
+                  a2
+                );
+              }
+            );
+          })()
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof UserTransactionEditCategory) {
     let c = msg.c;
     return [
-      model.withFields({
-        transaction_edit_form: (() => {
-          let _pipe = model.transaction_edit_form;
-          return map(
-            _pipe,
-            (tef) => {
-              return tef.withFields({ category_name: c });
-            }
-          );
-        })()
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          (() => {
+            let _pipe = model.transaction_edit_form;
+            return map(
+              _pipe,
+              (tef) => {
+                let _record$1 = tef;
+                return new TransactionEditForm(
+                  _record$1.id,
+                  _record$1.date,
+                  _record$1.payee,
+                  c,
+                  _record$1.amount
+                );
+              }
+            );
+          })()
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof UpdateTransaction) {
     return [
-      model.withFields({
-        selected_transaction: new None(),
-        transaction_edit_form: new None()
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          new None(),
+          new None()
+        );
+      })(),
       (() => {
         let $ = (() => {
           let _pipe = model.transaction_edit_form;
@@ -10186,7 +11327,26 @@ function update(model, msg) {
     ];
   } else if (msg instanceof DeleteCategory) {
     return [
-      model.withFields({ selected_category: new None() }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          new None(),
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       (() => {
         let $ = model.selected_category;
         if ($ instanceof None) {
@@ -10200,13 +11360,40 @@ function update(model, msg) {
   } else if (msg instanceof UpdateCategoryName) {
     let cat = msg.cat;
     return [
-      model.withFields({ selected_category: new None() }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          new None(),
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       (() => {
         let $ = model.selected_category;
         if ($ instanceof Some) {
           let sc = $[0];
           return save_target_eff(
-            cat.withFields({ name: sc.input_name }),
+            (() => {
+              let _record = cat;
+              return new Category(
+                _record.id,
+                sc.input_name,
+                _record.target,
+                _record.inflow
+              );
+            })(),
             cat.target
           );
         } else {
@@ -10217,17 +11404,39 @@ function update(model, msg) {
   } else if (msg instanceof UserInputCategoryUpdateName) {
     let name = msg.n;
     return [
-      model.withFields({
-        selected_category: (() => {
-          let _pipe = model.selected_category;
-          return map(
-            _pipe,
-            (sc) => {
-              return sc.withFields({ input_name: name });
-            }
-          );
-        })()
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          (() => {
+            let _pipe = model.selected_category;
+            return map(
+              _pipe,
+              (sc) => {
+                let _record$1 = sc;
+                return new SelectedCategory(
+                  _record$1.id,
+                  name,
+                  _record$1.allocation
+                );
+              }
+            );
+          })(),
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof CategoryDeleteResult && msg.a.isOk()) {
@@ -10265,17 +11474,39 @@ function update(model, msg) {
   } else if (msg instanceof UserAllocationUpdate) {
     let a2 = msg.amount;
     return [
-      model.withFields({
-        selected_category: (() => {
-          let _pipe = model.selected_category;
-          return map(
-            _pipe,
-            (sc) => {
-              return sc.withFields({ allocation: a2 });
-            }
-          );
-        })()
-      }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          (() => {
+            let _pipe = model.selected_category;
+            return map(
+              _pipe,
+              (sc) => {
+                let _record$1 = sc;
+                return new SelectedCategory(
+                  _record$1.id,
+                  _record$1.input_name,
+                  a2
+                );
+              }
+            );
+          })(),
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       none()
     ];
   } else if (msg instanceof CycleShift) {
@@ -10288,45 +11519,56 @@ function update(model, msg) {
       }
     })();
     return [
-      model.withFields({ cycle: new_cycle }),
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          new_cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
       batch(
         toList([get_transactions(), get_allocations(new_cycle)])
       )
     ];
   } else {
     let show = msg.show;
-    return [model.withFields({ show_all_transactions: show }), none()];
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          show,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form
+        );
+      })(),
+      none()
+    ];
   }
-}
-function init3(_) {
-  return [
-    new Model2(
-      new User("id1", "Sergey"),
-      calculate_current_cycle(),
-      new Home(),
-      new Some(26),
-      true,
-      toList([]),
-      toList([]),
-      toList([]),
-      new None(),
-      false,
-      "",
-      new TransactionForm(
-        "",
-        "",
-        new None(),
-        new None(),
-        false
-      ),
-      new TargetEdit("", false, new Monthly(int_to_money(0))),
-      new None(),
-      new None()
-    ),
-    batch(
-      toList([init2(on_route_change), initial_eff()])
-    )
-  ];
 }
 function main() {
   let app = application(init3, update, view);

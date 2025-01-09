@@ -1,0 +1,6 @@
+1. [minor] user ids for transactions
+2. [minor] user selection persistence(cookie)
+3. [minor] category suggestion on add transaction
+4. [major] category groups
+5. [major] import transactions
+

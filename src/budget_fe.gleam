@@ -36,6 +36,35 @@ pub fn main() {
   Nil
 }
 
+fn init(_flags) -> #(Model, effect.Effect(Msg)) {
+  #(
+    msg.Model(
+      user: User(id: "id1", name: "Sergey"),
+      cycle: m.calculate_current_cycle(),
+      route: msg.Home,
+      cycle_end_day: option.Some(26),
+      show_all_transactions: False,
+      categories: [],
+      transactions: [],
+      allocations: [],
+      selected_category: option.None,
+      show_add_category_ui: False,
+      user_category_name_input: "",
+      transaction_add_input: msg.TransactionForm(
+        "",
+        "",
+        option.None,
+        option.None,
+        False,
+      ),
+      target_edit: msg.TargetEdit("", False, m.Monthly(m.int_to_money(0))),
+      selected_transaction: option.None,
+      transaction_edit_form: option.None,
+    ),
+    effect.batch([modem.init(eff.on_route_change), eff.initial_eff()]),
+  )
+}
+
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   io.debug(msg)
   case msg {
@@ -105,13 +134,13 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           Model(
             ..model,
             //todo: resett form
-            // transaction_add_input: msg.TransactionForm(
-            //   date: "",
-            //   payee: "",
-            //   category: option.None,
-            //   amount: option.None,
-            //   is_inflow: False,
-            // ),
+            transaction_add_input: msg.TransactionForm(
+              date: "",
+              payee: "",
+              category: option.None,
+              amount: option.None,
+              is_inflow: False,
+            ),
           ),
           eff.add_transaction_eff(model.transaction_add_input, money, cat),
         )
@@ -428,35 +457,6 @@ fn find_alloc_by_cat_id(
 ) -> Result(Allocation, Nil) {
   allocations
   |> list.find(fn(a) { a.category_id == cat_id && a.date == cycle })
-}
-
-fn init(_flags) -> #(Model, effect.Effect(Msg)) {
-  #(
-    msg.Model(
-      user: User(id: "id1", name: "Sergey"),
-      cycle: m.calculate_current_cycle(),
-      route: msg.Home,
-      cycle_end_day: option.Some(26),
-      show_all_transactions: True,
-      categories: [],
-      transactions: [],
-      allocations: [],
-      selected_category: option.None,
-      show_add_category_ui: False,
-      user_category_name_input: "",
-      transaction_add_input: msg.TransactionForm(
-        "",
-        "",
-        option.None,
-        option.None,
-        False,
-      ),
-      target_edit: msg.TargetEdit("", False, m.Monthly(m.int_to_money(0))),
-      selected_transaction: option.None,
-      transaction_edit_form: option.None,
-    ),
-    effect.batch([modem.init(eff.on_route_change), eff.initial_eff()]),
-  )
 }
 //<!---- Effects ----!>
 
