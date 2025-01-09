@@ -21,8 +21,9 @@ modem = "~> 2.0.1"
 gluid = ">= 1.0.0 and < 2.0.0"
 rada = { path = "../rada" }
 # rada = ">= 0.4.0 and < 1.0.0"
-gleam_json = ">= 2.1.0 and < 3.0.0"
+gleam_json = "~> 2.3.0"
 budget_test = { path = "../budget_test" }
+decode = ">= 1.1.0 and < 2.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.2.0 and < 2.0.0"

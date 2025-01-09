@@ -5,8 +5,8 @@ import budget_test.{
   MonthInYear, Transaction, User,
 } as m
 import date_utils
-import decode/zero
 import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
@@ -18,74 +18,7 @@ import lustre/effect
 import lustre_http
 import modem.{initial_uri}
 import rada/date as d
-
-pub fn money_decoder() -> zero.Decoder(Money) {
-  let money_decoder = {
-    use s <- zero.field("s", zero.int)
-    use b <- zero.field("b", zero.int)
-    use is_neg <- zero.field("is_neg", zero.bool)
-    zero.success(m.Money(s, b, is_neg))
-  }
-  money_decoder
-}
-
-pub fn month_decoder() -> zero.Decoder(MonthInYear) {
-  {
-    use month <- zero.field("month", zero.int)
-    use year <- zero.field("year", zero.int)
-    zero.success(m.MonthInYear(month, year))
-  }
-}
-
-pub fn target_decoder() -> zero.Decoder(Target) {
-  let monthly_decoder = {
-    use money <- zero.field("money", money_decoder())
-    zero.success(m.Monthly(money))
-  }
-
-  let custom_decoder = {
-    use money <- zero.field("money", money_decoder())
-    use date <- zero.field("date", month_decoder())
-    zero.success(m.Custom(money, date))
-  }
-
-  let target_decoder = {
-    use tag <- zero.field("type", zero.string)
-    case tag {
-      "monthly" -> monthly_decoder
-      _ -> custom_decoder
-    }
-  }
-  target_decoder
-}
-
-pub fn category_decoder() -> zero.Decoder(Category) {
-  let category_decoder = {
-    use id <- zero.field("id", zero.string)
-    use name <- zero.field("name", zero.string)
-    use target <- zero.field("target", zero.optional(target_decoder()))
-    use inflow <- zero.field("inflow", zero.bool)
-    zero.success(Category(id, name, target, inflow))
-  }
-}
-
-pub fn transaction_decoder() -> zero.Decoder(Transaction) {
-  let transaction_decoder = {
-    use id <- zero.field("id", zero.string)
-    use date <- zero.field("date", zero.int)
-    use payee <- zero.field("payee", zero.string)
-    use category_id <- zero.field("category_id", zero.string)
-    use value <- zero.field("value", money_decoder())
-    zero.success(Transaction(
-      id,
-      d.from_rata_die(date),
-      payee,
-      category_id,
-      value,
-    ))
-  }
-  transaction_decoder
-}
+import decode/zero
 
 pub fn transaction_encode(t: m.Transaction) -> json.Json {
   json.object([
@@ -97,6 +30,13 @@ pub fn transaction_encode(t: m.Transaction) -> json.Json {
   ])
 }
 
+// pub fn id_decoder() -> zero.Decoder(String) {
+//   {
+//     use id <- zero.field("id", zero.string)
+//     zero.success(id)
+//   }
+// }
+
 pub fn money_encode(money: Money) -> json.Json {
   json.object([
     #("s", json.int(money.s)),
@@ -105,31 +45,11 @@ pub fn money_encode(money: Money) -> json.Json {
   ])
 }
 
-pub fn cycle_decoder() -> zero.Decoder(Cycle) {
-  let cycle_decoder = {
-    use month <- zero.field("month", zero.int)
-    use year <- zero.field("year", zero.int)
-    zero.success(m.Cycle(year, month |> d.number_to_month))
-  }
-  cycle_decoder
-}
-
-pub fn id_decoder() -> zero.Decoder(String) {
+pub fn id_decoder() -> decode.Decoder(String) {
   {
-    use id <- zero.field("id", zero.string)
-    zero.success(id)
+    use id <- decode.field("id", decode.string)
+    decode.success(id)
   }
-}
-
-pub fn allocation_decoder() -> zero.Decoder(Allocation) {
-  let allocation_decoder = {
-    use id <- zero.field("id", zero.string)
-    use amount <- zero.field("amount", money_decoder())
-    use category_id <- zero.field("category_id", zero.string)
-    use date <- zero.field("date", cycle_decoder())
-    zero.success(Allocation(id, amount, category_id, date))
-  }
-  allocation_decoder
 }
 
 pub fn allocation_encode(

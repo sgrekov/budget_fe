@@ -6,6 +6,8 @@ import budget_test.{
 } as m
 import date_utils
 import decode/zero
+import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
 import gleam/io
@@ -69,10 +71,7 @@ pub fn add_transaction_eff(
   lustre_http.post(
     url,
     decoders.transaction_encode(t),
-    lustre_http.expect_json(
-      fn(d) { zero.run(d, decoders.transaction_decoder()) },
-      msg.AddTransactionResult,
-    ),
+    lustre_http.expect_json2(m.transaction_decoder(), msg.AddTransactionResult),
   )
 }
 
@@ -82,12 +81,10 @@ pub fn add_category(name: String) -> effect.Effect(Msg) {
   lustre_http.post(
     url,
     json.object([#("name", json.string(name))]),
-    lustre_http.expect_json(
-      fn(d) {
-        zero.run(d, {
-          use id <- zero.field("id", zero.string)
-          zero.success(id)
-        })
+    lustre_http.expect_json2(
+      {
+        use id <- decode.field("id", decode.string)
+        decode.success(id)
       },
       msg.AddCategoryResult,
     ),
@@ -97,31 +94,22 @@ pub fn add_category(name: String) -> effect.Effect(Msg) {
 pub fn get_allocations(cycle: Cycle) -> effect.Effect(Msg) {
   let url = "http://localho.st:8000/allocations"
 
-  let decoder = zero.list(decoders.allocation_decoder())
-  lustre_http.get(
-    url,
-    lustre_http.expect_json(fn(d) { zero.run(d, decoder) }, msg.Allocations),
-  )
+  let decoder = decode.list(m.allocation_decoder())
+  lustre_http.get(url, lustre_http.expect_json2(decoder, msg.Allocations))
 }
 
 pub fn get_categories() -> effect.Effect(Msg) {
   let url = "http://localho.st:8000/categories"
 
-  let decoder = zero.list(decoders.category_decoder())
-  lustre_http.get(
-    url,
-    lustre_http.expect_json(fn(d) { zero.run(d, decoder) }, msg.Categories),
-  )
+  let decoder = decode.list(m.category_decoder())
+  lustre_http.get(url, lustre_http.expect_json2(decoder, msg.Categories))
 }
 
 pub fn get_transactions() -> effect.Effect(Msg) {
   let url = "http://localho.st:8000/transactions"
 
-  let decoder = zero.list(decoders.transaction_decoder())
-  lustre_http.get(
-    url,
-    lustre_http.expect_json(fn(d) { zero.run(d, decoder) }, msg.Transactions),
-  )
+  let decoder = decode.list(m.transaction_decoder())
+  lustre_http.get(url, lustre_http.expect_json2(decoder, msg.Transactions))
 }
 
 pub fn save_allocation_eff(
@@ -147,10 +135,7 @@ fn create_allocation_eff(
   lustre_http.post(
     url,
     decoders.allocation_encode(None, money, category_id, cycle),
-    lustre_http.expect_json(
-      fn(d) { zero.run(d, decoders.id_decoder()) },
-      msg.SaveAllocationResult,
-    ),
+    lustre_http.expect_json2(decoders.id_decoder(), msg.SaveAllocationResult),
   )
 }
 
@@ -171,9 +156,10 @@ fn update_allocation_eff(a: Allocation, amount: m.Money) -> effect.Effect(Msg) {
               a.category_id,
               a.date,
             )),
-          ) |> request.set_header("Content-Type", "application/json"),
-        lustre_http.expect_json(
-          fn(d) { zero.run(d, decoders.id_decoder()) },
+          )
+          |> request.set_header("Content-Type", "application/json"),
+        lustre_http.expect_json2(
+          decoders.id_decoder(),
           msg.SaveAllocationResult,
         ),
       )
@@ -191,8 +177,8 @@ pub fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
     Ok(req) ->
       lustre_http.send(
         req,
-        lustre_http.expect_json(
-          fn(d) { zero.run(d, decoders.id_decoder()) },
+        lustre_http.expect_json2(
+          decoders.id_decoder(),
           msg.CategoryDeleteResult,
         ),
       )
@@ -212,8 +198,8 @@ pub fn update_transaction_eff(t: m.Transaction) -> effect.Effect(Msg) {
         req
           |> request.set_body(json.to_string(decoders.transaction_encode(t)))
           |> request.set_header("Content-Type", "application/json"),
-        lustre_http.expect_json(
-          fn(d) { zero.run(d, decoders.id_decoder()) },
+        lustre_http.expect_json2(
+          decoders.id_decoder(),
           msg.TransactionEditResult,
         ),
       )
@@ -231,8 +217,8 @@ pub fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {
     Ok(req) ->
       lustre_http.send(
         req,
-        lustre_http.expect_json(
-          fn(d) { zero.run(d, decoders.id_decoder()) },
+        lustre_http.expect_json2(
+          decoders.id_decoder(),
           msg.TransactionDeleteResult,
         ),
       )
@@ -243,9 +229,8 @@ pub fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {
 pub fn save_target_eff(
   category: Category,
   target_edit: Option(Target),
-) -> effect.Effect(Msg) {  
+) -> effect.Effect(Msg) {
   let url = "http://localho.st:8000/category/" <> category.id
-
   let req =
     request.to(url)
     |> result.map(fn(req) { request.Request(..req, method: http.Put) })
@@ -259,10 +244,7 @@ pub fn save_target_eff(
             )),
           )
           |> request.set_header("Content-Type", "application/json"),
-        lustre_http.expect_json(
-          fn(d) { zero.run(d, decoders.id_decoder()) },
-          msg.CategorySaveTarget,
-        ),
+        lustre_http.expect_json2(decoders.id_decoder(), msg.CategorySaveTarget),
       )
     _ -> effect.none()
   }
@@ -278,10 +260,7 @@ pub fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
     Ok(req) ->
       lustre_http.send(
         req,
-        lustre_http.expect_json(
-          fn(d) { zero.run(d, decoders.id_decoder()) },
-          msg.CategorySaveTarget,
-        ),
+        lustre_http.expect_json2(decoders.id_decoder(), msg.CategorySaveTarget),
       )
     _ -> effect.none()
   }
