@@ -41,13 +41,15 @@ pub fn initial_eff() -> effect.Effect(Msg) {
     Ok(uri) -> uri_to_route(uri)
     _ -> msg.Home
   }
-  effect.from(fn(dispatch) {
-    dispatch(msg.Initial(
-      User(id: "id2", name: "Sergey"),
-      m.calculate_current_cycle(),
-      path,
-    ))
-  })
+  let url = "http://localho.st:8000/"
+
+  let decoder = decode.list(m.user_decoder())
+  lustre_http.get(
+    url,
+    lustre_http.expect_json2(decoder, fn(users) {
+      msg.Initial(users, m.calculate_current_cycle(), path)
+    }),
+  )
 }
 
 pub fn add_transaction_eff(
@@ -66,6 +68,7 @@ pub fn add_transaction_eff(
       payee: transaction_form.payee,
       category_id: cat.id,
       value: amount,
+      user_id: transaction_form.user_id,
     )
   // io.debug(t)
   lustre_http.post(
@@ -264,4 +267,26 @@ pub fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
       )
     _ -> effect.none()
   }
+}
+
+pub fn read_localstorage(key: String) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    do_read_localstorage(key)
+    |> msg.CurrentSavedUser
+    |> dispatch
+  })
+}
+
+@external(javascript, "./app.ffi.mjs", "read_localstorage")
+fn do_read_localstorage(_key: String) -> Result(String, Nil) {
+  Error(Nil)
+}
+
+pub fn write_localstorage(key: String, value: String) -> effect.Effect(msg) {
+  effect.from(fn(_) { do_write_localstorage(key, value) })
+}
+
+@external(javascript, "./app.ffi.mjs", "write_localstorage")
+fn do_write_localstorage(_key: String, _value: String) -> Nil {
+  Nil
 }

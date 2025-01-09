@@ -27,15 +27,10 @@ pub fn transaction_encode(t: m.Transaction) -> json.Json {
     #("payee", json.string(t.payee)),
     #("category_id", json.string(t.category_id)),
     #("value", money_encode(t.value)),
+    #("user_id", json.string(t.user_id)),
   ])
 }
 
-// pub fn id_decoder() -> zero.Decoder(String) {
-//   {
-//     use id <- zero.field("id", zero.string)
-//     zero.success(id)
-//   }
-// }
 
 pub fn money_encode(money: Money) -> json.Json {
   json.object([

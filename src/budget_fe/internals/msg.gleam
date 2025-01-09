@@ -14,7 +14,12 @@ pub type Route {
 
 pub type Msg {
   OnRouteChange(route: Route)
-  Initial(user: User, cycle: Cycle, initial_route: Route)
+  Initial(
+    users: Result(List(User), lustre_http.HttpError),
+    cycle: Cycle,
+    initial_route: Route,
+  )
+  CurrentSavedUser(id : Result(String, Nil))
   Categories(cats: Result(List(Category), lustre_http.HttpError))
   Transactions(trans: Result(List(Transaction), lustre_http.HttpError))
   Allocations(a: Result(List(Allocation), lustre_http.HttpError))
@@ -60,7 +65,8 @@ pub type Msg {
 
 pub type Model {
   Model(
-    user: User,
+    current_user: User,
+    all_users: List(User),
     cycle: Cycle,
     route: Route,
     cycle_end_day: Option(Int),
@@ -89,6 +95,7 @@ pub type TransactionForm {
     category: Option(Category),
     amount: Option(Money),
     is_inflow: Bool,
+    user_id : String,
   )
 }
 

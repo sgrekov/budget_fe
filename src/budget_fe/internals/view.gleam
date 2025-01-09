@@ -69,7 +69,7 @@ pub fn view(model: Model) -> element.Element(Msg) {
           ],
           [
             html.a([attribute.class(""), attribute.href("/user")], [
-              html.text(model.user.name),
+              html.text(model.current_user.name),
             ]),
           ],
         ),
@@ -179,30 +179,25 @@ fn cycle_to_text(c: Cycle) -> String {
 }
 
 fn user_selection(m: Model) -> element.Element(Msg) {
-  let #(serg_active_class, kate_active_class) = case m.user {
-    User("id1", _) -> #("active", "")
-    User(_, _) -> #("", "active")
-  }
-
   html.div([attribute.class("d-flex flex-row")], [
-    html.div([attribute.class("btn-group")], [
-      html.a(
-        [
-          attribute.class("btn btn-primary" <> serg_active_class),
-          attribute.href("#"),
-          event.on_click(msg.SelectUser(User(id: "id1", name: "Sergey"))),
-        ],
-        [html.text("Sergey")],
-      ),
-      html.a(
-        [
-          attribute.class("btn btn-primary" <> kate_active_class),
-          attribute.href("#"),
-          event.on_click(msg.SelectUser(User(id: "id2", name: "Kate"))),
-        ],
-        [html.text("Ekaterina")],
-      ),
-    ]),
+    html.div(
+      [attribute.class("btn-group")],
+      m.all_users
+        |> list.map(fn(user) {
+          let active_class = case m.current_user.id == user.id {
+            True -> "active"
+            False -> ""
+          }
+          html.a(
+            [
+              attribute.class("btn btn-primary" <> active_class),
+              attribute.href("#"),
+              event.on_click(msg.SelectUser(user)),
+            ],
+            [html.text(user.name)],
+          )
+        }),
+    ),
   ])
 }
 

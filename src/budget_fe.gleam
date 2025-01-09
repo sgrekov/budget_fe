@@ -39,7 +39,8 @@ pub fn main() {
 fn init(_flags) -> #(Model, effect.Effect(Msg)) {
   #(
     msg.Model(
-      user: User(id: "id1", name: "Sergey"),
+      current_user: User(id: "initial", name: "Initial"),
+      all_users: [],
       cycle: m.calculate_current_cycle(),
       route: msg.Home,
       cycle_end_day: option.Some(26),
@@ -56,6 +57,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
         option.None,
         option.None,
         False,
+        "initial",
       ),
       target_edit: msg.TargetEdit("", False, m.Monthly(m.int_to_money(0))),
       selected_transaction: option.None,
@@ -71,17 +73,28 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     msg.OnRouteChange(route) -> {
       #(Model(..model, route: route), effect.none())
     }
-    msg.Initial(user, cycle, initial_path) -> {
-      // let #(start, end) = cycle_bounds(cycle, model.cycle_end_day)
-      #(
-        Model(..model, user: user, cycle: cycle, route: initial_path),
-        effect.batch([
-          eff.get_categories(),
-          eff.get_transactions(),
-          eff.get_allocations(cycle),
-        ]),
-      )
+    msg.Initial(users, cycle, initial_path) -> {
+      case users {
+        Ok(users) -> #(
+          Model(..model, all_users: users, cycle: cycle, route: initial_path),
+          effect.batch([
+            eff.get_categories(),
+            eff.get_transactions(),
+            eff.get_allocations(cycle),
+            eff.read_localstorage("current_user_id"),
+          ]),
+        )
+        Error(_) -> #(model, effect.none())
+      }
     }
+    msg.CurrentSavedUser(Ok(user_id)) -> {
+      let user = model.all_users |> list.find(fn(u) { u.id == user_id })
+      case user {
+        Ok(user) -> #(Model(..model, current_user: user), effect.none())
+        Error(_) -> #(model, effect.none())
+      }
+    }
+    msg.CurrentSavedUser(Error(_)) -> #(model, effect.none())
     msg.Categories(Ok(cats)) -> {
       #(Model(..model, categories: cats), eff.get_transactions())
     }
@@ -110,7 +123,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
-    msg.SelectUser(user) -> #(Model(..model, user: user), effect.none())
+    msg.SelectUser(user) -> #(
+      Model(..model, current_user: user),
+      eff.write_localstorage("current_user_id", user.id),
+    )
     msg.ShowAddCategoryUI -> #(
       Model(..model, show_add_category_ui: !model.show_add_category_ui),
       effect.none(),
@@ -140,6 +156,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
               category: option.None,
               amount: option.None,
               is_inflow: False,
+              user_id: model.current_user.id,
             ),
           ),
           eff.add_transaction_eff(model.transaction_add_input, money, cat),
@@ -343,7 +360,11 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       case
         model.transaction_edit_form
         |> option.map(fn(tef) {
-          transaction_form_to_transaction(tef, model.categories)
+          transaction_form_to_transaction(
+            tef,
+            model.categories,
+            model.current_user,
+          )
         })
         |> option.flatten
       {
@@ -418,6 +439,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
 fn transaction_form_to_transaction(
   tef: msg.TransactionEditForm,
   categories: List(Category),
+  current_user: User,
 ) -> Option(Transaction) {
   let date_option =
     tef.date |> date_utils.from_date_string |> option.from_result
@@ -434,6 +456,7 @@ fn transaction_form_to_transaction(
         payee: tef.payee,
         category_id: category.id,
         value: amount,
+        user_id: current_user.id,
       ))
     _, _ -> None
   }
