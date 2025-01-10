@@ -1,4 +1,5 @@
 import budget_fe/internals/effects as eff
+import gleam/dict
 
 // import budget_fe/internals/factories.{allocations, transactions}
 import budget_fe/internals/msg.{Model} as _
@@ -11,21 +12,17 @@ import budget_test.{
   type User, Allocation, Category, Cycle, MonthInYear, Transaction, User,
 } as m
 import date_utils
-import gleam/bool
 import gleam/dynamic.{type Dynamic}
 import gleam/int
 import gleam/io
-import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/result
 import gleam/string_tree.{type StringTree}
 import gleam/uri.{type Uri}
-import gluid
 import lustre
 import lustre/effect
-import lustre_http
 import modem.{initial_uri}
 import rada/date.{type Date} as d
 
@@ -57,11 +54,11 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
         option.None,
         option.None,
         False,
-        "initial",
       ),
       target_edit: msg.TargetEdit("", False, m.Monthly(m.int_to_money(0))),
       selected_transaction: option.None,
       transaction_edit_form: option.None,
+      suggestions: dict.new(),
     ),
     effect.batch([modem.init(eff.on_route_change), eff.initial_eff()]),
   )
@@ -82,6 +79,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
             eff.get_transactions(),
             eff.get_allocations(cycle),
             eff.read_localstorage("current_user_id"),
+            eff.get_category_suggestions(),
           ]),
         )
         Error(_) -> #(model, effect.none())
@@ -149,17 +147,20 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         Some(cat), Some(money) -> #(
           Model(
             ..model,
-            //todo: resett form
             transaction_add_input: msg.TransactionForm(
-              date: "",
+              date: model.transaction_add_input.date,
               payee: "",
               category: option.None,
               amount: option.None,
               is_inflow: False,
-              user_id: model.current_user.id,
             ),
           ),
-          eff.add_transaction_eff(model.transaction_add_input, money, cat),
+          eff.add_transaction_eff(
+            model.transaction_add_input,
+            money,
+            cat,
+            model.current_user,
+          ),
         )
         _, _ -> #(model, effect.none())
       }
@@ -198,16 +199,20 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
-    msg.UserUpdatedTransactionPayee(payee) -> #(
-      Model(
-        ..model,
-        transaction_add_input: msg.TransactionForm(
-          ..model.transaction_add_input,
-          payee: payee,
+    msg.UserUpdatedTransactionPayee(payee) -> {
+      let category = model.suggestions |> dict.get(payee)
+      #(
+        Model(
+          ..model,
+          transaction_add_input: msg.TransactionForm(
+            ..model.transaction_add_input,
+            payee: payee,
+            category: category |> option.from_result,
+          ),
         ),
-      ),
-      effect.none(),
-    )
+        effect.none(),
+      )
+    }
     msg.UserUpdatedTransactionAmount(amount) -> #(
       Model(
         ..model,
@@ -433,6 +438,11 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, show_all_transactions: show),
       effect.none(),
     )
+    msg.Suggestions(Ok(suggestions)) -> #(
+      Model(..model, suggestions: suggestions),
+      effect.none(),
+    )
+    msg.Suggestions(Error(_)) -> #(model, effect.none())
   }
 }
 

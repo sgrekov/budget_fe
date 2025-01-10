@@ -695,6 +695,20 @@ function find(loop$list, loop$is_desired) {
     }
   }
 }
+function unique(list4) {
+  if (list4.hasLength(0)) {
+    return toList([]);
+  } else {
+    let x = list4.head;
+    let rest$1 = list4.tail;
+    return prepend(
+      x,
+      unique(filter(rest$1, (y) => {
+        return !isEqual(y, x);
+      }))
+    );
+  }
+}
 function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$prev, loop$acc) {
   while (true) {
     let list4 = loop$list;
@@ -2394,8 +2408,8 @@ function inspectUtfCodepoint(codepoint2) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/dict.mjs
-function insert(dict3, key, value3) {
-  return map_insert(key, value3, dict3);
+function insert(dict4, key, value3) {
+  return map_insert(key, value3, dict4);
 }
 function reverse_and_concat(loop$remaining, loop$accumulator) {
   while (true) {
@@ -2425,9 +2439,29 @@ function do_keys_loop(loop$list, loop$acc) {
     }
   }
 }
-function keys(dict3) {
-  let list_of_pairs = map_to_list(dict3);
+function keys(dict4) {
+  let list_of_pairs = map_to_list(dict4);
   return do_keys_loop(list_of_pairs, toList([]));
+}
+function fold_loop(loop$list, loop$initial, loop$fun) {
+  while (true) {
+    let list4 = loop$list;
+    let initial = loop$initial;
+    let fun = loop$fun;
+    if (list4.hasLength(0)) {
+      return initial;
+    } else {
+      let k = list4.head[0];
+      let v = list4.head[1];
+      let rest = list4.tail;
+      loop$list = rest;
+      loop$initial = fun(initial, k, v);
+      loop$fun = fun;
+    }
+  }
+}
+function fold2(dict4, initial, fun) {
+  return fold_loop(map_to_list(dict4), initial, fun);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam_stdlib_decode_ffi.mjs
@@ -2474,6 +2508,25 @@ function list(data, decode3, pushPath, index4, emptyList) {
   }
   return [List.fromArray(decoded), emptyList];
 }
+function dict(data) {
+  if (data instanceof Dict) {
+    return new Ok(data);
+  }
+  if (data instanceof Map || data instanceof WeakMap) {
+    return new Ok(Dict.fromMap(data));
+  }
+  if (data == null) {
+    return new Error("Dict");
+  }
+  if (typeof data !== "object") {
+    return new Error("Dict");
+  }
+  const proto = Object.getPrototypeOf(data);
+  if (proto === Object.prototype || proto === null) {
+    return new Ok(Dict.fromObject(data));
+  }
+  return new Error("Dict");
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/dynamic/decode.mjs
 var DecodeError2 = class extends CustomType {
@@ -2505,6 +2558,11 @@ function success(data) {
     return [data, toList([])];
   });
 }
+function decode_error(expected, found) {
+  return toList([
+    new DecodeError2(expected, classify_dynamic(found), toList([]))
+  ]);
+}
 function optional2(inner) {
   return new Decoder(
     (data) => {
@@ -2524,6 +2582,48 @@ function optional2(inner) {
         let data$1 = $1[0];
         let errors = $1[1];
         return [new Some(data$1), errors];
+      }
+    }
+  );
+}
+function fold_dict(acc, key, value3, key_decoder, value_decoder) {
+  let $ = key_decoder(key);
+  if ($[1].hasLength(0)) {
+    let key$1 = $[0];
+    let $1 = value_decoder(value3);
+    if ($1[1].hasLength(0)) {
+      let value$1 = $1[0];
+      let dict$1 = insert(acc[0], key$1, value$1);
+      return [dict$1, acc[1]];
+    } else {
+      let errors = $1[1];
+      return push_path2([new_map(), errors], toList(["values"]));
+    }
+  } else {
+    let errors = $[1];
+    return push_path2([new_map(), errors], toList(["keys"]));
+  }
+}
+function dict2(key, value3) {
+  return new Decoder(
+    (data) => {
+      let $ = dict(data);
+      if (!$.isOk()) {
+        return [new_map(), decode_error("Dict", data)];
+      } else {
+        let dict$1 = $[0];
+        return fold2(
+          dict$1,
+          [new_map(), toList([])],
+          (a2, k, v) => {
+            let $1 = a2[1];
+            if ($1.hasLength(0)) {
+              return fold_dict(a2, k, v, key.function, value3.function);
+            } else {
+              return a2;
+            }
+          }
+        );
       }
     }
   );
@@ -2733,9 +2833,9 @@ function check2(regexp, string3) {
 
 // build/dev/javascript/gleam_stdlib/gleam/set.mjs
 var Set2 = class extends CustomType {
-  constructor(dict3) {
+  constructor(dict4) {
     super();
-    this.dict = dict3;
+    this.dict = dict4;
   }
 };
 function new$() {
@@ -2748,14 +2848,14 @@ function contains2(set2, member) {
 }
 var token = void 0;
 function from_list2(members) {
-  let dict3 = fold(
+  let dict4 = fold(
     members,
     new_map(),
     (m, k) => {
       return insert(m, k, token);
     }
   );
-  return new Set2(dict3);
+  return new Set2(dict4);
 }
 
 // build/dev/javascript/nibble/nibble/lexer.mjs
@@ -5192,6 +5292,9 @@ function category_decoder() {
     }
   );
 }
+function category_suggestions_decoder() {
+  return dict2(string, category_decoder());
+}
 function allocation_decoder() {
   let allocation_decoder$1 = field2(
     "id",
@@ -5436,165 +5539,6 @@ function money_to_string(m) {
 }
 function is_zero_int(m) {
   return m.s === 0;
-}
-
-// build/dev/javascript/gleam_json/gleam_json_ffi.mjs
-function json_to_string(json) {
-  return JSON.stringify(json);
-}
-function object(entries) {
-  return Object.fromEntries(entries);
-}
-function identity2(x) {
-  return x;
-}
-function do_null() {
-  return null;
-}
-function decode(string3) {
-  try {
-    const result = JSON.parse(string3);
-    return new Ok(result);
-  } catch (err) {
-    return new Error(getJsonDecodeError(err, string3));
-  }
-}
-function getJsonDecodeError(stdErr, json) {
-  if (isUnexpectedEndOfInput(stdErr))
-    return new UnexpectedEndOfInput();
-  return toUnexpectedByteError(stdErr, json);
-}
-function isUnexpectedEndOfInput(err) {
-  const unexpectedEndOfInputRegex = /((unexpected (end|eof))|(end of data)|(unterminated string)|(json( parse error|\.parse)\: expected '(\:|\}|\])'))/i;
-  return unexpectedEndOfInputRegex.test(err.message);
-}
-function toUnexpectedByteError(err, json) {
-  let converters = [
-    v8UnexpectedByteError,
-    oldV8UnexpectedByteError,
-    jsCoreUnexpectedByteError,
-    spidermonkeyUnexpectedByteError
-  ];
-  for (let converter of converters) {
-    let result = converter(err, json);
-    if (result)
-      return result;
-  }
-  return new UnexpectedByte("", 0);
-}
-function v8UnexpectedByteError(err) {
-  const regex = /unexpected token '(.)', ".+" is not valid JSON/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const byte = toHex(match[1]);
-  return new UnexpectedByte(byte, -1);
-}
-function oldV8UnexpectedByteError(err) {
-  const regex = /unexpected token (.) in JSON at position (\d+)/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const byte = toHex(match[1]);
-  const position = Number(match[2]);
-  return new UnexpectedByte(byte, position);
-}
-function spidermonkeyUnexpectedByteError(err, json) {
-  const regex = /(unexpected character|expected .*) at line (\d+) column (\d+)/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const line = Number(match[2]);
-  const column2 = Number(match[3]);
-  const position = getPositionFromMultiline(line, column2, json);
-  const byte = toHex(json[position]);
-  return new UnexpectedByte(byte, position);
-}
-function jsCoreUnexpectedByteError(err) {
-  const regex = /unexpected (identifier|token) "(.)"/i;
-  const match = regex.exec(err.message);
-  if (!match)
-    return null;
-  const byte = toHex(match[2]);
-  return new UnexpectedByte(byte, 0);
-}
-function toHex(char) {
-  return "0x" + char.charCodeAt(0).toString(16).toUpperCase();
-}
-function getPositionFromMultiline(line, column2, string3) {
-  if (line === 1)
-    return column2 - 1;
-  let currentLn = 1;
-  let position = 0;
-  string3.split("").find((char, idx) => {
-    if (char === "\n")
-      currentLn += 1;
-    if (currentLn === line) {
-      position = idx + column2;
-      return true;
-    }
-    return false;
-  });
-  return position;
-}
-
-// build/dev/javascript/gleam_json/gleam/json.mjs
-var UnexpectedEndOfInput = class extends CustomType {
-};
-var UnexpectedByte = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var UnableToDecode = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-function do_parse(json, decoder) {
-  return then$(
-    decode(json),
-    (dynamic_value) => {
-      let _pipe = run(dynamic_value, decoder);
-      return map_error(
-        _pipe,
-        (var0) => {
-          return new UnableToDecode(var0);
-        }
-      );
-    }
-  );
-}
-function parse(json, decoder) {
-  return do_parse(json, decoder);
-}
-function to_string2(json) {
-  return json_to_string(json);
-}
-function string2(input2) {
-  return identity2(input2);
-}
-function bool3(input2) {
-  return identity2(input2);
-}
-function int3(input2) {
-  return identity2(input2);
-}
-function null$() {
-  return do_null();
-}
-function nullable(input2, inner_type) {
-  if (input2 instanceof Some) {
-    let value3 = input2[0];
-    return inner_type(value3);
-  } else {
-    return null$();
-  }
-}
-function object2(entries) {
-  return object(entries);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
@@ -6338,7 +6282,7 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
     }
   }
 }
-function parse2(uri_string) {
+function parse(uri_string) {
   let default_pieces = new Uri(
     new None(),
     new None(),
@@ -6388,7 +6332,7 @@ function remove_dot_segments(input2) {
 function path_segments(path) {
   return remove_dot_segments(split2(path, "/"));
 }
-function to_string3(uri) {
+function to_string2(uri) {
   let parts = (() => {
     let $ = uri.fragment;
     if ($ instanceof Some) {
@@ -6463,46 +6407,163 @@ function to_string3(uri) {
   return concat2(parts$5);
 }
 
-// build/dev/javascript/gluid/gluid.mjs
-function format_uuid(src) {
-  return slice(src, 0, 8) + "-" + slice(src, 8, 4) + "-" + slice(
-    src,
-    12,
-    4
-  ) + "-" + slice(src, 16, 4) + "-" + slice(src, 20, 12);
+// build/dev/javascript/gleam_json/gleam_json_ffi.mjs
+function json_to_string(json) {
+  return JSON.stringify(json);
 }
-function guidv4() {
-  let randoma = random(4294967295);
-  let a2 = (() => {
-    let _pipe = to_base16(randoma);
-    return pad_left(_pipe, 8, "0");
-  })();
-  let randomb = random(4294967295);
-  let clear_mask = bitwise_not(bitwise_shift_left(15, 12));
-  let randomb$1 = bitwise_and(randomb, clear_mask);
-  let value_mask = bitwise_shift_left(4, 12);
-  let randomb$2 = bitwise_or(randomb$1, value_mask);
-  let b = (() => {
-    let _pipe = to_base16(randomb$2);
-    return pad_left(_pipe, 8, "0");
-  })();
-  let randomc = random(4294967295);
-  let clear_mask$1 = bitwise_not(bitwise_shift_left(3, 30));
-  let randomc$1 = bitwise_and(randomc, clear_mask$1);
-  let value_mask$1 = bitwise_shift_left(2, 30);
-  let randomc$2 = bitwise_or(randomc$1, value_mask$1);
-  let c = (() => {
-    let _pipe = to_base16(randomc$2);
-    return pad_left(_pipe, 8, "0");
-  })();
-  let randomd = random(4294967295);
-  let d = (() => {
-    let _pipe = randomd;
-    let _pipe$1 = to_base16(_pipe);
-    return pad_left(_pipe$1, 8, "0");
-  })();
-  let concatened = a2 + b + c + d;
-  return format_uuid(concatened);
+function object(entries) {
+  return Object.fromEntries(entries);
+}
+function identity2(x) {
+  return x;
+}
+function do_null() {
+  return null;
+}
+function decode(string3) {
+  try {
+    const result = JSON.parse(string3);
+    return new Ok(result);
+  } catch (err) {
+    return new Error(getJsonDecodeError(err, string3));
+  }
+}
+function getJsonDecodeError(stdErr, json) {
+  if (isUnexpectedEndOfInput(stdErr))
+    return new UnexpectedEndOfInput();
+  return toUnexpectedByteError(stdErr, json);
+}
+function isUnexpectedEndOfInput(err) {
+  const unexpectedEndOfInputRegex = /((unexpected (end|eof))|(end of data)|(unterminated string)|(json( parse error|\.parse)\: expected '(\:|\}|\])'))/i;
+  return unexpectedEndOfInputRegex.test(err.message);
+}
+function toUnexpectedByteError(err, json) {
+  let converters = [
+    v8UnexpectedByteError,
+    oldV8UnexpectedByteError,
+    jsCoreUnexpectedByteError,
+    spidermonkeyUnexpectedByteError
+  ];
+  for (let converter of converters) {
+    let result = converter(err, json);
+    if (result)
+      return result;
+  }
+  return new UnexpectedByte("", 0);
+}
+function v8UnexpectedByteError(err) {
+  const regex = /unexpected token '(.)', ".+" is not valid JSON/i;
+  const match = regex.exec(err.message);
+  if (!match)
+    return null;
+  const byte = toHex(match[1]);
+  return new UnexpectedByte(byte, -1);
+}
+function oldV8UnexpectedByteError(err) {
+  const regex = /unexpected token (.) in JSON at position (\d+)/i;
+  const match = regex.exec(err.message);
+  if (!match)
+    return null;
+  const byte = toHex(match[1]);
+  const position = Number(match[2]);
+  return new UnexpectedByte(byte, position);
+}
+function spidermonkeyUnexpectedByteError(err, json) {
+  const regex = /(unexpected character|expected .*) at line (\d+) column (\d+)/i;
+  const match = regex.exec(err.message);
+  if (!match)
+    return null;
+  const line = Number(match[2]);
+  const column2 = Number(match[3]);
+  const position = getPositionFromMultiline(line, column2, json);
+  const byte = toHex(json[position]);
+  return new UnexpectedByte(byte, position);
+}
+function jsCoreUnexpectedByteError(err) {
+  const regex = /unexpected (identifier|token) "(.)"/i;
+  const match = regex.exec(err.message);
+  if (!match)
+    return null;
+  const byte = toHex(match[2]);
+  return new UnexpectedByte(byte, 0);
+}
+function toHex(char) {
+  return "0x" + char.charCodeAt(0).toString(16).toUpperCase();
+}
+function getPositionFromMultiline(line, column2, string3) {
+  if (line === 1)
+    return column2 - 1;
+  let currentLn = 1;
+  let position = 0;
+  string3.split("").find((char, idx) => {
+    if (char === "\n")
+      currentLn += 1;
+    if (currentLn === line) {
+      position = idx + column2;
+      return true;
+    }
+    return false;
+  });
+  return position;
+}
+
+// build/dev/javascript/gleam_json/gleam/json.mjs
+var UnexpectedEndOfInput = class extends CustomType {
+};
+var UnexpectedByte = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+var UnableToDecode = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
+function do_parse(json, decoder) {
+  return then$(
+    decode(json),
+    (dynamic_value) => {
+      let _pipe = run(dynamic_value, decoder);
+      return map_error(
+        _pipe,
+        (var0) => {
+          return new UnableToDecode(var0);
+        }
+      );
+    }
+  );
+}
+function parse2(json, decoder) {
+  return do_parse(json, decoder);
+}
+function to_string3(json) {
+  return json_to_string(json);
+}
+function string2(input2) {
+  return identity2(input2);
+}
+function bool3(input2) {
+  return identity2(input2);
+}
+function int3(input2) {
+  return identity2(input2);
+}
+function null$() {
+  return do_null();
+}
+function nullable(input2, inner_type) {
+  if (input2 instanceof Some) {
+    let value3 = input2[0];
+    return inner_type(value3);
+  } else {
+    return null$();
+  }
+}
+function object2(entries) {
+  return object(entries);
 }
 
 // build/dev/javascript/lustre/lustre/effect.mjs
@@ -7407,6 +7468,113 @@ function start2(app, selector, flags) {
   );
 }
 
+// build/dev/javascript/modem/modem.ffi.mjs
+var defaults = {
+  handle_external_links: false,
+  handle_internal_links: true
+};
+var initial_location = window?.location?.href;
+var do_initial_uri = () => {
+  if (!initial_location) {
+    return new Error(void 0);
+  } else {
+    return new Ok(uri_from_url(new URL(initial_location)));
+  }
+};
+var do_init = (dispatch, options = defaults) => {
+  document.addEventListener("click", (event2) => {
+    const a2 = find_anchor(event2.target);
+    if (!a2)
+      return;
+    try {
+      const url = new URL(a2.href);
+      const uri = uri_from_url(url);
+      const is_external = url.host !== window.location.host;
+      if (!options.handle_external_links && is_external)
+        return;
+      if (!options.handle_internal_links && !is_external)
+        return;
+      event2.preventDefault();
+      if (!is_external) {
+        window.history.pushState({}, "", a2.href);
+        window.requestAnimationFrame(() => {
+          if (url.hash) {
+            document.getElementById(url.hash.slice(1))?.scrollIntoView();
+          }
+        });
+      }
+      return dispatch(uri);
+    } catch {
+      return;
+    }
+  });
+  window.addEventListener("popstate", (e) => {
+    e.preventDefault();
+    const url = new URL(window.location.href);
+    const uri = uri_from_url(url);
+    window.requestAnimationFrame(() => {
+      if (url.hash) {
+        document.getElementById(url.hash.slice(1))?.scrollIntoView();
+      }
+    });
+    dispatch(uri);
+  });
+  window.addEventListener("modem-push", ({ detail }) => {
+    dispatch(detail);
+  });
+  window.addEventListener("modem-replace", ({ detail }) => {
+    dispatch(detail);
+  });
+};
+var find_anchor = (el) => {
+  if (!el || el.tagName === "BODY") {
+    return null;
+  } else if (el.tagName === "A") {
+    return el;
+  } else {
+    return find_anchor(el.parentElement);
+  }
+};
+var uri_from_url = (url) => {
+  return new Uri(
+    /* scheme   */
+    url.protocol ? new Some(url.protocol.slice(0, -1)) : new None(),
+    /* userinfo */
+    new None(),
+    /* host     */
+    url.hostname ? new Some(url.hostname) : new None(),
+    /* port     */
+    url.port ? new Some(Number(url.port)) : new None(),
+    /* path     */
+    url.pathname,
+    /* query    */
+    url.search ? new Some(url.search.slice(1)) : new None(),
+    /* fragment */
+    url.hash ? new Some(url.hash.slice(1)) : new None()
+  );
+};
+
+// build/dev/javascript/modem/modem.mjs
+function init2(handler) {
+  return from(
+    (dispatch) => {
+      return guard(
+        !is_browser(),
+        void 0,
+        () => {
+          return do_init(
+            (uri) => {
+              let _pipe = uri;
+              let _pipe$1 = handler(_pipe);
+              return dispatch(_pipe$1);
+            }
+          );
+        }
+      );
+    }
+  );
+}
+
 // build/dev/javascript/gleam_http/gleam/http.mjs
 var Get = class extends CustomType {
 };
@@ -7566,8 +7734,50 @@ function set_method(req, method) {
 }
 function to(url) {
   let _pipe = url;
-  let _pipe$1 = parse2(_pipe);
+  let _pipe$1 = parse(_pipe);
   return then$(_pipe$1, from_uri);
+}
+
+// build/dev/javascript/gluid/gluid.mjs
+function format_uuid(src) {
+  return slice(src, 0, 8) + "-" + slice(src, 8, 4) + "-" + slice(
+    src,
+    12,
+    4
+  ) + "-" + slice(src, 16, 4) + "-" + slice(src, 20, 12);
+}
+function guidv4() {
+  let randoma = random(4294967295);
+  let a2 = (() => {
+    let _pipe = to_base16(randoma);
+    return pad_left(_pipe, 8, "0");
+  })();
+  let randomb = random(4294967295);
+  let clear_mask = bitwise_not(bitwise_shift_left(15, 12));
+  let randomb$1 = bitwise_and(randomb, clear_mask);
+  let value_mask = bitwise_shift_left(4, 12);
+  let randomb$2 = bitwise_or(randomb$1, value_mask);
+  let b = (() => {
+    let _pipe = to_base16(randomb$2);
+    return pad_left(_pipe, 8, "0");
+  })();
+  let randomc = random(4294967295);
+  let clear_mask$1 = bitwise_not(bitwise_shift_left(3, 30));
+  let randomc$1 = bitwise_and(randomc, clear_mask$1);
+  let value_mask$1 = bitwise_shift_left(2, 30);
+  let randomc$2 = bitwise_or(randomc$1, value_mask$1);
+  let c = (() => {
+    let _pipe = to_base16(randomc$2);
+    return pad_left(_pipe, 8, "0");
+  })();
+  let randomd = random(4294967295);
+  let d = (() => {
+    let _pipe = randomd;
+    let _pipe$1 = to_base16(_pipe);
+    return pad_left(_pipe$1, 8, "0");
+  })();
+  let concatened = a2 + b + c + d;
+  return format_uuid(concatened);
 }
 
 // build/dev/javascript/gleam_http/gleam/http/response.mjs
@@ -7650,7 +7860,7 @@ function from_fetch_response(response) {
   );
 }
 function to_fetch_request(request) {
-  let url = to_string3(to_uri(request));
+  let url = to_string2(to_uri(request));
   let method = method_to_string(request.method).toUpperCase();
   let options = {
     headers: make_headers(request.headers),
@@ -7784,7 +7994,7 @@ function post(url, body, expect) {
           "Content-Type",
           "application/json"
         );
-        let _pipe$3 = set_body(_pipe$2, to_string2(body));
+        let _pipe$3 = set_body(_pipe$2, to_string3(body));
         return do_send(_pipe$3, expect, dispatch);
       } else {
         return dispatch(expect.run(new Error(new BadUrl(url))));
@@ -7823,7 +8033,7 @@ function expect_json2(decoder, to_msg) {
       let _pipe$2 = then$(
         _pipe$1,
         (body) => {
-          let $ = parse(body, decoder);
+          let $ = parse2(body, decoder);
           if ($.isOk()) {
             let json = $[0];
             return new Ok(json);
@@ -7834,113 +8044,6 @@ function expect_json2(decoder, to_msg) {
         }
       );
       return to_msg(_pipe$2);
-    }
-  );
-}
-
-// build/dev/javascript/modem/modem.ffi.mjs
-var defaults = {
-  handle_external_links: false,
-  handle_internal_links: true
-};
-var initial_location = window?.location?.href;
-var do_initial_uri = () => {
-  if (!initial_location) {
-    return new Error(void 0);
-  } else {
-    return new Ok(uri_from_url(new URL(initial_location)));
-  }
-};
-var do_init = (dispatch, options = defaults) => {
-  document.addEventListener("click", (event2) => {
-    const a2 = find_anchor(event2.target);
-    if (!a2)
-      return;
-    try {
-      const url = new URL(a2.href);
-      const uri = uri_from_url(url);
-      const is_external = url.host !== window.location.host;
-      if (!options.handle_external_links && is_external)
-        return;
-      if (!options.handle_internal_links && !is_external)
-        return;
-      event2.preventDefault();
-      if (!is_external) {
-        window.history.pushState({}, "", a2.href);
-        window.requestAnimationFrame(() => {
-          if (url.hash) {
-            document.getElementById(url.hash.slice(1))?.scrollIntoView();
-          }
-        });
-      }
-      return dispatch(uri);
-    } catch {
-      return;
-    }
-  });
-  window.addEventListener("popstate", (e) => {
-    e.preventDefault();
-    const url = new URL(window.location.href);
-    const uri = uri_from_url(url);
-    window.requestAnimationFrame(() => {
-      if (url.hash) {
-        document.getElementById(url.hash.slice(1))?.scrollIntoView();
-      }
-    });
-    dispatch(uri);
-  });
-  window.addEventListener("modem-push", ({ detail }) => {
-    dispatch(detail);
-  });
-  window.addEventListener("modem-replace", ({ detail }) => {
-    dispatch(detail);
-  });
-};
-var find_anchor = (el) => {
-  if (!el || el.tagName === "BODY") {
-    return null;
-  } else if (el.tagName === "A") {
-    return el;
-  } else {
-    return find_anchor(el.parentElement);
-  }
-};
-var uri_from_url = (url) => {
-  return new Uri(
-    /* scheme   */
-    url.protocol ? new Some(url.protocol.slice(0, -1)) : new None(),
-    /* userinfo */
-    new None(),
-    /* host     */
-    url.hostname ? new Some(url.hostname) : new None(),
-    /* port     */
-    url.port ? new Some(Number(url.port)) : new None(),
-    /* path     */
-    url.pathname,
-    /* query    */
-    url.search ? new Some(url.search.slice(1)) : new None(),
-    /* fragment */
-    url.hash ? new Some(url.hash.slice(1)) : new None()
-  );
-};
-
-// build/dev/javascript/modem/modem.mjs
-function init2(handler) {
-  return from(
-    (dispatch) => {
-      return guard(
-        !is_browser(),
-        void 0,
-        () => {
-          return do_init(
-            (uri) => {
-              let _pipe = uri;
-              let _pipe$1 = handler(_pipe);
-              return dispatch(_pipe$1);
-            }
-          );
-        }
-      );
     }
   );
 }
@@ -7979,6 +8082,12 @@ var Categories = class extends CustomType {
   }
 };
 var Transactions = class extends CustomType {
+  constructor(trans) {
+    super();
+    this.trans = trans;
+  }
+};
+var Suggestions = class extends CustomType {
   constructor(trans) {
     super();
     this.trans = trans;
@@ -8200,7 +8309,7 @@ var UserInputShowAllTransactions = class extends CustomType {
   }
 };
 var Model2 = class extends CustomType {
-  constructor(current_user, all_users, cycle, route, cycle_end_day, show_all_transactions, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form) {
+  constructor(current_user, all_users, cycle, route, cycle_end_day, show_all_transactions, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions) {
     super();
     this.current_user = current_user;
     this.all_users = all_users;
@@ -8218,6 +8327,7 @@ var Model2 = class extends CustomType {
     this.target_edit = target_edit;
     this.selected_transaction = selected_transaction;
     this.transaction_edit_form = transaction_edit_form;
+    this.suggestions = suggestions;
   }
 };
 var SelectedCategory = class extends CustomType {
@@ -8229,14 +8339,13 @@ var SelectedCategory = class extends CustomType {
   }
 };
 var TransactionForm = class extends CustomType {
-  constructor(date, payee, category, amount, is_inflow, user_id) {
+  constructor(date, payee, category, amount, is_inflow) {
     super();
     this.date = date;
     this.payee = payee;
     this.category = category;
     this.amount = amount;
     this.is_inflow = is_inflow;
-    this.user_id = user_id;
   }
 };
 var ShiftLeft = class extends CustomType {
@@ -8598,7 +8707,7 @@ function initial_eff() {
     )
   );
 }
-function add_transaction_eff(transaction_form, amount, cat) {
+function add_transaction_eff(transaction_form, amount, cat, current_user) {
   let url = "http://localhost:8000/transaction/add";
   let t = new Transaction(
     guidv4(),
@@ -8610,7 +8719,7 @@ function add_transaction_eff(transaction_form, amount, cat) {
     transaction_form.payee,
     cat.id,
     amount,
-    transaction_form.user_id
+    current_user.id
   );
   return post(
     url,
@@ -8722,7 +8831,7 @@ function update_allocation_eff(a2, amount) {
         let _pipe = req$1;
         let _pipe$1 = set_body(
           _pipe,
-          to_string2(
+          to_string3(
             allocation_encode(
               new Some(a2.id),
               amount,
@@ -8816,7 +8925,7 @@ function update_transaction_eff(t) {
         let _pipe = req$1;
         let _pipe$1 = set_body(
           _pipe,
-          to_string2(transaction_encode(t))
+          to_string3(transaction_encode(t))
         );
         return set_header(_pipe$1, "Content-Type", "application/json");
       })(),
@@ -8895,7 +9004,7 @@ function save_target_eff(category, target_edit) {
         let _pipe = req$1;
         let _pipe$1 = set_body(
           _pipe,
-          to_string2(
+          to_string3(
             category_encode(
               (() => {
                 let _record = category;
@@ -8971,6 +9080,19 @@ function write_localstorage2(key, value3) {
   return from((_) => {
     return write_localstorage(key, value3);
   });
+}
+function get_category_suggestions() {
+  let url = "http://localho.st:8000/category/suggestions";
+  let decoder = category_suggestions_decoder();
+  return get3(
+    url,
+    expect_json2(
+      decoder,
+      (var0) => {
+        return new Suggestions(var0);
+      }
+    )
+  );
 }
 
 // build/dev/javascript/lustre/lustre/element/html.mjs
@@ -9591,7 +9713,7 @@ function transaction_list_item_html(t, model) {
     );
   }
 }
-function add_transaction_ui(transactions, categories) {
+function add_transaction_ui(transactions, categories, transaction_edit_form) {
   return tr(
     toList([]),
     toList([
@@ -9608,7 +9730,8 @@ function add_transaction_ui(transactions, categories) {
               placeholder("date"),
               id("addTransactionDateId"),
               class$("form-control"),
-              type_("date")
+              type_("date"),
+              value(transaction_edit_form.date)
             ])
           )
         ])
@@ -9627,7 +9750,8 @@ function add_transaction_ui(transactions, categories) {
               id("addTransactionPayeeId"),
               class$("form-control"),
               type_("text"),
-              attribute("list", "payees_list")
+              attribute("list", "payees_list"),
+              value(transaction_edit_form.payee)
             ])
           ),
           datalist(
@@ -9637,8 +9761,9 @@ function add_transaction_ui(transactions, categories) {
               let _pipe$1 = map2(_pipe, (t) => {
                 return t.payee;
               });
+              let _pipe$2 = unique(_pipe$1);
               return map2(
-                _pipe$1,
+                _pipe$2,
                 (p2) => {
                   return option(toList([value(p2)]), "");
                 }
@@ -9657,7 +9782,16 @@ function add_transaction_ui(transactions, categories) {
                   return new UserUpdatedTransactionCategory(var0);
                 }
               ),
-              class$("form-select")
+              class$("form-select"),
+              value(
+                (() => {
+                  let _pipe = transaction_edit_form.category;
+                  let _pipe$1 = map(_pipe, (c) => {
+                    return c.name;
+                  });
+                  return unwrap(_pipe$1, "");
+                })()
+              )
             ]),
             (() => {
               let _pipe = categories;
@@ -9688,7 +9822,20 @@ function add_transaction_ui(transactions, categories) {
               id("addTransactionAmountId"),
               class$("form-control"),
               type_("text"),
-              style(toList([["width", "120px"]]))
+              style(toList([["width", "120px"]])),
+              value(
+                (() => {
+                  let _pipe = transaction_edit_form.amount;
+                  let _pipe$1 = map(
+                    _pipe,
+                    (m) => {
+                      let _pipe$12 = m;
+                      return money_to_string_no_sign(_pipe$12);
+                    }
+                  );
+                  return unwrap(_pipe$1, "");
+                })()
+              )
             ])
           ),
           button(
@@ -9751,7 +9898,11 @@ function budget_transactions(model) {
             flatten2(
               toList([
                 toList([
-                  add_transaction_ui(model.transactions, model.categories)
+                  add_transaction_ui(
+                    model.transactions,
+                    model.categories,
+                    model.transaction_add_input
+                  )
                 ]),
                 (() => {
                   let $ = model.show_all_transactions;
@@ -10342,12 +10493,12 @@ function init3(_) {
         "",
         new None(),
         new None(),
-        false,
-        "initial"
+        false
       ),
       new TargetEdit("", false, new Monthly(int_to_money(0))),
       new None(),
-      new None()
+      new None(),
+      new_map()
     ),
     batch(
       toList([init2(on_route_change), initial_eff()])
@@ -10435,7 +10586,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -10465,7 +10617,8 @@ function update(model, msg) {
             _record.transaction_add_input,
             _record.target_edit,
             _record.selected_transaction,
-            _record.transaction_edit_form
+            _record.transaction_edit_form,
+            _record.suggestions
           );
         })(),
         batch(
@@ -10473,7 +10626,8 @@ function update(model, msg) {
             get_categories(),
             get_transactions(),
             get_allocations(cycle),
-            read_localstorage2("current_user_id")
+            read_localstorage2("current_user_id"),
+            get_category_suggestions()
           ])
         )
       ];
@@ -10509,7 +10663,8 @@ function update(model, msg) {
             _record.transaction_add_input,
             _record.target_edit,
             _record.selected_transaction,
-            _record.transaction_edit_form
+            _record.transaction_edit_form,
+            _record.suggestions
           );
         })(),
         none()
@@ -10540,7 +10695,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       get_transactions()
@@ -10576,7 +10732,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -10604,7 +10761,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -10652,7 +10810,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -10678,7 +10837,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       write_localstorage2("current_user_id", user.id)
@@ -10703,7 +10863,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -10728,7 +10889,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       add_category(model.user_category_name_input)
@@ -10754,7 +10916,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -10787,19 +10950,24 @@ function update(model, msg) {
             _record.show_add_category_ui,
             _record.user_category_name_input,
             new TransactionForm(
-              "",
+              model.transaction_add_input.date,
               "",
               new None(),
               new None(),
-              false,
-              model.current_user.id
+              false
             ),
             _record.target_edit,
             _record.selected_transaction,
-            _record.transaction_edit_form
+            _record.transaction_edit_form,
+            _record.suggestions
           );
         })(),
-        add_transaction_eff(model.transaction_add_input, money, cat)
+        add_transaction_eff(
+          model.transaction_add_input,
+          money,
+          cat,
+          model.current_user
+        )
       ];
     } else {
       return [model, none()];
@@ -10833,7 +11001,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -10875,13 +11044,13 @@ function update(model, msg) {
               _record$1.payee,
               category,
               _record$1.amount,
-              _record$1.is_inflow,
-              _record$1.user_id
+              _record$1.is_inflow
             );
           })(),
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -10911,19 +11080,23 @@ function update(model, msg) {
               _record$1.payee,
               _record$1.category,
               _record$1.amount,
-              _record$1.is_inflow,
-              _record$1.user_id
+              _record$1.is_inflow
             );
           })(),
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
     ];
   } else if (msg instanceof UserUpdatedTransactionPayee) {
     let payee = msg.payee;
+    let category = (() => {
+      let _pipe = model.suggestions;
+      return map_get(_pipe, payee);
+    })();
     return [
       (() => {
         let _record = model;
@@ -10945,15 +11118,18 @@ function update(model, msg) {
             return new TransactionForm(
               _record$1.date,
               payee,
-              _record$1.category,
+              (() => {
+                let _pipe = category;
+                return from_result(_pipe);
+              })(),
               _record$1.amount,
-              _record$1.is_inflow,
-              _record$1.user_id
+              _record$1.is_inflow
             );
           })(),
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -10992,13 +11168,13 @@ function update(model, msg) {
                 );
                 return from_result(_pipe$1);
               })(),
-              _record$1.is_inflow,
-              _record$1.user_id
+              _record$1.is_inflow
             );
           })(),
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -11026,7 +11202,8 @@ function update(model, msg) {
             return new TargetEdit(_record$1.cat_id, true, _record$1.target);
           })(),
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -11059,7 +11236,8 @@ function update(model, msg) {
             );
           })(),
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       save_target_eff(
@@ -11098,7 +11276,8 @@ function update(model, msg) {
             );
           })(),
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       delete_target_eff(c)
@@ -11145,7 +11324,8 @@ function update(model, msg) {
             );
           })(),
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -11191,7 +11371,8 @@ function update(model, msg) {
             );
           })(),
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -11240,7 +11421,8 @@ function update(model, msg) {
             );
           })(),
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -11271,7 +11453,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           new Some(t.id),
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -11297,7 +11480,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           new None(),
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       delete_transaction_eff(id2)
@@ -11338,7 +11522,8 @@ function update(model, msg) {
                 return money_to_string_no_sign(_pipe);
               })()
             )
-          )
+          ),
+          _record.suggestions
         );
       })(),
       none()
@@ -11389,7 +11574,8 @@ function update(model, msg) {
                 );
               }
             );
-          })()
+          })(),
+          _record.suggestions
         );
       })(),
       none()
@@ -11430,7 +11616,8 @@ function update(model, msg) {
                 );
               }
             );
-          })()
+          })(),
+          _record.suggestions
         );
       })(),
       none()
@@ -11471,7 +11658,8 @@ function update(model, msg) {
                 );
               }
             );
-          })()
+          })(),
+          _record.suggestions
         );
       })(),
       none()
@@ -11512,7 +11700,8 @@ function update(model, msg) {
                 );
               }
             );
-          })()
+          })(),
+          _record.suggestions
         );
       })(),
       none()
@@ -11537,7 +11726,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           new None(),
-          new None()
+          new None(),
+          _record.suggestions
         );
       })(),
       (() => {
@@ -11583,7 +11773,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       (() => {
@@ -11617,7 +11808,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       (() => {
@@ -11675,7 +11867,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -11746,7 +11939,8 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
@@ -11779,14 +11973,15 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       batch(
         toList([get_transactions(), get_allocations(new_cycle)])
       )
     ];
-  } else {
+  } else if (msg instanceof UserInputShowAllTransactions) {
     let show = msg.show;
     return [
       (() => {
@@ -11807,11 +12002,41 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
-          _record.transaction_edit_form
+          _record.transaction_edit_form,
+          _record.suggestions
         );
       })(),
       none()
     ];
+  } else if (msg instanceof Suggestions && msg.trans.isOk()) {
+    let suggestions = msg.trans[0];
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.current_user,
+          _record.all_users,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          suggestions
+        );
+      })(),
+      none()
+    ];
+  } else {
+    return [model, none()];
   }
 }
 function main() {
@@ -11821,7 +12046,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      34,
+      31,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

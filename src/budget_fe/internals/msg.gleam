@@ -3,6 +3,7 @@ import budget_test.{
   type Transaction, type User,
 } as _
 import budget_test.{Allocation, Category, Cycle, Money, Transaction, User}
+import gleam/dict
 import gleam/option.{type Option}
 import lustre_http
 
@@ -19,9 +20,10 @@ pub type Msg {
     cycle: Cycle,
     initial_route: Route,
   )
-  CurrentSavedUser(id : Result(String, Nil))
+  CurrentSavedUser(id: Result(String, Nil))
   Categories(cats: Result(List(Category), lustre_http.HttpError))
   Transactions(trans: Result(List(Transaction), lustre_http.HttpError))
+  Suggestions(trans: Result(dict.Dict(String, Category), lustre_http.HttpError))
   Allocations(a: Result(List(Allocation), lustre_http.HttpError))
   SelectCategory(c: Category)
   SelectUser(u: User)
@@ -81,6 +83,7 @@ pub type Model {
     target_edit: TargetEdit,
     selected_transaction: Option(String),
     transaction_edit_form: Option(TransactionEditForm),
+    suggestions : dict.Dict(String, Category),
   )
 }
 
@@ -95,7 +98,6 @@ pub type TransactionForm {
     category: Option(Category),
     amount: Option(Money),
     is_inflow: Bool,
-    user_id : String,
   )
 }
 

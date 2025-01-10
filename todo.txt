@@ -1,4 +1,6 @@
 1. [minor] category suggestion on add transaction
-2. [major] category groups
-3. [major] import transactions
+2. [minor] allocate needed
+3. [minor] cover minus
+4. [major] category groups
+5. [major] import transactions
 

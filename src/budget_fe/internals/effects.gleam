@@ -56,6 +56,7 @@ pub fn add_transaction_eff(
   transaction_form: TransactionForm,
   amount: m.Money,
   cat: Category,
+  current_user: User,
 ) -> effect.Effect(Msg) {
   let url = "http://localhost:8000/transaction/add"
 
@@ -68,7 +69,7 @@ pub fn add_transaction_eff(
       payee: transaction_form.payee,
       category_id: cat.id,
       value: amount,
-      user_id: transaction_form.user_id,
+      user_id: current_user.id,
     )
   // io.debug(t)
   lustre_http.post(
@@ -289,4 +290,11 @@ pub fn write_localstorage(key: String, value: String) -> effect.Effect(msg) {
 @external(javascript, "./app.ffi.mjs", "write_localstorage")
 fn do_write_localstorage(_key: String, _value: String) -> Nil {
   Nil
+}
+
+pub fn get_category_suggestions() -> effect.Effect(Msg) {
+  let url = "http://localho.st:8000/category/suggestions"
+
+  let decoder = m.category_suggestions_decoder()
+  lustre_http.get(url, lustre_http.expect_json2(decoder, msg.Suggestions))
 }

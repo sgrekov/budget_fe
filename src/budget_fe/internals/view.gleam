@@ -478,7 +478,13 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
       html.tbody(
         [],
         list.flatten([
-          [add_transaction_ui(model.transactions, model.categories)],
+          [
+            add_transaction_ui(
+              model.transactions,
+              model.categories,
+              model.transaction_add_input,
+            ),
+          ],
           {
             case model.show_all_transactions {
               False ->
@@ -637,6 +643,7 @@ fn manage_transaction_buttons(
 fn add_transaction_ui(
   transactions: List(Transaction),
   categories: List(Category),
+  transaction_edit_form: msg.TransactionForm,
 ) -> element.Element(Msg) {
   html.tr([], [
     html.td([], [
@@ -646,6 +653,7 @@ fn add_transaction_ui(
         attribute.id("addTransactionDateId"),
         attribute.class("form-control"),
         attribute.type_("date"),
+        attribute.value(transaction_edit_form.date),
       ]),
     ]),
     html.td([], [
@@ -656,11 +664,13 @@ fn add_transaction_ui(
         attribute.class("form-control"),
         attribute.type_("text"),
         attribute.attribute("list", "payees_list"),
+        attribute.value(transaction_edit_form.payee),
       ]),
       html.datalist(
         [attribute.id("payees_list")],
         transactions
           |> list.map(fn(t) { t.payee })
+          |> list.unique()
           |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
       ),
     ]),
@@ -669,6 +679,11 @@ fn add_transaction_ui(
         [
           event.on_input(msg.UserUpdatedTransactionCategory),
           attribute.class("form-select"),
+          attribute.value(
+            transaction_edit_form.category
+            |> option.map(fn(c) { c.name })
+            |> option.unwrap(""),
+          ),
         ],
         categories
           |> list.map(fn(c) { c.name })
@@ -683,6 +698,11 @@ fn add_transaction_ui(
         attribute.class("form-control"),
         attribute.type_("text"),
         attribute.style([#("width", "120px")]),
+        attribute.value(
+          transaction_edit_form.amount
+          |> option.map(fn(m) { m |> m.money_to_string_no_sign })
+          |> option.unwrap(""),
+        ),
       ]),
       html.button([event.on_click(msg.AddTransaction)], [element.text("Add")]),
     ]),
