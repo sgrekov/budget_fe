@@ -465,7 +465,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         new_category_group_name: "",
         show_add_category_group_ui: False,
       ),
-      eff.add_new_group_eff(model.new_category_group_name),
+      eff.get_category_groups(),
     )
     msg.AddCategoryGroupResult(Error(_)) -> #(model, effect.none())
     msg.CategoryGroups(Ok(groups)) -> #(

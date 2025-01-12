@@ -60,6 +60,7 @@ pub fn category_encode(cat: Category) -> json.Json {
     #("name", json.string(cat.name)),
     #("target", json.nullable(cat.target, of: target_encode)),
     #("inflow", json.bool(cat.inflow)),
+    #("group_id", json.string(cat.group_id)),
   ])
 }
 

@@ -585,6 +585,9 @@ function append_loop(loop$first, loop$second) {
 function append(first2, second) {
   return append_loop(reverse(first2), second);
 }
+function prepend2(list3, item) {
+  return prepend(item, list3);
+}
 function reverse_and_prepend(loop$prefix, loop$suffix) {
   while (true) {
     let prefix = loop$prefix;
@@ -615,6 +618,10 @@ function flatten_loop(loop$lists, loop$acc) {
 }
 function flatten2(lists) {
   return flatten_loop(lists, toList([]));
+}
+function flat_map(list3, fun) {
+  let _pipe = map2(list3, fun);
+  return flatten2(_pipe);
 }
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
@@ -5092,20 +5099,21 @@ var User = class extends CustomType {
   }
 };
 var CategoryGroup = class extends CustomType {
-  constructor(id2, name, order) {
+  constructor(id2, name, position) {
     super();
     this.id = id2;
     this.name = name;
-    this.order = order;
+    this.position = position;
   }
 };
 var Category = class extends CustomType {
-  constructor(id2, name, target, inflow) {
+  constructor(id2, name, target, inflow, group_id) {
     super();
     this.id = id2;
     this.name = name;
     this.target = target;
     this.inflow = inflow;
+    this.group_id = group_id;
   }
 };
 var Monthly = class extends CustomType {
@@ -5188,10 +5196,10 @@ function category_group_decoder() {
         string,
         (name) => {
           return field2(
-            "order",
+            "position",
             int2,
-            (order) => {
-              return success(new CategoryGroup(id2, name, order));
+            (position) => {
+              return success(new CategoryGroup(id2, name, position));
             }
           );
         }
@@ -5311,7 +5319,15 @@ function category_decoder() {
                 "inflow",
                 bool2,
                 (inflow) => {
-                  return success(new Category(id2, name, target, inflow));
+                  return field2(
+                    "group_id",
+                    string,
+                    (group_id) => {
+                      return success(
+                        new Category(id2, name, target, inflow, group_id)
+                      );
+                    }
+                  );
                 }
               );
             }
@@ -8165,7 +8181,8 @@ function category_encode(cat) {
       ["id", string2(cat.id)],
       ["name", string2(cat.name)],
       ["target", nullable(cat.target, target_encode)],
-      ["inflow", bool3(cat.inflow)]
+      ["inflow", bool3(cat.inflow)],
+      ["group_id", string2(cat.group_id)]
     ])
   );
 }
@@ -9110,7 +9127,8 @@ function save_target_eff(category, target_edit) {
                   _record.id,
                   _record.name,
                   target_edit,
-                  _record.inflow
+                  _record.inflow,
+                  _record.group_id
                 );
               })()
             )
@@ -10199,6 +10217,63 @@ function category_balance(cat, model) {
     ])
   );
 }
+function category_list_item_ui(categories, model, group) {
+  let _pipe = categories;
+  let _pipe$1 = filter(
+    _pipe,
+    (c) => {
+      return !c.inflow && c.group_id === group.id;
+    }
+  );
+  return map2(
+    _pipe$1,
+    (c) => {
+      let active_class = (() => {
+        let $ = model.selected_category;
+        if ($ instanceof None) {
+          return "";
+        } else {
+          let selected_cat = $[0];
+          let $1 = selected_cat.id === c.id;
+          if ($1) {
+            return "table-active";
+          } else {
+            return "";
+          }
+        }
+      })();
+      return tr(
+        toList([
+          on_click(new SelectCategory(c)),
+          class$(active_class)
+        ]),
+        toList([
+          td(toList([]), toList([text2(c.name)])),
+          td(toList([]), toList([category_balance(c, model)]))
+        ])
+      );
+    }
+  );
+}
+function category_group_list_item_ui(groups, model) {
+  let _pipe = groups;
+  return flat_map(
+    _pipe,
+    (group) => {
+      let group_ui = tr(
+        toList([
+          style(toList([["background-color", "rgb(199, 208, 201)"]]))
+        ]),
+        toList([
+          td(toList([]), toList([text2(group.name)])),
+          td(toList([]), toList([]))
+        ])
+      );
+      let _pipe$1 = category_list_item_ui(model.categories, model, group);
+      return prepend2(_pipe$1, group_ui);
+    }
+  );
+}
 function budget_categories(model) {
   let size = (() => {
     let $ = model.selected_category;
@@ -10247,41 +10322,10 @@ function budget_categories(model) {
       tbody(
         toList([]),
         (() => {
-          let cats_ui = (() => {
-            let _pipe = model.categories;
-            let _pipe$1 = filter(_pipe, (c) => {
-              return !c.inflow;
-            });
-            return map2(
-              _pipe$1,
-              (c) => {
-                let active_class = (() => {
-                  let $ = model.selected_category;
-                  if ($ instanceof None) {
-                    return "";
-                  } else {
-                    let selected_cat = $[0];
-                    let $1 = selected_cat.id === c.id;
-                    if ($1) {
-                      return "table-active";
-                    } else {
-                      return "";
-                    }
-                  }
-                })();
-                return tr(
-                  toList([
-                    on_click(new SelectCategory(c)),
-                    class$(active_class)
-                  ]),
-                  toList([
-                    td(toList([]), toList([text2(c.name)])),
-                    td(toList([]), toList([category_balance(c, model)]))
-                  ])
-                );
-              }
-            );
-          })();
+          let categories_groups_ui = category_group_list_item_ui(
+            model.categories_groups,
+            model
+          );
           let add_cat_group_ui = (() => {
             let $ = model.show_add_category_group_ui;
             if (!$) {
@@ -10326,7 +10370,7 @@ function budget_categories(model) {
               ]);
             }
           })();
-          return flatten2(toList([add_cat_group_ui, cats_ui]));
+          return flatten2(toList([add_cat_group_ui, categories_groups_ui]));
         })()
       )
     ])
@@ -12084,7 +12128,8 @@ function update(model, msg) {
                 _record.id,
                 sc.input_name,
                 _record.target,
-                _record.inflow
+                _record.inflow,
+                _record.group_id
               );
             })(),
             cat.target
@@ -12425,7 +12470,7 @@ function update(model, msg) {
           ""
         );
       })(),
-      add_new_group_eff(model.new_category_group_name)
+      get_category_groups()
     ];
   } else if (msg instanceof AddCategoryGroupResult && !msg.c.isOk()) {
     return [model, none()];

@@ -788,29 +788,9 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
       ]),
     ]),
     html.tbody([], {
-      let cats_ui =
-        model.categories
-        |> list.filter(fn(c) { !c.inflow })
-        |> list.map(fn(c) {
-          let active_class = case model.selected_category {
-            option.None -> ""
-            option.Some(selected_cat) ->
-              case selected_cat.id == c.id {
-                True -> "table-active"
-                False -> ""
-              }
-          }
-          html.tr(
-            [
-              event.on_click(msg.SelectCategory(c)),
-              attribute.class(active_class),
-            ],
-            [
-              html.td([], [html.text(c.name)]),
-              html.td([], [category_balance(c, model)]),
-            ],
-          )
-        })
+      let categories_groups_ui =
+        category_group_list_item_ui(model.categories_groups, model)
+
       // let add_cat_ui = case model.show_add_category_ui {
       //   False -> []
       //   True -> [
@@ -854,9 +834,51 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
         ]
       }
 
-      list.flatten([add_cat_group_ui, cats_ui])
+      list.flatten([add_cat_group_ui, categories_groups_ui])
     }),
   ])
+}
+
+fn category_group_list_item_ui(
+  groups: List(m.CategoryGroup),
+  model: Model,
+) -> List(element.Element(Msg)) {
+  groups
+  |> list.flat_map(fn(group) {
+    let group_ui =
+      html.tr([attribute.style([#("background-color", "rgb(199, 208, 201)")])], [
+        html.td([], [html.text(group.name)]),
+        html.td([], []),
+      ])
+    category_list_item_ui(model.categories, model, group) |> list.prepend(group_ui)
+    // [] |> list.prepend(group_ui)
+  })
+}
+
+fn category_list_item_ui(
+  categories: List(Category),
+  model: Model,
+  group : m.CategoryGroup,
+) -> List(element.Element(Msg)) {
+  categories
+  |> list.filter(fn(c) { !c.inflow && c.group_id == group.id })
+  |> list.map(fn(c) {
+    let active_class = case model.selected_category {
+      option.None -> ""
+      option.Some(selected_cat) ->
+        case selected_cat.id == c.id {
+          True -> "table-active"
+          False -> ""
+        }
+    }
+    html.tr(
+      [event.on_click(msg.SelectCategory(c)), attribute.class(active_class)],
+      [
+        html.td([], [html.text(c.name)]),
+        html.td([], [category_balance(c, model)]),
+      ],
+    )
+  })
 }
 
 fn category_assigned(
