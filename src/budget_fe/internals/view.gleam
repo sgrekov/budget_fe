@@ -775,7 +775,7 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
         html.th([], [
           html.text("Categories groups"),
           {
-            let btn_label = case model.show_add_category_ui {
+            let btn_label = case model.show_add_category_group_ui {
               True -> "-"
               False -> "+"
             }
@@ -811,29 +811,50 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
             ],
           )
         })
-      let add_cat_ui = case model.show_add_category_ui {
+      // let add_cat_ui = case model.show_add_category_ui {
+      //   False -> []
+      //   True -> [
+      //     html.tr([], [
+      //       html.td([], [
+      //         html.input([
+      //           event.on_input(msg.UserUpdatedCategoryName),
+      //           attribute.placeholder("category name"),
+      //           attribute.id("exampleFormControlInput1"),
+      //           attribute.class("form-control"),
+      //           attribute.type_("text"),
+      //         ]),
+      //       ]),
+      //       html.td([], [
+      //         html.button([event.on_click(msg.AddCategory)], [
+      //           element.text("Add"),
+      //         ]),
+      //       ]),
+      //     ]),
+      //   ]
+      // }
+      let add_cat_group_ui = case model.show_add_category_group_ui {
         False -> []
         True -> [
           html.tr([], [
             html.td([], [
               html.input([
-                event.on_input(msg.UserUpdatedCategoryName),
-                attribute.placeholder("category name"),
-                attribute.id("exampleFormControlInput1"),
+                event.on_input(msg.UserUpdatedCategoryGroupName),
+                attribute.placeholder("Category group name"),
+                // attribute.id("exampleFormControlInput1"),
                 attribute.class("form-control"),
                 attribute.type_("text"),
               ]),
             ]),
             html.td([], [
-              html.button([event.on_click(msg.AddCategory)], [
-                element.text("Add"),
+              html.button([event.on_click(msg.CreateCategoryGroup)], [
+                element.text("Create group"),
               ]),
             ]),
           ]),
         ]
       }
 
-      list.flatten([add_cat_ui, cats_ui])
+      list.flatten([add_cat_group_ui, cats_ui])
     }),
   ])
 }

@@ -1,8 +1,8 @@
 import budget_test.{
-  type Allocation, type Category, type Cycle, type Money, type Target,
-  type Transaction, type User,
-} as _
-import budget_test.{Allocation, Category, Cycle, Money, Transaction, User}
+  type Allocation, type Category, type CategoryGroup, type Cycle, type Money,
+  type Target, type Transaction, type User, Allocation, Category, Cycle, Money,
+  Transaction, User,
+}
 import gleam/dict
 import gleam/option.{type Option}
 import lustre_http
@@ -66,6 +66,10 @@ pub type Msg {
   AllocateNeeded(cat: Category, needed_amount: Money, alloc: Option(Allocation))
   CoverOverspent(cat: Category, balance: Money)
   ShowAddCategoryGroupUI
+  UserUpdatedCategoryGroupName(name: String)
+  CreateCategoryGroup
+  AddCategoryGroupResult(c: Result(String, lustre_http.HttpError))
+  CategoryGroups(c: Result(List(CategoryGroup), lustre_http.HttpError))
 }
 
 pub type Model {
@@ -76,18 +80,20 @@ pub type Model {
     route: Route,
     cycle_end_day: Option(Int),
     show_all_transactions: Bool,
+    categories_groups: List(CategoryGroup),
     categories: List(Category),
     transactions: List(Transaction),
     allocations: List(Allocation),
     selected_category: Option(SelectedCategory),
     show_add_category_ui: Bool,
-    show_add_category_group_ui: Bool,
     user_category_name_input: String,
     transaction_add_input: TransactionForm,
     target_edit: TargetEdit,
     selected_transaction: Option(String),
     transaction_edit_form: Option(TransactionEditForm),
     suggestions: dict.Dict(String, Category),
+    show_add_category_group_ui: Bool,
+    new_category_group_name: String,
   )
 }
 

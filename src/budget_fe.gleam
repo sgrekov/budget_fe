@@ -12,6 +12,7 @@ import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/set
 import lustre
 import lustre/effect
 import modem
@@ -33,6 +34,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       route: msg.Home,
       cycle_end_day: option.Some(26),
       show_all_transactions: False,
+      categories_groups: [],
       categories: [],
       transactions: [],
       allocations: [],
@@ -51,6 +53,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       selected_transaction: option.None,
       transaction_edit_form: option.None,
       suggestions: dict.new(),
+      new_category_group_name: "",
     ),
     effect.batch([modem.init(eff.on_route_change), eff.initial_eff()]),
   )
@@ -67,6 +70,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         Ok(users) -> #(
           Model(..model, all_users: users, cycle: cycle, route: initial_path),
           effect.batch([
+            eff.get_category_groups(),
             eff.get_categories(),
             eff.get_transactions(),
             eff.get_allocations(),
@@ -447,6 +451,28 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
+    msg.UserUpdatedCategoryGroupName(input_group_name) -> #(
+      Model(..model, new_category_group_name: input_group_name),
+      effect.none(),
+    )
+    msg.CreateCategoryGroup -> #(
+      model,
+      eff.add_new_group_eff(model.new_category_group_name),
+    )
+    msg.AddCategoryGroupResult(Ok(id)) -> #(
+      Model(
+        ..model,
+        new_category_group_name: "",
+        show_add_category_group_ui: False,
+      ),
+      eff.add_new_group_eff(model.new_category_group_name),
+    )
+    msg.AddCategoryGroupResult(Error(_)) -> #(model, effect.none())
+    msg.CategoryGroups(Ok(groups)) -> #(
+      Model(..model, categories_groups: groups),
+      effect.none(),
+    )
+    msg.CategoryGroups(Error(_)) -> #(model, effect.none())
   }
 }
 

@@ -1,5 +1,3 @@
-import gleam/http
-import gleam/http/request
 import budget_fe/internals/decoders
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_test.{
@@ -8,6 +6,8 @@ import budget_test.{
 } as m
 import date_utils
 import gleam/dynamic/decode
+import gleam/http
+import gleam/http/request
 import gleam/json
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
@@ -122,6 +122,29 @@ pub fn save_allocation_eff(
     Some(allocation) -> update_allocation_eff(allocation, money)
     None -> create_allocation_eff(money, category_id, cycle)
   }
+}
+
+pub fn get_category_groups() -> effect.Effect(Msg) {
+  let url = "http://localho.st:8000/category/groups"
+
+  let decoder = decode.list(m.category_group_decoder())
+  lustre_http.get(url, lustre_http.expect_json2(decoder, msg.CategoryGroups))
+}
+
+pub fn add_new_group_eff(name: String) -> effect.Effect(Msg) {
+  let url = "http://localho.st:8000/category/group/add"
+
+  lustre_http.post(
+    url,
+    json.object([#("name", json.string(name))]),
+    lustre_http.expect_json2(
+      {
+        use id <- decode.field("id", decode.string)
+        decode.success(id)
+      },
+      msg.AddCategoryGroupResult,
+    ),
+  )
 }
 
 fn create_allocation_eff(

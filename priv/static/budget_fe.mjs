@@ -5091,6 +5091,14 @@ var User = class extends CustomType {
     this.name = name;
   }
 };
+var CategoryGroup = class extends CustomType {
+  constructor(id2, name, order) {
+    super();
+    this.id = id2;
+    this.name = name;
+    this.order = order;
+  }
+};
 var Category = class extends CustomType {
   constructor(id2, name, target, inflow) {
     super();
@@ -5165,6 +5173,27 @@ function user_decoder() {
         string,
         (name) => {
           return success(new User(id2, name));
+        }
+      );
+    }
+  );
+}
+function category_group_decoder() {
+  return field2(
+    "id",
+    string,
+    (id2) => {
+      return field2(
+        "name",
+        string,
+        (name) => {
+          return field2(
+            "order",
+            int2,
+            (order) => {
+              return success(new CategoryGroup(id2, name, order));
+            }
+          );
         }
       );
     }
@@ -8418,8 +8447,28 @@ var CoverOverspent = class extends CustomType {
 };
 var ShowAddCategoryGroupUI = class extends CustomType {
 };
+var UserUpdatedCategoryGroupName = class extends CustomType {
+  constructor(name) {
+    super();
+    this.name = name;
+  }
+};
+var CreateCategoryGroup = class extends CustomType {
+};
+var AddCategoryGroupResult = class extends CustomType {
+  constructor(c) {
+    super();
+    this.c = c;
+  }
+};
+var CategoryGroups = class extends CustomType {
+  constructor(c) {
+    super();
+    this.c = c;
+  }
+};
 var Model2 = class extends CustomType {
-  constructor(current_user, all_users, cycle, route, cycle_end_day, show_all_transactions, categories, transactions, allocations, selected_category, show_add_category_ui, show_add_category_group_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions) {
+  constructor(current_user, all_users, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name) {
     super();
     this.current_user = current_user;
     this.all_users = all_users;
@@ -8427,18 +8476,20 @@ var Model2 = class extends CustomType {
     this.route = route;
     this.cycle_end_day = cycle_end_day;
     this.show_all_transactions = show_all_transactions;
+    this.categories_groups = categories_groups;
     this.categories = categories;
     this.transactions = transactions;
     this.allocations = allocations;
     this.selected_category = selected_category;
     this.show_add_category_ui = show_add_category_ui;
-    this.show_add_category_group_ui = show_add_category_group_ui;
     this.user_category_name_input = user_category_name_input;
     this.transaction_add_input = transaction_add_input;
     this.target_edit = target_edit;
     this.selected_transaction = selected_transaction;
     this.transaction_edit_form = transaction_edit_form;
     this.suggestions = suggestions;
+    this.show_add_category_group_ui = show_add_category_group_ui;
+    this.new_category_group_name = new_category_group_name;
   }
 };
 var SelectedCategory = class extends CustomType {
@@ -8801,6 +8852,38 @@ function get_transactions() {
       decoder,
       (var0) => {
         return new Transactions(var0);
+      }
+    )
+  );
+}
+function get_category_groups() {
+  let url = "http://localho.st:8000/category/groups";
+  let decoder = list2(category_group_decoder());
+  return get3(
+    url,
+    expect_json2(
+      decoder,
+      (var0) => {
+        return new CategoryGroups(var0);
+      }
+    )
+  );
+}
+function add_new_group_eff(name) {
+  let url = "http://localho.st:8000/category/group/add";
+  return post(
+    url,
+    object2(toList([["name", string2(name)]])),
+    expect_json2(
+      field2(
+        "id",
+        string,
+        (id2) => {
+          return success(id2);
+        }
+      ),
+      (var0) => {
+        return new AddCategoryGroupResult(var0);
       }
     )
   );
@@ -10140,7 +10223,7 @@ function budget_categories(model) {
                   text2("Categories groups"),
                   (() => {
                     let btn_label = (() => {
-                      let $ = model.show_add_category_ui;
+                      let $ = model.show_add_category_group_ui;
                       if ($) {
                         return "-";
                       } else {
@@ -10199,8 +10282,8 @@ function budget_categories(model) {
               }
             );
           })();
-          let add_cat_ui = (() => {
-            let $ = model.show_add_category_ui;
+          let add_cat_group_ui = (() => {
+            let $ = model.show_add_category_group_ui;
             if (!$) {
               return toList([]);
             } else {
@@ -10215,11 +10298,12 @@ function budget_categories(model) {
                           toList([
                             on_input(
                               (var0) => {
-                                return new UserUpdatedCategoryName(var0);
+                                return new UserUpdatedCategoryGroupName(
+                                  var0
+                                );
                               }
                             ),
-                            placeholder("category name"),
-                            id("exampleFormControlInput1"),
+                            placeholder("Category group name"),
                             class$("form-control"),
                             type_("text")
                           ])
@@ -10230,8 +10314,10 @@ function budget_categories(model) {
                       toList([]),
                       toList([
                         button(
-                          toList([on_click(new AddCategory())]),
-                          toList([text("Add")])
+                          toList([
+                            on_click(new CreateCategoryGroup())
+                          ]),
+                          toList([text("Create group")])
                         )
                       ])
                     )
@@ -10240,7 +10326,7 @@ function budget_categories(model) {
               ]);
             }
           })();
-          return flatten2(toList([add_cat_ui, cats_ui]));
+          return flatten2(toList([add_cat_group_ui, cats_ui]));
         })()
       )
     ])
@@ -10561,8 +10647,8 @@ function init3(_) {
       toList([]),
       toList([]),
       toList([]),
+      toList([]),
       new None(),
-      false,
       false,
       "",
       new TransactionForm(
@@ -10575,7 +10661,9 @@ function init3(_) {
       new TargetEdit("", false, new Monthly(int_to_money(0))),
       new None(),
       new None(),
-      new_map()
+      new_map(),
+      false,
+      ""
     ),
     batch(
       toList([init2(on_route_change), initial_eff()])
@@ -10654,18 +10742,20 @@ function update(model, msg) {
           route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -10686,22 +10776,25 @@ function update(model, msg) {
             initial_path,
             _record.cycle_end_day,
             _record.show_all_transactions,
+            _record.categories_groups,
             _record.categories,
             _record.transactions,
             _record.allocations,
             _record.selected_category,
             _record.show_add_category_ui,
-            _record.show_add_category_group_ui,
             _record.user_category_name_input,
             _record.transaction_add_input,
             _record.target_edit,
             _record.selected_transaction,
             _record.transaction_edit_form,
-            _record.suggestions
+            _record.suggestions,
+            _record.show_add_category_group_ui,
+            _record.new_category_group_name
           );
         })(),
         batch(
           toList([
+            get_category_groups(),
             get_categories(),
             get_transactions(),
             get_allocations(),
@@ -10733,18 +10826,20 @@ function update(model, msg) {
             _record.route,
             _record.cycle_end_day,
             _record.show_all_transactions,
+            _record.categories_groups,
             _record.categories,
             _record.transactions,
             _record.allocations,
             _record.selected_category,
             _record.show_add_category_ui,
-            _record.show_add_category_group_ui,
             _record.user_category_name_input,
             _record.transaction_add_input,
             _record.target_edit,
             _record.selected_transaction,
             _record.transaction_edit_form,
-            _record.suggestions
+            _record.suggestions,
+            _record.show_add_category_group_ui,
+            _record.new_category_group_name
           );
         })(),
         none()
@@ -10766,18 +10861,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           cats,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       get_transactions()
@@ -10796,6 +10893,7 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           (() => {
             let _pipe = t;
@@ -10809,13 +10907,14 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -10834,18 +10933,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           a2,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -10864,6 +10965,7 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
@@ -10889,13 +10991,14 @@ function update(model, msg) {
             )
           ),
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -10912,18 +11015,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       write_localstorage2("current_user_id", user.id)
@@ -10939,18 +11044,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           !model.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -10966,18 +11073,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           "",
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       add_category(model.user_category_name_input)
@@ -10994,18 +11103,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           name,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11030,12 +11141,12 @@ function update(model, msg) {
             _record.route,
             _record.cycle_end_day,
             _record.show_all_transactions,
+            _record.categories_groups,
             _record.categories,
             _record.transactions,
             _record.allocations,
             _record.selected_category,
             _record.show_add_category_ui,
-            _record.show_add_category_group_ui,
             _record.user_category_name_input,
             new TransactionForm(
               model.transaction_add_input.date,
@@ -11047,7 +11158,9 @@ function update(model, msg) {
             _record.target_edit,
             _record.selected_transaction,
             _record.transaction_edit_form,
-            _record.suggestions
+            _record.suggestions,
+            _record.show_add_category_group_ui,
+            _record.new_category_group_name
           );
         })(),
         add_transaction_eff(
@@ -11072,6 +11185,7 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           (() => {
             let _pipe = flatten2(toList([model.transactions, toList([t])]));
@@ -11085,13 +11199,14 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11120,12 +11235,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           (() => {
             let _record$1 = model.transaction_add_input;
@@ -11140,7 +11255,9 @@ function update(model, msg) {
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11157,12 +11274,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           (() => {
             let _record$1 = model.transaction_add_input;
@@ -11177,7 +11294,9 @@ function update(model, msg) {
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11198,12 +11317,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           (() => {
             let _record$1 = model.transaction_add_input;
@@ -11221,7 +11340,9 @@ function update(model, msg) {
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11238,12 +11359,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           (() => {
             let _record$1 = model.transaction_add_input;
@@ -11267,7 +11388,9 @@ function update(model, msg) {
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11283,12 +11406,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11297,7 +11420,9 @@ function update(model, msg) {
           })(),
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11314,12 +11439,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11332,7 +11457,9 @@ function update(model, msg) {
           })(),
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       save_target_eff(
@@ -11355,12 +11482,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11373,7 +11500,9 @@ function update(model, msg) {
           })(),
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       delete_target_eff(c)
@@ -11404,12 +11533,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11422,7 +11551,9 @@ function update(model, msg) {
           })(),
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11452,12 +11583,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11470,7 +11601,9 @@ function update(model, msg) {
           })(),
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11503,12 +11636,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11521,7 +11654,9 @@ function update(model, msg) {
           })(),
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11542,18 +11677,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           new Some(t.id),
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11570,18 +11707,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           new None(),
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       delete_transaction_eff(id2)
@@ -11599,12 +11738,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11624,7 +11763,9 @@ function update(model, msg) {
               })()
             )
           ),
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11649,12 +11790,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11675,7 +11816,9 @@ function update(model, msg) {
               }
             );
           })(),
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11692,12 +11835,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11718,7 +11861,9 @@ function update(model, msg) {
               }
             );
           })(),
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11735,12 +11880,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11761,7 +11906,9 @@ function update(model, msg) {
               }
             );
           })(),
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11778,12 +11925,12 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11804,7 +11951,9 @@ function update(model, msg) {
               }
             );
           })(),
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -11820,18 +11969,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           new None(),
           new None(),
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       (() => {
@@ -11868,18 +12019,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           new None(),
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       (() => {
@@ -11904,18 +12057,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           new None(),
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       (() => {
@@ -11951,6 +12106,7 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
@@ -11969,13 +12125,14 @@ function update(model, msg) {
             );
           })(),
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -12022,6 +12179,7 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
@@ -12040,13 +12198,14 @@ function update(model, msg) {
             );
           })(),
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -12070,18 +12229,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       batch(toList([get_transactions(), get_allocations()]))
@@ -12098,18 +12259,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           show,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -12126,18 +12289,20 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          suggestions
+          suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
@@ -12171,7 +12336,7 @@ function update(model, msg) {
         }
       })()
     ];
-  } else {
+  } else if (msg instanceof ShowAddCategoryGroupUI) {
     return [
       (() => {
         let _record = model;
@@ -12182,22 +12347,120 @@ function update(model, msg) {
           _record.route,
           _record.cycle_end_day,
           _record.show_all_transactions,
+          _record.categories_groups,
           _record.categories,
           _record.transactions,
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          !model.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
           _record.selected_transaction,
           _record.transaction_edit_form,
-          _record.suggestions
+          _record.suggestions,
+          !model.show_add_category_group_ui,
+          _record.new_category_group_name
         );
       })(),
       none()
     ];
+  } else if (msg instanceof UserUpdatedCategoryGroupName) {
+    let input_group_name = msg.name;
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.current_user,
+          _record.all_users,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          input_group_name
+        );
+      })(),
+      none()
+    ];
+  } else if (msg instanceof CreateCategoryGroup) {
+    return [model, add_new_group_eff(model.new_category_group_name)];
+  } else if (msg instanceof AddCategoryGroupResult && msg.c.isOk()) {
+    let id2 = msg.c[0];
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.current_user,
+          _record.all_users,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          false,
+          ""
+        );
+      })(),
+      add_new_group_eff(model.new_category_group_name)
+    ];
+  } else if (msg instanceof AddCategoryGroupResult && !msg.c.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof CategoryGroups && msg.c.isOk()) {
+    let groups = msg.c[0];
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.current_user,
+          _record.all_users,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name
+        );
+      })(),
+      none()
+    ];
+  } else {
+    return [model, none()];
   }
 }
 function main() {
@@ -12207,7 +12470,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      22,
+      23,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
