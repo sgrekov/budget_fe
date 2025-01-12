@@ -1,29 +1,20 @@
 import budget_fe/internals/effects as eff
-import gleam/dict
-
-// import budget_fe/internals/factories.{allocations, transactions}
-import budget_fe/internals/msg.{Model} as _
-import budget_fe/internals/msg.{
-  type Model, type Msg, type Route, type TransactionForm,
-}
+import budget_fe/internals/msg.{type Model, type Msg, Model}
 import budget_fe/internals/view as v
 import budget_test.{
   type Allocation, type Category, type Cycle, type MonthInYear, type Transaction,
   type User, Allocation, Category, Cycle, MonthInYear, Transaction, User,
 } as m
 import date_utils
-import gleam/dynamic.{type Dynamic}
+import gleam/dict
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/option.{None, Some}
-import gleam/option.{type Option} as _
+import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/string_tree.{type StringTree}
-import gleam/uri.{type Uri}
 import lustre
 import lustre/effect
-import modem.{initial_uri}
+import modem
 import rada/date.{type Date} as d
 
 pub fn main() {
@@ -292,7 +283,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         effect.none(),
       )
     }
-    msg.CategorySaveTarget(Ok(cat_id)) -> #(model, eff.get_categories())
+    msg.CategorySaveTarget(Ok(_)) -> #(model, eff.get_categories())
     msg.CategorySaveTarget(Error(_)) -> #(model, effect.none())
     msg.SelectTransaction(t) -> #(
       Model(..model, selected_transaction: option.Some(t.id)),
@@ -315,12 +306,9 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
-    msg.TransactionDeleteResult(Ok(id)) -> #(model, eff.get_transactions())
+    msg.TransactionDeleteResult(Ok(_)) -> #(model, eff.get_transactions())
     msg.TransactionDeleteResult(Error(_)) -> #(model, effect.none())
-    msg.TransactionEditResult(Ok(transaction_id)) -> #(
-      model,
-      eff.get_transactions(),
-    )
+    msg.TransactionEditResult(Ok(_)) -> #(model, eff.get_transactions())
     msg.TransactionEditResult(Error(_)) -> #(model, effect.none())
     msg.UserTransactionEditPayee(payee) -> #(
       Model(
@@ -399,7 +387,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
-    msg.CategoryDeleteResult(Ok(id)) -> #(model, eff.get_categories())
+    msg.CategoryDeleteResult(Ok(_)) -> #(model, eff.get_categories())
     msg.CategoryDeleteResult(Error(_)) -> #(model, effect.none())
     msg.SaveAllocation(alloc) -> #(model, case model.selected_category {
       option.Some(sc) -> {
@@ -412,7 +400,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       }
       option.None -> effect.none()
     })
-    msg.SaveAllocationResult(Ok(aer)) -> {
+    msg.SaveAllocationResult(Ok(_)) -> {
       #(model, eff.get_allocations())
     }
     msg.SaveAllocationResult(Error(_)) -> #(model, effect.none())
@@ -447,18 +435,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       model,
       eff.save_allocation_eff(alloc, amount_needed, cat.id, model.cycle),
     )
-    msg.CoverOverspent(cat, balance) -> #(
-      model,
-      case balance.is_neg {
-        False -> effect.none()
-        True -> eff.save_allocation_eff(
-          option.None,
-          balance,
-          cat.id,
-          model.cycle,
-        )
-      }      
-    )
+    msg.CoverOverspent(cat, balance) -> #(model, case balance.is_neg {
+      False -> effect.none()
+      True -> eff.save_allocation_eff(option.None, balance, cat.id, model.cycle)
+    })
   }
 }
 
@@ -488,12 +468,12 @@ fn transaction_form_to_transaction(
   }
 }
 
-fn find_alloc_by_id(
-  allocations: List(Allocation),
-  id: String,
-) -> Result(Allocation, Nil) {
-  allocations |> list.find(fn(a) { a.id == id })
-}
+// fn find_alloc_by_id(
+//   allocations: List(Allocation),
+//   id: String,
+// ) -> Result(Allocation, Nil) {
+//   allocations |> list.find(fn(a) { a.id == id })
+// }
 
 fn date_to_month(d: Date) -> MonthInYear {
   MonthInYear(d |> d.month_number, d |> d.year)

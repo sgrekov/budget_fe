@@ -283,7 +283,7 @@ fn category_details_allocate_needed_ui(
   let target_money = target_money(cat)
   let assigned = category_assigned(cat, model.allocations, model.cycle)
   let add_diff = m.money_sum(assigned, target_money |> m.negate)
-  let warn_text = case add_diff.is_neg {
+  case add_diff.is_neg {
     False -> html.text("")
     True -> {
       html.div([], [
@@ -312,14 +312,11 @@ fn category_details_cover_overspent_ui(
     False -> html.text("")
     True -> {
       html.div([], [
-        html.button(        
-          [event.on_click(msg.CoverOverspent(cat, balance))],
-          [
-            element.text(
-              "Cover overspent " <> balance |> m.money_to_string_no_sign,
-            ),
-          ],
-        ),
+        html.button([event.on_click(msg.CoverOverspent(cat, balance))], [
+          element.text(
+            "Cover overspent " <> balance |> m.money_to_string_no_sign,
+          ),
+        ]),
       ])
     }
   }

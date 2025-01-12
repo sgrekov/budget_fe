@@ -24,6 +24,7 @@ rada = { path = "../rada" }
 gleam_json = "~> 2.3.0"
 budget_test = { path = "../budget_test" }
 decode = ">= 1.1.0 and < 2.0.0"
+gleam_http = ">= 3.7.2 and < 4.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.2.0 and < 2.0.0"
