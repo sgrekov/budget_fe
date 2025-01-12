@@ -38,6 +38,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       allocations: [],
       selected_category: option.None,
       show_add_category_ui: False,
+      show_add_category_group_ui: False,
       user_category_name_input: "",
       transaction_add_input: msg.TransactionForm(
         "",
@@ -439,6 +440,13 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       False -> effect.none()
       True -> eff.save_allocation_eff(option.None, balance, cat.id, model.cycle)
     })
+    msg.ShowAddCategoryGroupUI -> #(
+      Model(
+        ..model,
+        show_add_category_group_ui: !model.show_add_category_group_ui,
+      ),
+      effect.none(),
+    )
   }
 }
 

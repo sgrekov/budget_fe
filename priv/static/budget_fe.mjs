@@ -8416,8 +8416,10 @@ var CoverOverspent = class extends CustomType {
     this.balance = balance;
   }
 };
+var ShowAddCategoryGroupUI = class extends CustomType {
+};
 var Model2 = class extends CustomType {
-  constructor(current_user, all_users, cycle, route, cycle_end_day, show_all_transactions, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions) {
+  constructor(current_user, all_users, cycle, route, cycle_end_day, show_all_transactions, categories, transactions, allocations, selected_category, show_add_category_ui, show_add_category_group_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions) {
     super();
     this.current_user = current_user;
     this.all_users = all_users;
@@ -8430,6 +8432,7 @@ var Model2 = class extends CustomType {
     this.allocations = allocations;
     this.selected_category = selected_category;
     this.show_add_category_ui = show_add_category_ui;
+    this.show_add_category_group_ui = show_add_category_group_ui;
     this.user_category_name_input = user_category_name_input;
     this.transaction_add_input = transaction_add_input;
     this.target_edit = target_edit;
@@ -10134,7 +10137,7 @@ function budget_categories(model) {
               th(
                 toList([]),
                 toList([
-                  text2("Category"),
+                  text2("Categories groups"),
                   (() => {
                     let btn_label = (() => {
                       let $ = model.show_add_category_ui;
@@ -10145,7 +10148,9 @@ function budget_categories(model) {
                       }
                     })();
                     return button(
-                      toList([on_click(new ShowAddCategoryUI())]),
+                      toList([
+                        on_click(new ShowAddCategoryGroupUI())
+                      ]),
                       toList([text(btn_label)])
                     );
                   })()
@@ -10558,6 +10563,7 @@ function init3(_) {
       toList([]),
       new None(),
       false,
+      false,
       "",
       new TransactionForm(
         "",
@@ -10653,6 +10659,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -10684,6 +10691,7 @@ function update(model, msg) {
             _record.allocations,
             _record.selected_category,
             _record.show_add_category_ui,
+            _record.show_add_category_group_ui,
             _record.user_category_name_input,
             _record.transaction_add_input,
             _record.target_edit,
@@ -10730,6 +10738,7 @@ function update(model, msg) {
             _record.allocations,
             _record.selected_category,
             _record.show_add_category_ui,
+            _record.show_add_category_group_ui,
             _record.user_category_name_input,
             _record.transaction_add_input,
             _record.target_edit,
@@ -10762,6 +10771,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -10799,6 +10809,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -10828,6 +10839,7 @@ function update(model, msg) {
           a2,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -10877,6 +10889,7 @@ function update(model, msg) {
             )
           ),
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -10904,6 +10917,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -10930,6 +10944,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           !model.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -10956,6 +10971,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           "",
           _record.transaction_add_input,
           _record.target_edit,
@@ -10983,6 +10999,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           name,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11018,6 +11035,7 @@ function update(model, msg) {
             _record.allocations,
             _record.selected_category,
             _record.show_add_category_ui,
+            _record.show_add_category_group_ui,
             _record.user_category_name_input,
             new TransactionForm(
               model.transaction_add_input.date,
@@ -11067,6 +11085,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11106,6 +11125,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           (() => {
             let _record$1 = model.transaction_add_input;
@@ -11142,6 +11162,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           (() => {
             let _record$1 = model.transaction_add_input;
@@ -11182,6 +11203,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           (() => {
             let _record$1 = model.transaction_add_input;
@@ -11221,6 +11243,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           (() => {
             let _record$1 = model.transaction_add_input;
@@ -11265,6 +11288,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11295,6 +11319,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11335,6 +11360,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11383,6 +11409,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11430,6 +11457,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11480,6 +11508,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
@@ -11518,6 +11547,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11545,6 +11575,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11573,6 +11604,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11622,6 +11654,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11664,6 +11697,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11706,6 +11740,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11748,6 +11783,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11789,6 +11825,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11836,6 +11873,7 @@ function update(model, msg) {
           _record.allocations,
           new None(),
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11871,6 +11909,7 @@ function update(model, msg) {
           _record.allocations,
           new None(),
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11930,6 +11969,7 @@ function update(model, msg) {
             );
           })(),
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -12000,6 +12040,7 @@ function update(model, msg) {
             );
           })(),
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -12034,6 +12075,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -12061,6 +12103,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -12088,6 +12131,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
+          _record.show_add_category_group_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -12108,7 +12152,7 @@ function update(model, msg) {
       model,
       save_allocation_eff(alloc, amount_needed, cat.id, model.cycle)
     ];
-  } else {
+  } else if (msg instanceof CoverOverspent) {
     let cat = msg.cat;
     let balance = msg.balance;
     return [
@@ -12126,6 +12170,33 @@ function update(model, msg) {
           );
         }
       })()
+    ];
+  } else {
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.current_user,
+          _record.all_users,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          !model.show_add_category_group_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions
+        );
+      })(),
+      none()
     ];
   }
 }

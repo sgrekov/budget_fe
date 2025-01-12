@@ -74,9 +74,7 @@ pub fn view(model: Model) -> element.Element(Msg) {
       ]),
       html.div([attribute.class("d-flex flex-row")], [
         case model.route {
-          msg.Home -> {
-            budget_categories(model)
-          }
+          msg.Home -> budget_categories(model)
           msg.TransactionsRoute -> budget_transactions(model)
           msg.UserRoute -> user_selection(model)
         },
@@ -775,13 +773,13 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
     html.thead([], [
       html.tr([], [
         html.th([], [
-          html.text("Category"),
+          html.text("Categories groups"),
           {
             let btn_label = case model.show_add_category_ui {
               True -> "-"
               False -> "+"
             }
-            html.button([event.on_click(msg.ShowAddCategoryUI)], [
+            html.button([event.on_click(msg.ShowAddCategoryGroupUI)], [
               element.text(btn_label),
             ])
           },

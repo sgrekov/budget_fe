@@ -1,5 +1,5 @@
-import gleam/http/request
 import gleam/http
+import gleam/http/request
 import budget_fe/internals/decoders
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_test.{

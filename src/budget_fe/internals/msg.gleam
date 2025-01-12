@@ -65,6 +65,7 @@ pub type Msg {
   UserInputShowAllTransactions(show: Bool)
   AllocateNeeded(cat: Category, needed_amount: Money, alloc: Option(Allocation))
   CoverOverspent(cat: Category, balance: Money)
+  ShowAddCategoryGroupUI
 }
 
 pub type Model {
@@ -80,6 +81,7 @@ pub type Model {
     allocations: List(Allocation),
     selected_category: Option(SelectedCategory),
     show_add_category_ui: Bool,
+    show_add_category_group_ui: Bool,
     user_category_name_input: String,
     transaction_add_input: TransactionForm,
     target_edit: TargetEdit,
