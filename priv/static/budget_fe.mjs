@@ -8251,6 +8251,10 @@ var SelectUser = class extends CustomType {
   }
 };
 var ShowAddCategoryUI = class extends CustomType {
+  constructor(group_id) {
+    super();
+    this.group_id = group_id;
+  }
 };
 var UserUpdatedCategoryName = class extends CustomType {
   constructor(cat_name) {
@@ -8259,6 +8263,10 @@ var UserUpdatedCategoryName = class extends CustomType {
   }
 };
 var AddCategory = class extends CustomType {
+  constructor(group_id) {
+    super();
+    this.group_id = group_id;
+  }
 };
 var AddCategoryResult = class extends CustomType {
   constructor(c) {
@@ -8815,11 +8823,16 @@ function add_transaction_eff(transaction_form, amount, cat, current_user) {
     )
   );
 }
-function add_category(name) {
+function add_category(name, group_id) {
   let url = "http://localhost:8000/category/add";
   return post(
     url,
-    object2(toList([["name", string2(name)]])),
+    object2(
+      toList([
+        ["name", string2(name)],
+        ["group_id", string2(group_id)]
+      ])
+    ),
     expect_json2(
       field2(
         "id",
@@ -10255,24 +10268,85 @@ function category_list_item_ui(categories, model, group) {
     }
   );
 }
-function category_group_list_item_ui(groups, model) {
-  let _pipe = groups;
-  return flat_map(
-    _pipe,
-    (group) => {
-      let group_ui = tr(
+function group_ui(group, model) {
+  let is_current_group_active_add_ui = (() => {
+    let $ = model.show_add_category_ui;
+    if ($ instanceof Some) {
+      let group_id = $[0];
+      return group.id === group_id;
+    } else {
+      return false;
+    }
+  })();
+  let add_cat_ui = (() => {
+    if (!is_current_group_active_add_ui) {
+      return text2("");
+    } else {
+      return tr(
+        toList([]),
         toList([
-          style(toList([["background-color", "rgb(199, 208, 201)"]]))
-        ]),
-        toList([
-          td(toList([]), toList([text2(group.name)])),
-          td(toList([]), toList([]))
+          td(
+            toList([]),
+            toList([
+              input(
+                toList([
+                  on_input(
+                    (var0) => {
+                      return new UserUpdatedCategoryName(var0);
+                    }
+                  ),
+                  placeholder("category name"),
+                  id("exampleFormControlInput1"),
+                  class$("form-control"),
+                  type_("text")
+                ])
+              )
+            ])
+          ),
+          td(
+            toList([]),
+            toList([
+              button(
+                toList([on_click(new AddCategory(group.id))]),
+                toList([text("Add")])
+              )
+            ])
+          )
         ])
       );
-      let _pipe$1 = category_list_item_ui(model.categories, model, group);
-      return prepend2(_pipe$1, group_ui);
     }
+  })();
+  let add_btn = (() => {
+    let btn_label = (() => {
+      if (is_current_group_active_add_ui) {
+        return "-";
+      } else {
+        return "+";
+      }
+    })();
+    return button(
+      toList([on_click(new ShowAddCategoryUI(group.id))]),
+      toList([text(btn_label)])
+    );
+  })();
+  let group_ui$1 = tr(
+    toList([
+      style(toList([["background-color", "rgb(199, 208, 201)"]]))
+    ]),
+    toList([
+      td(toList([]), toList([text2(group.name), add_btn])),
+      td(toList([]), toList([]))
+    ])
   );
+  let _pipe = category_list_item_ui(model.categories, model, group);
+  let _pipe$1 = prepend2(_pipe, add_cat_ui);
+  return prepend2(_pipe$1, group_ui$1);
+}
+function category_group_list_item_ui(groups, model) {
+  let _pipe = groups;
+  return flat_map(_pipe, (group) => {
+    return group_ui(group, model);
+  });
 }
 function budget_categories(model) {
   let size = (() => {
@@ -10693,7 +10767,7 @@ function init3(_) {
       toList([]),
       toList([]),
       new None(),
-      false,
+      new None(),
       "",
       new TransactionForm(
         "",
@@ -11078,6 +11152,7 @@ function update(model, msg) {
       write_localstorage2("current_user_id", user.id)
     ];
   } else if (msg instanceof ShowAddCategoryUI) {
+    let group_id = msg.group_id;
     return [
       (() => {
         let _record = model;
@@ -11093,7 +11168,20 @@ function update(model, msg) {
           _record.transactions,
           _record.allocations,
           _record.selected_category,
-          !model.show_add_category_ui,
+          (() => {
+            let $ = model.show_add_category_ui;
+            if ($ instanceof None) {
+              return new Some(group_id);
+            } else {
+              let current_group_id = $[0];
+              let $1 = current_group_id === group_id;
+              if ($1) {
+                return new None();
+              } else {
+                return new Some(group_id);
+              }
+            }
+          })(),
           _record.user_category_name_input,
           _record.transaction_add_input,
           _record.target_edit,
@@ -11107,6 +11195,7 @@ function update(model, msg) {
       none()
     ];
   } else if (msg instanceof AddCategory) {
+    let group_id = msg.group_id;
     return [
       (() => {
         let _record = model;
@@ -11133,7 +11222,7 @@ function update(model, msg) {
           _record.new_category_group_name
         );
       })(),
-      add_category(model.user_category_name_input)
+      add_category(model.user_category_name_input, group_id)
     ];
   } else if (msg instanceof UserUpdatedCategoryName) {
     let name = msg.cat_name;

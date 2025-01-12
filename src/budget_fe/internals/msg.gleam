@@ -27,9 +27,9 @@ pub type Msg {
   Allocations(a: Result(List(Allocation), lustre_http.HttpError))
   SelectCategory(c: Category)
   SelectUser(u: User)
-  ShowAddCategoryUI
+  ShowAddCategoryUI(group_id: String)
   UserUpdatedCategoryName(cat_name: String)
-  AddCategory
+  AddCategory(group_id: String)
   AddCategoryResult(c: Result(String, lustre_http.HttpError))
   AddTransaction
   UserUpdatedTransactionDate(date: String)
@@ -85,7 +85,7 @@ pub type Model {
     transactions: List(Transaction),
     allocations: List(Allocation),
     selected_category: Option(SelectedCategory),
-    show_add_category_ui: Bool,
+    show_add_category_ui: Option(String),
     user_category_name_input: String,
     transaction_add_input: TransactionForm,
     target_edit: TargetEdit,

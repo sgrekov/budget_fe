@@ -75,12 +75,15 @@ pub fn add_transaction_eff(
   )
 }
 
-pub fn add_category(name: String) -> effect.Effect(Msg) {
+pub fn add_category(name: String, group_id: String) -> effect.Effect(Msg) {
   let url = "http://localhost:8000/category/add"
 
   lustre_http.post(
     url,
-    json.object([#("name", json.string(name))]),
+    json.object([
+      #("name", json.string(name)),
+      #("group_id", json.string(group_id)),
+    ]),
     lustre_http.expect_json2(
       {
         use id <- decode.field("id", decode.string)

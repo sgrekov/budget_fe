@@ -791,27 +791,6 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
       let categories_groups_ui =
         category_group_list_item_ui(model.categories_groups, model)
 
-      // let add_cat_ui = case model.show_add_category_ui {
-      //   False -> []
-      //   True -> [
-      //     html.tr([], [
-      //       html.td([], [
-      //         html.input([
-      //           event.on_input(msg.UserUpdatedCategoryName),
-      //           attribute.placeholder("category name"),
-      //           attribute.id("exampleFormControlInput1"),
-      //           attribute.class("form-control"),
-      //           attribute.type_("text"),
-      //         ]),
-      //       ]),
-      //       html.td([], [
-      //         html.button([event.on_click(msg.AddCategory)], [
-      //           element.text("Add"),
-      //         ]),
-      //       ]),
-      //     ]),
-      //   ]
-      // }
       let add_cat_group_ui = case model.show_add_category_group_ui {
         False -> []
         True -> [
@@ -844,21 +823,60 @@ fn category_group_list_item_ui(
   model: Model,
 ) -> List(element.Element(Msg)) {
   groups
-  |> list.flat_map(fn(group) {
-    let group_ui =
-      html.tr([attribute.style([#("background-color", "rgb(199, 208, 201)")])], [
-        html.td([], [html.text(group.name)]),
-        html.td([], []),
+  |> list.flat_map(fn(group) { group_ui(group, model) })
+}
+
+fn group_ui(group: m.CategoryGroup, model: Model) -> List(element.Element(Msg)) {
+  let is_current_group_active_add_ui = case model.show_add_category_ui {
+    Some(group_id) -> group.id == group_id
+    None -> False
+  }
+
+  let add_cat_ui = case is_current_group_active_add_ui {
+    False -> html.text("")
+    True ->
+      html.tr([], [
+        html.td([], [
+          html.input([
+            event.on_input(msg.UserUpdatedCategoryName),
+            attribute.placeholder("category name"),
+            attribute.id("exampleFormControlInput1"),
+            attribute.class("form-control"),
+            attribute.type_("text"),
+          ]),
+        ]),
+        html.td([], [
+          html.button([event.on_click(msg.AddCategory(group.id))], [
+            element.text("Add"),
+          ]),
+        ]),
       ])
-    category_list_item_ui(model.categories, model, group) |> list.prepend(group_ui)
-    // [] |> list.prepend(group_ui)
-  })
+  }
+
+  let add_btn = {
+    let btn_label = case is_current_group_active_add_ui {
+      True -> "-"
+      False -> "+"
+    }
+    html.button([event.on_click(msg.ShowAddCategoryUI(group.id))], [
+      element.text(btn_label),
+    ])
+  }
+
+  let group_ui =
+    html.tr([attribute.style([#("background-color", "rgb(199, 208, 201)")])], [
+      html.td([], [html.text(group.name), add_btn]),
+      html.td([], []),
+    ])
+  category_list_item_ui(model.categories, model, group)
+  |> list.prepend(add_cat_ui)
+  |> list.prepend(group_ui)
 }
 
 fn category_list_item_ui(
   categories: List(Category),
   model: Model,
-  group : m.CategoryGroup,
+  group: m.CategoryGroup,
 ) -> List(element.Element(Msg)) {
   categories
   |> list.filter(fn(c) { !c.inflow && c.group_id == group.id })

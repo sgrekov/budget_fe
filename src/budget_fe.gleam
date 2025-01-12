@@ -39,7 +39,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       transactions: [],
       allocations: [],
       selected_category: option.None,
-      show_add_category_ui: False,
+      show_add_category_ui: None,
       show_add_category_group_ui: False,
       user_category_name_input: "",
       transaction_add_input: msg.TransactionForm(
@@ -121,13 +121,20 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, current_user: user),
       eff.write_localstorage("current_user_id", user.id),
     )
-    msg.ShowAddCategoryUI -> #(
-      Model(..model, show_add_category_ui: !model.show_add_category_ui),
+    msg.ShowAddCategoryUI(group_id) -> #(
+      Model(..model, show_add_category_ui: case model.show_add_category_ui {
+        None -> Some(group_id)
+        Some(current_group_id) ->
+          case current_group_id == group_id {
+            True -> None
+            False -> Some(group_id)
+          }
+      }),
       effect.none(),
     )
-    msg.AddCategory -> #(
+    msg.AddCategory(group_id) -> #(
       Model(..model, user_category_name_input: ""),
-      eff.add_category(model.user_category_name_input),
+      eff.add_category(model.user_category_name_input, group_id),
     )
     msg.UserUpdatedCategoryName(name) -> #(
       Model(..model, user_category_name_input: name),
