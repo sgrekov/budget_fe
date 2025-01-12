@@ -270,6 +270,33 @@ fn category_details(
     category_details_allocation_ui(sc, allocation),
     category_details_allocate_needed_ui(category, allocation, model),
     category_details_cover_overspent_ui(category, model),
+    category_details_change_group_ui(category, model),
+  ])
+}
+
+fn category_details_change_group_ui(
+  cat: Category,
+  model: Model,
+) -> element.Element(Msg) {
+  html.div([], [
+    html.text("Change group"),
+    html.input([
+      event.on_input(msg.UserInputCategoryGroupChange),
+      attribute.placeholder("group"),
+      attribute.class("form-control"),
+      attribute.type_("text"),
+      attribute.style([#("width", "160px")]),
+      attribute.attribute("list", "group_list"),
+    ]),
+    html.datalist(
+      [attribute.id("group_list")],
+      model.categories_groups
+        |> list.map(fn(t) { t.name })
+        |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
+    ),
+    html.button([event.on_click(msg.ChangeGroupForCategory(cat))], [
+      element.text("Change group"),
+    ]),
   ])
 }
 

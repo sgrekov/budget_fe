@@ -54,6 +54,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       transaction_edit_form: option.None,
       suggestions: dict.new(),
       new_category_group_name: "",
+      category_group_change_input: "",
     ),
     effect.batch([modem.init(eff.on_route_change), eff.initial_eff()]),
   )
@@ -107,6 +108,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     msg.SelectCategory(c) -> #(
       Model(
         ..model,
+        category_group_change_input: model.categories_groups
+          |> list.find(fn(g) { g.id == c.group_id })
+          |> result.map(fn(g) { g.name })
+          |> result.unwrap(""),
         selected_category: option.Some(msg.SelectedCategory(
           c.id,
           c.name,
@@ -480,6 +485,22 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
     msg.CategoryGroups(Error(_)) -> #(model, effect.none())
+    msg.ChangeGroupForCategory(cat) -> {
+      let new_group =
+        model.categories_groups
+        |> list.find(fn(g) { g.name == model.category_group_change_input })
+      case new_group {
+        Error(_) -> #(model, effect.none())
+        Ok(group) -> #(
+          Model(..model, category_group_change_input: ""),
+          eff.save_target_eff(Category(..cat, group_id: group.id), cat.target),
+        )
+      }
+    }
+    msg.UserInputCategoryGroupChange(group_name) -> #(
+      Model(..model, category_group_change_input: group_name),
+      effect.none(),
+    )
   }
 }
 

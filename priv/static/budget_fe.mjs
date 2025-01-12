@@ -8492,8 +8492,20 @@ var CategoryGroups = class extends CustomType {
     this.c = c;
   }
 };
+var ChangeGroupForCategory = class extends CustomType {
+  constructor(cat) {
+    super();
+    this.cat = cat;
+  }
+};
+var UserInputCategoryGroupChange = class extends CustomType {
+  constructor(group_name) {
+    super();
+    this.group_name = group_name;
+  }
+};
 var Model2 = class extends CustomType {
-  constructor(current_user, all_users, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name) {
+  constructor(current_user, all_users, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input) {
     super();
     this.current_user = current_user;
     this.all_users = all_users;
@@ -8515,6 +8527,7 @@ var Model2 = class extends CustomType {
     this.suggestions = suggestions;
     this.show_add_category_group_ui = show_add_category_group_ui;
     this.new_category_group_name = new_category_group_name;
+    this.category_group_change_input = category_group_change_input;
   }
 };
 var SelectedCategory = class extends CustomType {
@@ -9499,6 +9512,47 @@ function current_cycle_transactions(model) {
     (t) => {
       return is_between(t.date, start3, end);
     }
+  );
+}
+function category_details_change_group_ui(cat, model) {
+  return div(
+    toList([]),
+    toList([
+      text2("Change group"),
+      input(
+        toList([
+          on_input(
+            (var0) => {
+              return new UserInputCategoryGroupChange(var0);
+            }
+          ),
+          placeholder("group"),
+          class$("form-control"),
+          type_("text"),
+          style(toList([["width", "160px"]])),
+          attribute("list", "group_list")
+        ])
+      ),
+      datalist(
+        toList([id("group_list")]),
+        (() => {
+          let _pipe = model.categories_groups;
+          let _pipe$1 = map2(_pipe, (t) => {
+            return t.name;
+          });
+          return map2(
+            _pipe$1,
+            (p2) => {
+              return option(toList([value(p2)]), "");
+            }
+          );
+        })()
+      ),
+      button(
+        toList([on_click(new ChangeGroupForCategory(cat))]),
+        toList([text("Change group")])
+      )
+    ])
   );
 }
 function category_details_allocation_ui(sc, allocation) {
@@ -10639,7 +10693,8 @@ function category_details(category, model, sc, allocation) {
       category_details_target_ui(category, model.target_edit),
       category_details_allocation_ui(sc, allocation),
       category_details_allocate_needed_ui(category, allocation, model),
-      category_details_cover_overspent_ui(category, model)
+      category_details_cover_overspent_ui(category, model),
+      category_details_change_group_ui(category, model)
     ])
   );
 }
@@ -10781,6 +10836,7 @@ function init3(_) {
       new None(),
       new_map(),
       false,
+      "",
       ""
     ),
     batch(
@@ -10873,7 +10929,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -10907,7 +10964,8 @@ function update(model, msg) {
             _record.transaction_edit_form,
             _record.suggestions,
             _record.show_add_category_group_ui,
-            _record.new_category_group_name
+            _record.new_category_group_name,
+            _record.category_group_change_input
           );
         })(),
         batch(
@@ -10957,7 +11015,8 @@ function update(model, msg) {
             _record.transaction_edit_form,
             _record.suggestions,
             _record.show_add_category_group_ui,
-            _record.new_category_group_name
+            _record.new_category_group_name,
+            _record.category_group_change_input
           );
         })(),
         none()
@@ -10992,7 +11051,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       get_transactions()
@@ -11032,7 +11092,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11064,7 +11125,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11116,7 +11178,20 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          (() => {
+            let _pipe = model.categories_groups;
+            let _pipe$1 = find(
+              _pipe,
+              (g) => {
+                return g.id === c.group_id;
+              }
+            );
+            let _pipe$2 = map3(_pipe$1, (g) => {
+              return g.name;
+            });
+            return unwrap2(_pipe$2, "");
+          })()
         );
       })(),
       none()
@@ -11146,7 +11221,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       write_localstorage2("current_user_id", user.id)
@@ -11189,7 +11265,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11219,7 +11296,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       add_category(model.user_category_name_input, group_id)
@@ -11249,7 +11327,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11293,7 +11372,8 @@ function update(model, msg) {
             _record.transaction_edit_form,
             _record.suggestions,
             _record.show_add_category_group_ui,
-            _record.new_category_group_name
+            _record.new_category_group_name,
+            _record.category_group_change_input
           );
         })(),
         add_transaction_eff(
@@ -11339,7 +11419,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11390,7 +11471,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11429,7 +11511,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11475,7 +11558,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11523,7 +11607,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11555,7 +11640,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11592,7 +11678,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       save_target_eff(
@@ -11635,7 +11722,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       delete_target_eff(c)
@@ -11686,7 +11774,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11736,7 +11825,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11789,7 +11879,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11823,7 +11914,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11853,7 +11945,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       delete_transaction_eff(id2)
@@ -11898,7 +11991,8 @@ function update(model, msg) {
           ),
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11951,7 +12045,8 @@ function update(model, msg) {
           })(),
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -11996,7 +12091,8 @@ function update(model, msg) {
           })(),
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -12041,7 +12137,8 @@ function update(model, msg) {
           })(),
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -12086,7 +12183,8 @@ function update(model, msg) {
           })(),
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -12115,7 +12213,8 @@ function update(model, msg) {
           new None(),
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       (() => {
@@ -12165,7 +12264,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       (() => {
@@ -12203,7 +12303,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       (() => {
@@ -12266,7 +12367,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -12339,7 +12441,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -12376,7 +12479,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       batch(toList([get_transactions(), get_allocations()]))
@@ -12406,7 +12510,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -12436,7 +12541,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -12494,7 +12600,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           !model.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -12524,7 +12631,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          input_group_name
+          input_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
@@ -12556,7 +12664,8 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           false,
-          ""
+          "",
+          _record.category_group_change_input
         );
       })(),
       get_category_groups()
@@ -12588,13 +12697,102 @@ function update(model, msg) {
           _record.transaction_edit_form,
           _record.suggestions,
           _record.show_add_category_group_ui,
-          _record.new_category_group_name
+          _record.new_category_group_name,
+          _record.category_group_change_input
         );
       })(),
       none()
     ];
-  } else {
+  } else if (msg instanceof CategoryGroups && !msg.c.isOk()) {
     return [model, none()];
+  } else if (msg instanceof ChangeGroupForCategory) {
+    let cat = msg.cat;
+    let new_group = (() => {
+      let _pipe = model.categories_groups;
+      return find(
+        _pipe,
+        (g) => {
+          return g.name === model.category_group_change_input;
+        }
+      );
+    })();
+    if (!new_group.isOk()) {
+      return [model, none()];
+    } else {
+      let group = new_group[0];
+      return [
+        (() => {
+          let _record = model;
+          return new Model2(
+            _record.current_user,
+            _record.all_users,
+            _record.cycle,
+            _record.route,
+            _record.cycle_end_day,
+            _record.show_all_transactions,
+            _record.categories_groups,
+            _record.categories,
+            _record.transactions,
+            _record.allocations,
+            _record.selected_category,
+            _record.show_add_category_ui,
+            _record.user_category_name_input,
+            _record.transaction_add_input,
+            _record.target_edit,
+            _record.selected_transaction,
+            _record.transaction_edit_form,
+            _record.suggestions,
+            _record.show_add_category_group_ui,
+            _record.new_category_group_name,
+            ""
+          );
+        })(),
+        save_target_eff(
+          (() => {
+            let _record = cat;
+            return new Category(
+              _record.id,
+              _record.name,
+              _record.target,
+              _record.inflow,
+              group.id
+            );
+          })(),
+          cat.target
+        )
+      ];
+    }
+  } else {
+    let group_name = msg.group_name;
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.current_user,
+          _record.all_users,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          group_name
+        );
+      })(),
+      none()
+    ];
   }
 }
 function main() {

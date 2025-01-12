@@ -70,6 +70,8 @@ pub type Msg {
   CreateCategoryGroup
   AddCategoryGroupResult(c: Result(String, lustre_http.HttpError))
   CategoryGroups(c: Result(List(CategoryGroup), lustre_http.HttpError))
+  ChangeGroupForCategory(cat: Category)
+  UserInputCategoryGroupChange(group_name: String)
 }
 
 pub type Model {
@@ -94,6 +96,7 @@ pub type Model {
     suggestions: dict.Dict(String, Category),
     show_add_category_group_ui: Bool,
     new_category_group_name: String,
+    category_group_change_input: String,
   )
 }
 
