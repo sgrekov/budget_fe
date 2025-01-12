@@ -447,10 +447,10 @@ var Descending = class extends CustomType {
 };
 function length_loop(loop$list, loop$count) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let count = loop$count;
-    if (list4.atLeastLength(1)) {
-      let list$1 = list4.tail;
+    if (list3.atLeastLength(1)) {
+      let list$1 = list3.tail;
       loop$list = list$1;
       loop$count = count + 1;
     } else {
@@ -458,8 +458,8 @@ function length_loop(loop$list, loop$count) {
     }
   }
 }
-function length(list4) {
-  return length_loop(list4, 0);
+function length(list3) {
+  return length_loop(list3, 0);
 }
 function reverse_loop(loop$remaining, loop$accumulator) {
   while (true) {
@@ -475,20 +475,20 @@ function reverse_loop(loop$remaining, loop$accumulator) {
     }
   }
 }
-function reverse(list4) {
-  return reverse_loop(list4, toList([]));
+function reverse(list3) {
+  return reverse_loop(list3, toList([]));
 }
 function contains(loop$list, loop$elem) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let elem = loop$elem;
-    if (list4.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return false;
-    } else if (list4.atLeastLength(1) && isEqual(list4.head, elem)) {
-      let first$1 = list4.head;
+    } else if (list3.atLeastLength(1) && isEqual(list3.head, elem)) {
+      let first$1 = list3.head;
       return true;
     } else {
-      let rest$1 = list4.tail;
+      let rest$1 = list3.tail;
       loop$list = rest$1;
       loop$elem = elem;
     }
@@ -496,14 +496,14 @@ function contains(loop$list, loop$elem) {
 }
 function filter_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list4.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list4.head;
-      let rest$1 = list4.tail;
+      let first$1 = list3.head;
+      let rest$1 = list3.tail;
       let new_acc = (() => {
         let $ = fun(first$1);
         if ($) {
@@ -518,19 +518,19 @@ function filter_loop(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter(list4, predicate) {
-  return filter_loop(list4, predicate, toList([]));
+function filter(list3, predicate) {
+  return filter_loop(list3, predicate, toList([]));
 }
 function filter_map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list4.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list4.head;
-      let rest$1 = list4.tail;
+      let first$1 = list3.head;
+      let rest$1 = list3.tail;
       let new_acc = (() => {
         let $ = fun(first$1);
         if ($.isOk()) {
@@ -546,27 +546,27 @@ function filter_map_loop(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter_map(list4, fun) {
-  return filter_map_loop(list4, fun, toList([]));
+function filter_map(list3, fun) {
+  return filter_map_loop(list3, fun, toList([]));
 }
 function map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list4.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list4.head;
-      let rest$1 = list4.tail;
+      let first$1 = list3.head;
+      let rest$1 = list3.tail;
       loop$list = rest$1;
       loop$fun = fun;
       loop$acc = prepend(fun(first$1), acc);
     }
   }
 }
-function map2(list4, fun) {
-  return map_loop(list4, fun, toList([]));
+function map2(list3, fun) {
+  return map_loop(list3, fun, toList([]));
 }
 function append_loop(loop$first, loop$second) {
   while (true) {
@@ -606,10 +606,10 @@ function flatten_loop(loop$lists, loop$acc) {
     if (lists.hasLength(0)) {
       return reverse(acc);
     } else {
-      let list4 = lists.head;
+      let list3 = lists.head;
       let further_lists = lists.tail;
       loop$lists = further_lists;
-      loop$acc = reverse_and_prepend(list4, acc);
+      loop$acc = reverse_and_prepend(list3, acc);
     }
   }
 }
@@ -618,14 +618,14 @@ function flatten2(lists) {
 }
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list4.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return initial;
     } else {
-      let x = list4.head;
-      let rest$1 = list4.tail;
+      let x = list3.head;
+      let rest$1 = list3.tail;
       loop$list = rest$1;
       loop$initial = fun(initial, x);
       loop$fun = fun;
@@ -650,19 +650,19 @@ function index_fold_loop(loop$over, loop$acc, loop$with, loop$index) {
     }
   }
 }
-function index_fold(list4, initial, fun) {
-  return index_fold_loop(list4, initial, fun, 0);
+function index_fold(list3, initial, fun) {
+  return index_fold_loop(list3, initial, fun, 0);
 }
 function fold_until(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list4.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return initial;
     } else {
-      let first$1 = list4.head;
-      let rest$1 = list4.tail;
+      let first$1 = list3.head;
+      let rest$1 = list3.tail;
       let $ = fun(initial, first$1);
       if ($ instanceof Continue) {
         let next_accumulator = $[0];
@@ -678,13 +678,13 @@ function fold_until(loop$list, loop$initial, loop$fun) {
 }
 function find(loop$list, loop$is_desired) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let is_desired = loop$is_desired;
-    if (list4.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return new Error(void 0);
     } else {
-      let x = list4.head;
-      let rest$1 = list4.tail;
+      let x = list3.head;
+      let rest$1 = list3.tail;
       let $ = is_desired(x);
       if ($) {
         return new Ok(x);
@@ -695,12 +695,12 @@ function find(loop$list, loop$is_desired) {
     }
   }
 }
-function unique(list4) {
-  if (list4.hasLength(0)) {
+function unique(list3) {
+  if (list3.hasLength(0)) {
     return toList([]);
   } else {
-    let x = list4.head;
-    let rest$1 = list4.tail;
+    let x = list3.head;
+    let rest$1 = list3.tail;
     return prepend(
       x,
       unique(filter(rest$1, (y) => {
@@ -711,22 +711,22 @@ function unique(list4) {
 }
 function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$prev, loop$acc) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let compare4 = loop$compare;
     let growing = loop$growing;
     let direction = loop$direction;
     let prev = loop$prev;
     let acc = loop$acc;
     let growing$1 = prepend(prev, growing);
-    if (list4.hasLength(0)) {
+    if (list3.hasLength(0)) {
       if (direction instanceof Ascending) {
         return prepend(reverse_loop(growing$1, toList([])), acc);
       } else {
         return prepend(growing$1, acc);
       }
     } else {
-      let new$1 = list4.head;
-      let rest$1 = list4.tail;
+      let new$1 = list3.head;
+      let rest$1 = list3.tail;
       let $ = compare4(prev, new$1);
       if ($ instanceof Gt && direction instanceof Descending) {
         loop$list = rest$1;
@@ -850,11 +850,11 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
     let compare4 = loop$compare;
     let acc = loop$acc;
     if (list1.hasLength(0)) {
-      let list4 = list22;
-      return reverse_loop(list4, acc);
+      let list3 = list22;
+      return reverse_loop(list3, acc);
     } else if (list22.hasLength(0)) {
-      let list4 = list1;
-      return reverse_loop(list4, acc);
+      let list3 = list1;
+      return reverse_loop(list3, acc);
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
@@ -916,11 +916,11 @@ function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
     let compare4 = loop$compare;
     let acc = loop$acc;
     if (list1.hasLength(0)) {
-      let list4 = list22;
-      return reverse_loop(list4, acc);
+      let list3 = list22;
+      return reverse_loop(list3, acc);
     } else if (list22.hasLength(0)) {
-      let list4 = list1;
-      return reverse_loop(list4, acc);
+      let list3 = list1;
+      return reverse_loop(list3, acc);
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
@@ -1001,16 +1001,16 @@ function merge_all(loop$sequences, loop$direction, loop$compare) {
     }
   }
 }
-function sort(list4, compare4) {
-  if (list4.hasLength(0)) {
+function sort(list3, compare4) {
+  if (list3.hasLength(0)) {
     return toList([]);
-  } else if (list4.hasLength(1)) {
-    let x = list4.head;
+  } else if (list3.hasLength(1)) {
+    let x = list3.head;
     return toList([x]);
   } else {
-    let x = list4.head;
-    let y = list4.tail.head;
-    let rest$1 = list4.tail.tail;
+    let x = list3.head;
+    let y = list3.tail.head;
+    let rest$1 = list3.tail.tail;
     let direction = (() => {
       let $ = compare4(x, y);
       if ($ instanceof Lt) {
@@ -1032,16 +1032,16 @@ function sort(list4, compare4) {
     return merge_all(sequences$1, new Ascending(), compare4);
   }
 }
-function key_set(list4, key, value3) {
-  if (list4.hasLength(0)) {
+function key_set(list3, key, value3) {
+  if (list3.hasLength(0)) {
     return toList([[key, value3]]);
-  } else if (list4.atLeastLength(1) && isEqual(list4.head[0], key)) {
-    let k = list4.head[0];
-    let rest$1 = list4.tail;
+  } else if (list3.atLeastLength(1) && isEqual(list3.head[0], key)) {
+    let k = list3.head[0];
+    let rest$1 = list3.tail;
     return prepend([key, value3], rest$1);
   } else {
-    let first$1 = list4.head;
-    let rest$1 = list4.tail;
+    let first$1 = list3.head;
+    let rest$1 = list3.tail;
     return prepend(first$1, key_set(rest$1, key, value3));
   }
 }
@@ -2397,8 +2397,8 @@ function inspectCustomType(record) {
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
-function inspectList(list4) {
-  return `[${list4.toArray().map(inspect).join(", ")}]`;
+function inspectList(list3) {
+  return `[${list3.toArray().map(inspect).join(", ")}]`;
 }
 function inspectBitArray(bits) {
   return `<<${Array.from(bits.buffer).join(", ")}>>`;
@@ -2408,8 +2408,8 @@ function inspectUtfCodepoint(codepoint2) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/dict.mjs
-function insert(dict4, key, value3) {
-  return map_insert(key, value3, dict4);
+function insert(dict3, key, value3) {
+  return map_insert(key, value3, dict3);
 }
 function reverse_and_concat(loop$remaining, loop$accumulator) {
   while (true) {
@@ -2427,41 +2427,41 @@ function reverse_and_concat(loop$remaining, loop$accumulator) {
 }
 function do_keys_loop(loop$list, loop$acc) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let acc = loop$acc;
-    if (list4.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return reverse_and_concat(acc, toList([]));
     } else {
-      let first2 = list4.head;
-      let rest = list4.tail;
+      let first2 = list3.head;
+      let rest = list3.tail;
       loop$list = rest;
       loop$acc = prepend(first2[0], acc);
     }
   }
 }
-function keys(dict4) {
-  let list_of_pairs = map_to_list(dict4);
+function keys(dict3) {
+  let list_of_pairs = map_to_list(dict3);
   return do_keys_loop(list_of_pairs, toList([]));
 }
 function fold_loop(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list4 = loop$list;
+    let list3 = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list4.hasLength(0)) {
+    if (list3.hasLength(0)) {
       return initial;
     } else {
-      let k = list4.head[0];
-      let v = list4.head[1];
-      let rest = list4.tail;
+      let k = list3.head[0];
+      let v = list3.head[1];
+      let rest = list3.tail;
       loop$list = rest;
       loop$initial = fun(initial, k, v);
       loop$fun = fun;
     }
   }
 }
-function fold2(dict4, initial, fun) {
-  return fold_loop(map_to_list(dict4), initial, fun);
+function fold2(dict3, initial, fun) {
+  return fold_loop(map_to_list(dict3), initial, fun);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam_stdlib_decode_ffi.mjs
@@ -2833,9 +2833,9 @@ function check2(regexp, string3) {
 
 // build/dev/javascript/gleam_stdlib/gleam/set.mjs
 var Set2 = class extends CustomType {
-  constructor(dict4) {
+  constructor(dict3) {
     super();
-    this.dict = dict4;
+    this.dict = dict3;
   }
 };
 function new$() {
@@ -2848,14 +2848,14 @@ function contains2(set2, member) {
 }
 var token = void 0;
 function from_list2(members) {
-  let dict4 = fold(
+  let dict3 = fold(
     members,
     new_map(),
     (m, k) => {
       return insert(m, k, token);
     }
   );
-  return new Set2(dict4);
+  return new Set2(dict3);
 }
 
 // build/dev/javascript/nibble/nibble/lexer.mjs
@@ -3073,8 +3073,8 @@ function run2(source, lexer2) {
 }
 
 // build/dev/javascript/nibble/glearray_ffi.mjs
-function fromList(list4) {
-  return list4.toArray();
+function fromList(list3) {
+  return list3.toArray();
 }
 function arrayLength(array3) {
   return array3.length;
@@ -5148,11 +5148,11 @@ var Transaction = class extends CustomType {
   }
 };
 var Money = class extends CustomType {
-  constructor(s, b, is_neg2) {
+  constructor(s, b, is_neg) {
     super();
     this.s = s;
     this.b = b;
-    this.is_neg = is_neg2;
+    this.is_neg = is_neg;
   }
 };
 function user_decoder() {
@@ -5221,8 +5221,8 @@ function money_decoder() {
           return field2(
             "is_neg",
             bool2,
-            (is_neg2) => {
-              return success(new Money(s, b, is_neg2));
+            (is_neg) => {
+              return success(new Money(s, b, is_neg));
             }
           );
         }
@@ -5463,7 +5463,7 @@ function string_to_money(raw) {
       return [false, raw];
     }
   })();
-  let is_neg$1 = $[0];
+  let is_neg = $[0];
   let s = $[1];
   let $1 = (() => {
     let _pipe = replace(s, ",", ".");
@@ -5482,21 +5482,21 @@ function string_to_money(raw) {
     if ($2.isOk() && $3.isOk()) {
       let s$2 = $2[0];
       let b$1 = $3[0];
-      return new Money(s$2, b$1, is_neg$1);
+      return new Money(s$2, b$1, is_neg);
     } else {
-      return new Money(0, 0, is_neg$1);
+      return new Money(0, 0, is_neg);
     }
   } else if ($1.atLeastLength(1)) {
     let s$1 = $1.head;
     let $2 = parse_int(s$1);
     if ($2.isOk()) {
       let s$2 = $2[0];
-      return new Money(s$2, 0, is_neg$1);
+      return new Money(s$2, 0, is_neg);
     } else {
-      return new Money(0, 0, is_neg$1);
+      return new Money(0, 0, is_neg);
     }
   } else {
-    return new Money(0, 0, is_neg$1);
+    return new Money(0, 0, is_neg);
   }
 }
 function money_to_string_no_sign(m) {
@@ -5507,9 +5507,6 @@ function money_to_string_no_sign(m) {
     let _pipe = m.b;
     return to_string(_pipe);
   })();
-}
-function is_neg(m) {
-  return m.is_neg;
 }
 function is_zero(m) {
   let $ = m.s;
@@ -8048,6 +8045,102 @@ function expect_json2(decoder, to_msg) {
   );
 }
 
+// build/dev/javascript/budget_fe/budget_fe/internals/decoders.mjs
+function money_encode(money) {
+  return object2(
+    toList([
+      ["s", int3(money.s)],
+      ["b", int3(money.b)],
+      ["is_neg", bool3(money.is_neg)]
+    ])
+  );
+}
+function transaction_encode(t) {
+  return object2(
+    toList([
+      ["id", string2(t.id)],
+      [
+        "date",
+        (() => {
+          let _pipe = to_rata_die(t.date);
+          return int3(_pipe);
+        })()
+      ],
+      ["payee", string2(t.payee)],
+      ["category_id", string2(t.category_id)],
+      ["value", money_encode(t.value)],
+      ["user_id", string2(t.user_id)]
+    ])
+  );
+}
+function id_decoder() {
+  return field2(
+    "id",
+    string,
+    (id2) => {
+      return success(id2);
+    }
+  );
+}
+function cycle_encode(cycle) {
+  return object2(
+    toList([
+      ["year", int3(cycle.year)],
+      [
+        "month",
+        (() => {
+          let _pipe = cycle.month;
+          let _pipe$1 = month_to_number(_pipe);
+          return int3(_pipe$1);
+        })()
+      ]
+    ])
+  );
+}
+function allocation_encode(id2, amount, cat_id, cycle) {
+  return object2(
+    toList([
+      ["id", nullable(id2, string2)],
+      ["amount", money_encode(amount)],
+      ["category_id", string2(cat_id)],
+      ["date", cycle_encode(cycle)]
+    ])
+  );
+}
+function month_in_year_encode(month2) {
+  return object2(
+    toList([["month", int3(month2.month)], ["year", int3(month2.year)]])
+  );
+}
+function target_encode(target) {
+  if (target instanceof Monthly) {
+    let money = target.target;
+    return object2(
+      toList([["type", string2("monthly")], ["money", money_encode(money)]])
+    );
+  } else {
+    let money = target.target;
+    let month2 = target.date;
+    return object2(
+      toList([
+        ["type", string2("custom")],
+        ["money", money_encode(money)],
+        ["date", month_in_year_encode(month2)]
+      ])
+    );
+  }
+}
+function category_encode(cat) {
+  return object2(
+    toList([
+      ["id", string2(cat.id)],
+      ["name", string2(cat.name)],
+      ["target", nullable(cat.target, target_encode)],
+      ["inflow", bool3(cat.inflow)]
+    ])
+  );
+}
+
 // build/dev/javascript/budget_fe/budget_fe/internals/msg.mjs
 var Home = class extends CustomType {
 };
@@ -8308,6 +8401,21 @@ var UserInputShowAllTransactions = class extends CustomType {
     this.show = show;
   }
 };
+var AllocateNeeded = class extends CustomType {
+  constructor(cat, needed_amount, alloc) {
+    super();
+    this.cat = cat;
+    this.needed_amount = needed_amount;
+    this.alloc = alloc;
+  }
+};
+var CoverOverspent = class extends CustomType {
+  constructor(cat, balance) {
+    super();
+    this.cat = cat;
+    this.balance = balance;
+  }
+};
 var Model2 = class extends CustomType {
   constructor(current_user, all_users, cycle, route, cycle_end_day, show_all_transactions, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions) {
     super();
@@ -8463,102 +8571,6 @@ function month_by_number(month2) {
   } else {
     return new Jan();
   }
-}
-
-// build/dev/javascript/budget_fe/budget_fe/internals/decoders.mjs
-function money_encode(money) {
-  return object2(
-    toList([
-      ["s", int3(money.s)],
-      ["b", int3(money.b)],
-      ["is_neg", bool3(money.is_neg)]
-    ])
-  );
-}
-function transaction_encode(t) {
-  return object2(
-    toList([
-      ["id", string2(t.id)],
-      [
-        "date",
-        (() => {
-          let _pipe = to_rata_die(t.date);
-          return int3(_pipe);
-        })()
-      ],
-      ["payee", string2(t.payee)],
-      ["category_id", string2(t.category_id)],
-      ["value", money_encode(t.value)],
-      ["user_id", string2(t.user_id)]
-    ])
-  );
-}
-function id_decoder() {
-  return field2(
-    "id",
-    string,
-    (id2) => {
-      return success(id2);
-    }
-  );
-}
-function cycle_encode(cycle) {
-  return object2(
-    toList([
-      ["year", int3(cycle.year)],
-      [
-        "month",
-        (() => {
-          let _pipe = cycle.month;
-          let _pipe$1 = month_to_number(_pipe);
-          return int3(_pipe$1);
-        })()
-      ]
-    ])
-  );
-}
-function allocation_encode(id2, amount, cat_id, cycle) {
-  return object2(
-    toList([
-      ["id", nullable(id2, string2)],
-      ["amount", money_encode(amount)],
-      ["category_id", string2(cat_id)],
-      ["date", cycle_encode(cycle)]
-    ])
-  );
-}
-function month_in_year_encode(month2) {
-  return object2(
-    toList([["month", int3(month2.month)], ["year", int3(month2.year)]])
-  );
-}
-function target_encode(target) {
-  if (target instanceof Monthly) {
-    let money = target.target;
-    return object2(
-      toList([["type", string2("monthly")], ["money", money_encode(money)]])
-    );
-  } else {
-    let money = target.target;
-    let month2 = target.date;
-    return object2(
-      toList([
-        ["type", string2("custom")],
-        ["money", money_encode(money)],
-        ["date", month_in_year_encode(month2)]
-      ])
-    );
-  }
-}
-function category_encode(cat) {
-  return object2(
-    toList([
-      ["id", string2(cat.id)],
-      ["name", string2(cat.name)],
-      ["target", nullable(cat.target, target_encode)],
-      ["inflow", bool3(cat.inflow)]
-    ])
-  );
 }
 
 // build/dev/javascript/budget_fe/budget_fe/internals/gleam.mjs
@@ -8751,7 +8763,7 @@ function add_category(name) {
     )
   );
 }
-function get_allocations(cycle) {
+function get_allocations() {
   let url = "http://localho.st:8000/allocations";
   let decoder = list2(allocation_decoder());
   return get3(
@@ -9372,6 +9384,32 @@ function current_cycle_transactions(model) {
     }
   );
 }
+function category_details_allocation_ui(sc, allocation) {
+  return div(
+    toList([]),
+    toList([
+      text2("Allocated: "),
+      input(
+        toList([
+          on_input(
+            (var0) => {
+              return new UserAllocationUpdate(var0);
+            }
+          ),
+          placeholder("amount"),
+          class$("form-control"),
+          type_("text"),
+          style(toList([["width", "120px"]])),
+          value(sc.allocation)
+        ])
+      ),
+      button(
+        toList([on_click(new SaveAllocation(allocation))]),
+        toList([text("Save")])
+      )
+    ])
+  );
+}
 function category_activity(cat, transactions) {
   let _pipe = transactions;
   let _pipe$1 = filter(_pipe, (t) => {
@@ -9948,6 +9986,71 @@ function category_assigned(c, allocations, cycle) {
     }
   );
 }
+function category_details_allocate_needed_ui(cat, allocation, model) {
+  let target_money$1 = target_money(cat);
+  let assigned = category_assigned(cat, model.allocations, model.cycle);
+  let add_diff = money_sum(
+    assigned,
+    (() => {
+      let _pipe = target_money$1;
+      return negate3(_pipe);
+    })()
+  );
+  let warn_text = (() => {
+    let $ = add_diff.is_neg;
+    if (!$) {
+      return text2("");
+    } else {
+      return div(
+        toList([]),
+        toList([
+          button(
+            toList([
+              on_click(
+                new AllocateNeeded(cat, add_diff, allocation)
+              )
+            ]),
+            toList([
+              text(
+                "Allocate needed " + (() => {
+                  let _pipe = add_diff;
+                  return money_to_string_no_sign(_pipe);
+                })()
+              )
+            ])
+          )
+        ])
+      );
+    }
+  })();
+  return warn_text;
+}
+function category_details_cover_overspent_ui(cat, model) {
+  let activity = category_activity(cat, current_cycle_transactions(model));
+  let assigned = category_assigned(cat, model.allocations, model.cycle);
+  let balance = money_sum(assigned, activity);
+  let $ = balance.is_neg;
+  if (!$) {
+    return text2("");
+  } else {
+    return div(
+      toList([]),
+      toList([
+        button(
+          toList([on_click(new CoverOverspent(cat, balance))]),
+          toList([
+            text(
+              "Cover overspent " + (() => {
+                let _pipe = balance;
+                return money_to_string_no_sign(_pipe);
+              })()
+            )
+          ])
+        )
+      ])
+    );
+  }
+}
 function div_context(text3, color) {
   return div(
     toList([
@@ -9972,10 +10075,7 @@ function category_balance(cat, model) {
     if ($) {
       return "rgb(137, 143, 138)";
     } else {
-      let $1 = (() => {
-        let _pipe = balance;
-        return is_neg(_pipe);
-      })();
+      let $1 = balance.is_neg;
       if ($1) {
         return "rgb(231, 41, 12)";
       } else {
@@ -9991,10 +10091,7 @@ function category_balance(cat, model) {
     })()
   );
   let warn_text = (() => {
-    let $ = (() => {
-      let _pipe = add_diff;
-      return is_neg(_pipe);
-    })();
+    let $ = add_diff.is_neg;
     if (!$) {
       return text2("");
     } else {
@@ -10178,7 +10275,7 @@ function target_string(category) {
     return "Monthly: " + money_to_string(amount);
   }
 }
-function category_target_ui(c, et) {
+function category_details_target_ui(c, et) {
   let $ = et.cat_id;
   let $1 = et.enabled;
   if ($1) {
@@ -10335,31 +10432,10 @@ function category_details(category, model, sc, allocation) {
           )
         ])
       ),
-      category_target_ui(category, model.target_edit),
-      div(
-        toList([]),
-        toList([
-          text2("Allocated: "),
-          input(
-            toList([
-              on_input(
-                (var0) => {
-                  return new UserAllocationUpdate(var0);
-                }
-              ),
-              placeholder("amount"),
-              class$("form-control"),
-              type_("text"),
-              style(toList([["width", "120px"]])),
-              value(sc.allocation)
-            ])
-          ),
-          button(
-            toList([on_click(new SaveAllocation(allocation))]),
-            toList([text("Save")])
-          )
-        ])
-      )
+      category_details_target_ui(category, model.target_edit),
+      category_details_allocation_ui(sc, allocation),
+      category_details_allocate_needed_ui(category, allocation, model),
+      category_details_cover_overspent_ui(category, model)
     ])
   );
 }
@@ -10625,7 +10701,7 @@ function update(model, msg) {
           toList([
             get_categories(),
             get_transactions(),
-            get_allocations(cycle),
+            get_allocations(),
             read_localstorage2("current_user_id"),
             get_category_suggestions()
           ])
@@ -10923,7 +10999,6 @@ function update(model, msg) {
       none()
     ];
   } else if (msg instanceof AddCategoryResult && msg.c.isOk()) {
-    let cat_id = msg.c[0];
     return [model, get_categories()];
   } else if (msg instanceof AddCategoryResult && !msg.c.isOk()) {
     return [model, none()];
@@ -11902,7 +11977,7 @@ function update(model, msg) {
     ];
   } else if (msg instanceof SaveAllocationResult && msg[0].isOk()) {
     let aer = msg[0][0];
-    return [model, get_allocations(model.cycle)];
+    return [model, get_allocations()];
   } else if (msg instanceof SaveAllocationResult && !msg[0].isOk()) {
     return [model, none()];
   } else if (msg instanceof UserAllocationUpdate) {
@@ -11977,9 +12052,7 @@ function update(model, msg) {
           _record.suggestions
         );
       })(),
-      batch(
-        toList([get_transactions(), get_allocations(new_cycle)])
-      )
+      batch(toList([get_transactions(), get_allocations()]))
     ];
   } else if (msg instanceof UserInputShowAllTransactions) {
     let show = msg.show;
@@ -12035,8 +12108,35 @@ function update(model, msg) {
       })(),
       none()
     ];
-  } else {
+  } else if (msg instanceof Suggestions && !msg.trans.isOk()) {
     return [model, none()];
+  } else if (msg instanceof AllocateNeeded) {
+    let cat = msg.cat;
+    let amount_needed = msg.needed_amount;
+    let alloc = msg.alloc;
+    return [
+      model,
+      save_allocation_eff(alloc, amount_needed, cat.id, model.cycle)
+    ];
+  } else {
+    let cat = msg.cat;
+    let balance = msg.balance;
+    return [
+      model,
+      (() => {
+        let $ = balance.is_neg;
+        if (!$) {
+          return none();
+        } else {
+          return save_allocation_eff(
+            new None(),
+            balance,
+            cat.id,
+            model.cycle
+          );
+        }
+      })()
+    ];
   }
 }
 function main() {

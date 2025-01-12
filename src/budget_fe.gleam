@@ -77,7 +77,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           effect.batch([
             eff.get_categories(),
             eff.get_transactions(),
-            eff.get_allocations(cycle),
+            eff.get_allocations(),
             eff.read_localstorage("current_user_id"),
             eff.get_category_suggestions(),
           ]),
@@ -137,7 +137,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, user_category_name_input: name),
       effect.none(),
     )
-    msg.AddCategoryResult(Ok(cat_id)) -> #(model, eff.get_categories())
+    msg.AddCategoryResult(Ok(_)) -> #(model, eff.get_categories())
     msg.AddCategoryResult(Error(_)) -> #(model, effect.none())
     msg.AddTransaction ->
       case
@@ -413,7 +413,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       option.None -> effect.none()
     })
     msg.SaveAllocationResult(Ok(aer)) -> {
-      #(model, eff.get_allocations(model.cycle))
+      #(model, eff.get_allocations())
     }
     msg.SaveAllocationResult(Error(_)) -> #(model, effect.none())
     msg.UserAllocationUpdate(a) -> #(
@@ -431,7 +431,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       }
       #(
         Model(..model, cycle: new_cycle),
-        effect.batch([eff.get_transactions(), eff.get_allocations(new_cycle)]),
+        effect.batch([eff.get_transactions(), eff.get_allocations()]),
       )
     }
     msg.UserInputShowAllTransactions(show) -> #(
@@ -443,6 +443,22 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
     msg.Suggestions(Error(_)) -> #(model, effect.none())
+    msg.AllocateNeeded(cat, amount_needed, alloc) -> #(
+      model,
+      eff.save_allocation_eff(alloc, amount_needed, cat.id, model.cycle),
+    )
+    msg.CoverOverspent(cat, balance) -> #(
+      model,
+      case balance.is_neg {
+        False -> effect.none()
+        True -> eff.save_allocation_eff(
+          option.None,
+          balance,
+          cat.id,
+          model.cycle,
+        )
+      }      
+    )
   }
 }
 

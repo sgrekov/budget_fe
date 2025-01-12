@@ -63,6 +63,8 @@ pub type Msg {
   UserAllocationUpdate(amount: String)
   CycleShift(shift: CycleShift)
   UserInputShowAllTransactions(show: Bool)
+  AllocateNeeded(cat: Category, needed_amount: Money, alloc: Option(Allocation))
+  CoverOverspent(cat: Category, balance: Money)
 }
 
 pub type Model {
@@ -83,7 +85,7 @@ pub type Model {
     target_edit: TargetEdit,
     selected_transaction: Option(String),
     transaction_edit_form: Option(TransactionEditForm),
-    suggestions : dict.Dict(String, Category),
+    suggestions: dict.Dict(String, Category),
   )
 }
 

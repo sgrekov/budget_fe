@@ -4,11 +4,9 @@ import budget_fe/internals/msg.{
 } as _
 import budget_test.{
   type Allocation, type Category, type Cycle, type Money, type MonthInYear,
-  type Transaction, type User,
+  type Transaction,
 } as m
-import budget_test.{
-  Allocation, Category, Cycle, Money, MonthInYear, Transaction, User,
-}
+import budget_test.{Allocation, Category, Cycle, Money, MonthInYear, Transaction}
 import date_utils
 import gleam/int
 import gleam/list
@@ -270,25 +268,87 @@ fn category_details(
         ]),
       ]),
     ]),
-    category_target_ui(category, model.target_edit),
-    html.div([], [
-      html.text("Allocated: "),
-      html.input([
-        event.on_input(msg.UserAllocationUpdate),
-        attribute.placeholder("amount"),
-        attribute.class("form-control"),
-        attribute.type_("text"),
-        attribute.style([#("width", "120px")]),
-        attribute.value(sc.allocation),
-      ]),
-      html.button([event.on_click(msg.SaveAllocation(allocation: allocation))], [
-        element.text("Save"),
-      ]),
+    category_details_target_ui(category, model.target_edit),
+    category_details_allocation_ui(sc, allocation),
+    category_details_allocate_needed_ui(category, allocation, model),
+    category_details_cover_overspent_ui(category, model),
+  ])
+}
+
+fn category_details_allocate_needed_ui(
+  cat: Category,
+  allocation: option.Option(Allocation),
+  model: Model,
+) -> element.Element(Msg) {
+  let target_money = target_money(cat)
+  let assigned = category_assigned(cat, model.allocations, model.cycle)
+  let add_diff = m.money_sum(assigned, target_money |> m.negate)
+  let warn_text = case add_diff.is_neg {
+    False -> html.text("")
+    True -> {
+      html.div([], [
+        html.button(
+          [event.on_click(msg.AllocateNeeded(cat, add_diff, allocation))],
+          [
+            element.text(
+              "Allocate needed " <> add_diff |> m.money_to_string_no_sign,
+            ),
+          ],
+        ),
+      ])
+    }
+  }
+}
+
+fn category_details_cover_overspent_ui(
+  cat: Category,
+  model: Model,
+) -> element.Element(Msg) {
+  let activity = category_activity(cat, current_cycle_transactions(model))
+  let assigned = category_assigned(cat, model.allocations, model.cycle)
+  let balance = m.money_sum(assigned, activity)
+
+  case balance.is_neg {
+    False -> html.text("")
+    True -> {
+      html.div([], [
+        html.button(        
+          [event.on_click(msg.CoverOverspent(cat, balance))],
+          [
+            element.text(
+              "Cover overspent " <> balance |> m.money_to_string_no_sign,
+            ),
+          ],
+        ),
+      ])
+    }
+  }
+}
+
+fn category_details_allocation_ui(
+  sc: SelectedCategory,
+  allocation: option.Option(Allocation),
+) -> element.Element(Msg) {
+  html.div([], [
+    html.text("Allocated: "),
+    html.input([
+      event.on_input(msg.UserAllocationUpdate),
+      attribute.placeholder("amount"),
+      attribute.class("form-control"),
+      attribute.type_("text"),
+      attribute.style([#("width", "120px")]),
+      attribute.value(sc.allocation),
+    ]),
+    html.button([event.on_click(msg.SaveAllocation(allocation: allocation))], [
+      element.text("Save"),
     ]),
   ])
 }
 
-fn category_target_ui(c: Category, et: TargetEdit) -> element.Element(Msg) {
+fn category_details_target_ui(
+  c: Category,
+  et: TargetEdit,
+) -> element.Element(Msg) {
   case et.cat_id, et.enabled {
     _, True -> {
       html.div([attribute.class("col")], [
@@ -802,13 +862,13 @@ fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
   let color = case balance |> m.is_zero_int {
     True -> "rgb(137, 143, 138)"
     _ ->
-      case balance |> m.is_neg {
+      case balance.is_neg {
         True -> "rgb(231, 41, 12)"
         False -> "rgba(64,185,78,1)"
       }
   }
   let add_diff = m.money_sum(assigned, target_money |> m.negate)
-  let warn_text = case add_diff |> m.is_neg {
+  let warn_text = case add_diff.is_neg {
     False -> html.text("")
     True ->
       div_context(

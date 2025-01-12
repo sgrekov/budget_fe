@@ -1,24 +1,11 @@
-import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_test.{
-  type Allocation, type Category, type Cycle, type Money, type MonthInYear,
-  type Target, type Transaction, type User, Allocation, Category, Cycle, Money,
-  MonthInYear, Transaction, User,
+  type Category, type Cycle, type Money, type MonthInYear, Category, Cycle,
+  Money, MonthInYear,
 } as m
-import date_utils
-import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/json
-import gleam/list
-import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
-import gleam/result
-import gleam/uri.{type Uri}
-import gluid
-import lustre/effect
-import lustre_http
-import modem.{initial_uri}
 import rada/date as d
-import decode/zero
 
 pub fn transaction_encode(t: m.Transaction) -> json.Json {
   json.object([
@@ -30,7 +17,6 @@ pub fn transaction_encode(t: m.Transaction) -> json.Json {
     #("user_id", json.string(t.user_id)),
   ])
 }
-
 
 pub fn money_encode(money: Money) -> json.Json {
   json.object([

@@ -1,3 +1,5 @@
+import gleam/http/request
+import gleam/http
 import budget_fe/internals/decoders
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_test.{
@@ -5,14 +7,8 @@ import budget_test.{
   type User, Allocation, Category, Cycle, Transaction, User,
 } as m
 import date_utils
-import decode/zero
-import gleam/dynamic
 import gleam/dynamic/decode
-import gleam/http
-import gleam/http/request
-import gleam/io
 import gleam/json
-import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/result
@@ -95,7 +91,7 @@ pub fn add_category(name: String) -> effect.Effect(Msg) {
   )
 }
 
-pub fn get_allocations(cycle: Cycle) -> effect.Effect(Msg) {
+pub fn get_allocations() -> effect.Effect(Msg) {
   let url = "http://localho.st:8000/allocations"
 
   let decoder = decode.list(m.allocation_decoder())
