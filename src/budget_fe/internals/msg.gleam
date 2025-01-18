@@ -65,7 +65,7 @@ pub type Msg {
   CycleShift(shift: CycleShift)
   UserInputShowAllTransactions(show: Bool)
   AllocateNeeded(cat: Category, needed_amount: Money, alloc: Option(Allocation))
-  CoverOverspent(cat: Category, balance: Money)
+  // CoverOverspent(cat: Category, balance: Money)
   ShowAddCategoryGroupUI
   UserUpdatedCategoryGroupName(name: String)
   CreateCategoryGroup
@@ -110,7 +110,7 @@ pub type TransactionForm {
     date: String,
     payee: String,
     category: Option(Category),
-    amount: Option(Money),
+    amount: String,
     is_inflow: Bool,
   )
 }

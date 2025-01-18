@@ -42,13 +42,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       show_add_category_ui: None,
       show_add_category_group_ui: False,
       user_category_name_input: "",
-      transaction_add_input: msg.TransactionForm(
-        "",
-        "",
-        option.None,
-        option.None,
-        False,
-      ),
+      transaction_add_input: msg.TransactionForm("", "", option.None, "", False),
       target_edit: msg.TargetEdit("", False, m.Monthly(m.Money(0))),
       selected_transaction: option.None,
       transaction_edit_form: option.None,
@@ -150,22 +144,22 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     msg.AddTransaction ->
       case
         model.transaction_add_input.category,
-        model.transaction_add_input.amount
+        model.transaction_add_input.amount |> m.string_to_money
       {
-        Some(cat), Some(money) -> #(
+        Some(cat), money -> #(
           Model(
             ..model,
             transaction_add_input: msg.TransactionForm(
               date: model.transaction_add_input.date,
               payee: "",
               category: option.None,
-              amount: option.None,
+              amount: "",
               is_inflow: False,
             ),
           ),
           eff.add_transaction_eff(
             model.transaction_add_input,
-            money,
+            model.transaction_add_input |> to_money,
             cat,
             model.current_user,
           ),
@@ -226,9 +220,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         ..model,
         transaction_add_input: msg.TransactionForm(
           ..model.transaction_add_input,
-          amount: int.parse(amount)
-            |> result.map(fn(amount) { m.Money(amount * 100 |> int.negate) })
-            |> option.from_result,
+          amount: amount,
         ),
       ),
       effect.none(),
@@ -238,13 +230,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         ..model,
         transaction_add_input: msg.TransactionForm(
           ..model.transaction_add_input,
-          amount: model.transaction_add_input.amount
-            |> option.map(fn(a) {
-              m.Money(case is_inflow {
-                True -> a.value |> int.absolute_value
-                False -> a.value |> int.absolute_value |> int.negate
-              })
-            }),
+          is_inflow: is_inflow,
         ),
       ),
       effect.none(),
@@ -468,10 +454,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       model,
       eff.save_allocation_eff(alloc, amount_needed, cat.id, model.cycle),
     )
-    msg.CoverOverspent(cat, balance) -> #(model, case balance.value < 0 {
-      False -> effect.none()
-      True -> eff.save_allocation_eff(option.None, balance, cat.id, model.cycle)
-    })
+    // msg.CoverOverspent(cat, balance) -> #(model, case balance.value < 0 {
+    //   False -> effect.none()
+    //   True -> eff.save_allocation_eff(option.None, balance, cat.id, model.cycle)
+    // })
     msg.ShowAddCategoryGroupUI -> #(
       Model(
         ..model,
@@ -518,6 +504,15 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
   }
+}
+
+fn to_money(tf: msg.TransactionForm) -> m.Money {
+  let money = tf.amount |> m.string_to_money
+  let sign = case tf.is_inflow {
+    True -> 1
+    False -> -1
+  }
+  m.Money({ money.value |> int.absolute_value } * sign)
 }
 
 fn transaction_form_to_transaction(

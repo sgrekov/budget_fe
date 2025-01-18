@@ -269,7 +269,7 @@ fn category_details(
     category_details_target_ui(category, model.target_edit),
     category_details_allocation_ui(sc, allocation),
     category_details_allocate_needed_ui(category, allocation, model),
-    category_details_cover_overspent_ui(category, model),
+    category_details_cover_overspent_ui(category, model, allocation),
     category_details_change_group_ui(category, model),
   ])
 }
@@ -332,6 +332,7 @@ fn category_details_allocate_needed_ui(
 fn category_details_cover_overspent_ui(
   cat: Category,
   model: Model,
+  allocation : option.Option(Allocation),
 ) -> element.Element(Msg) {
   let activity = category_activity(cat, current_cycle_transactions(model))
   let assigned = category_assigned(cat, model.allocations, model.cycle)
@@ -341,11 +342,20 @@ fn category_details_cover_overspent_ui(
     False -> html.text("")
     True -> {
       html.div([], [
-        html.button([event.on_click(msg.CoverOverspent(cat, balance))], [
-          element.text(
-            "Cover overspent " <> balance |> m.money_to_string_no_sign,
-          ),
-        ]),
+        html.button(
+          [
+            event.on_click(msg.AllocateNeeded(
+              cat : cat,
+              needed_amount :m.Money(assigned.value + { balance.value |> int.absolute_value }),
+              alloc : allocation,
+            )),
+          ],
+          [
+            element.text(
+              "Cover overspent " <> balance |> m.money_to_string_no_sign,
+            ),
+          ],
+        ),
       ])
     }
   }
@@ -795,12 +805,8 @@ fn add_transaction_ui(
         attribute.id("addTransactionAmountId"),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "120px")]),
-        // attribute.value(
-      //   transaction_edit_form.amount
-      //   |> option.map(fn(m) { m |> m.money_to_string_no_sign })
-      //   |> option.unwrap(""),
-      // ),
+        attribute.style([#("width", "120px")]),        
+        attribute.value(transaction_edit_form.amount),
       ]),
       check_box(
         "is inflow",

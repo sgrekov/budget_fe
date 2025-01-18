@@ -414,9 +414,6 @@ function clamp(x, min_bound, max_bound) {
   let _pipe$1 = min(_pipe, max_bound);
   return max(_pipe$1, min_bound);
 }
-function negate2(x) {
-  return -1 * x;
-}
 function random(max2) {
   let _pipe = random_uniform() * identity(max2);
   let _pipe$1 = floor(_pipe);
@@ -5495,20 +5492,28 @@ function string_to_money(raw) {
   }
 }
 function money_to_string_no_sign(m) {
+  let value3 = (() => {
+    let _pipe = m.value;
+    return absolute_value(_pipe);
+  })();
   return (() => {
-    let _pipe = divideInt(m.value, 100);
+    let _pipe = divideInt(value3, 100);
     return to_string(_pipe);
   })() + "." + (() => {
-    let _pipe = remainderInt(m.value, 100);
+    let _pipe = remainderInt(value3, 100);
     return to_string(_pipe);
   })();
 }
 function money_with_currency_no_sign(m) {
+  let value3 = (() => {
+    let _pipe = m.value;
+    return absolute_value(_pipe);
+  })();
   return "\u20AC" + (() => {
-    let _pipe = divideInt(m.value, 100);
+    let _pipe = divideInt(value3, 100);
     return to_string(_pipe);
   })() + "." + (() => {
-    let _pipe = remainderInt(m.value, 100);
+    let _pipe = remainderInt(value3, 100);
     return to_string(_pipe);
   })();
 }
@@ -8413,13 +8418,6 @@ var AllocateNeeded = class extends CustomType {
     this.alloc = alloc;
   }
 };
-var CoverOverspent = class extends CustomType {
-  constructor(cat, balance) {
-    super();
-    this.cat = cat;
-    this.balance = balance;
-  }
-};
 var ShowAddCategoryGroupUI = class extends CustomType {
 };
 var UserUpdatedCategoryGroupName = class extends CustomType {
@@ -10004,7 +10002,8 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               id("addTransactionAmountId"),
               class$("form-control"),
               type_("text"),
-              style(toList([["width", "120px"]]))
+              style(toList([["width", "120px"]])),
+              value(transaction_edit_form.amount)
             ])
           ),
           check_box(
@@ -10142,7 +10141,7 @@ function category_details_allocate_needed_ui(cat, allocation, model) {
     );
   }
 }
-function category_details_cover_overspent_ui(cat, model) {
+function category_details_cover_overspent_ui(cat, model, allocation) {
   let activity = category_activity(cat, current_cycle_transactions(model));
   let assigned = category_assigned(cat, model.allocations, model.cycle);
   let balance = money_sum(assigned, activity);
@@ -10154,7 +10153,20 @@ function category_details_cover_overspent_ui(cat, model) {
       toList([]),
       toList([
         button(
-          toList([on_click(new CoverOverspent(cat, balance))]),
+          toList([
+            on_click(
+              new AllocateNeeded(
+                cat,
+                new Money(
+                  assigned.value + (() => {
+                    let _pipe = balance.value;
+                    return absolute_value(_pipe);
+                  })()
+                ),
+                allocation
+              )
+            )
+          ]),
           toList([
             text(
               "Cover overspent " + (() => {
@@ -10638,7 +10650,7 @@ function category_details(category, model, sc, allocation) {
       category_details_target_ui(category, model.target_edit),
       category_details_allocation_ui(sc, allocation),
       category_details_allocate_needed_ui(category, allocation, model),
-      category_details_cover_overspent_ui(category, model),
+      category_details_cover_overspent_ui(category, model, allocation),
       category_details_change_group_ui(category, model)
     ])
   );
@@ -10769,13 +10781,7 @@ function init3(_) {
       new None(),
       new None(),
       "",
-      new TransactionForm(
-        "",
-        "",
-        new None(),
-        new None(),
-        false
-      ),
+      new TransactionForm("", "", new None(), "", false),
       new TargetEdit("", false, new Monthly(new Money(0))),
       new None(),
       new None(),
@@ -10788,6 +10794,26 @@ function init3(_) {
       toList([init2(on_route_change), initial_eff()])
     )
   ];
+}
+function to_money(tf) {
+  let money = (() => {
+    let _pipe = tf.amount;
+    return string_to_money(_pipe);
+  })();
+  let sign = (() => {
+    let $ = tf.is_inflow;
+    if ($) {
+      return 1;
+    } else {
+      return -1;
+    }
+  })();
+  return new Money(
+    (() => {
+      let _pipe = money.value;
+      return absolute_value(_pipe);
+    })() * sign
+  );
 }
 function transaction_form_to_transaction(tef, categories, current_user) {
   let date_option = (() => {
@@ -11284,10 +11310,13 @@ function update(model, msg) {
     return [model, none()];
   } else if (msg instanceof AddTransaction) {
     let $ = model.transaction_add_input.category;
-    let $1 = model.transaction_add_input.amount;
-    if ($ instanceof Some && $1 instanceof Some) {
+    let $1 = (() => {
+      let _pipe = model.transaction_add_input.amount;
+      return string_to_money(_pipe);
+    })();
+    if ($ instanceof Some) {
       let cat = $[0];
-      let money = $1[0];
+      let money = $1;
       return [
         (() => {
           let _record = model;
@@ -11309,7 +11338,7 @@ function update(model, msg) {
               model.transaction_add_input.date,
               "",
               new None(),
-              new None(),
+              "",
               false
             ),
             _record.target_edit,
@@ -11323,7 +11352,10 @@ function update(model, msg) {
         })(),
         add_transaction_eff(
           model.transaction_add_input,
-          money,
+          (() => {
+            let _pipe = model.transaction_add_input;
+            return to_money(_pipe);
+          })(),
           cat,
           model.current_user
         )
@@ -11534,21 +11566,7 @@ function update(model, msg) {
               _record$1.date,
               _record$1.payee,
               _record$1.category,
-              (() => {
-                let _pipe = parse_int(amount);
-                let _pipe$1 = map3(
-                  _pipe,
-                  (amount2) => {
-                    return new Money(
-                      (() => {
-                        let _pipe$12 = amount2 * 100;
-                        return negate2(_pipe$12);
-                      })()
-                    );
-                  }
-                );
-                return from_result(_pipe$1);
-              })(),
+              amount,
               _record$1.is_inflow
             );
           })(),
@@ -11588,27 +11606,8 @@ function update(model, msg) {
               _record$1.date,
               _record$1.payee,
               _record$1.category,
-              (() => {
-                let _pipe = model.transaction_add_input.amount;
-                return map(
-                  _pipe,
-                  (a2) => {
-                    return new Money(
-                      (() => {
-                        if (is_inflow) {
-                          let _pipe$1 = a2.value;
-                          return absolute_value(_pipe$1);
-                        } else {
-                          let _pipe$1 = a2.value;
-                          let _pipe$2 = absolute_value(_pipe$1);
-                          return negate2(_pipe$2);
-                        }
-                      })()
-                    );
-                  }
-                );
-              })(),
-              _record$1.is_inflow
+              _record$1.amount,
+              is_inflow
             );
           })(),
           _record.target_edit,
@@ -12565,25 +12564,6 @@ function update(model, msg) {
     return [
       model,
       save_allocation_eff(alloc, amount_needed, cat.id, model.cycle)
-    ];
-  } else if (msg instanceof CoverOverspent) {
-    let cat = msg.cat;
-    let balance = msg.balance;
-    return [
-      model,
-      (() => {
-        let $ = balance.value < 0;
-        if (!$) {
-          return none();
-        } else {
-          return save_allocation_eff(
-            new None(),
-            balance,
-            cat.id,
-            model.cycle
-          );
-        }
-      })()
     ];
   } else if (msg instanceof ShowAddCategoryGroupUI) {
     return [
