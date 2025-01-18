@@ -710,6 +710,11 @@ fn transaction_edit_ui(
         attribute.type_("text"),
         attribute.style([#("width", "160px")]),
       ]),
+      check_box(
+        "is inflow",
+        tef.is_inflow,
+        msg.UserEditTransactionIsInflow,
+      ),
       {
         let selected_id = model.selected_transaction |> option.unwrap("")
         manage_transaction_buttons(

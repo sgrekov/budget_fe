@@ -321,6 +321,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           payee: t.payee,
           category_name: category_name,
           amount: t.value |> m.money_to_string_no_sign,
+          is_inflow: t.value.value >= 0,
         )),
       ),
       effect.none(),
@@ -350,6 +351,16 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         ..model,
         transaction_edit_form: model.transaction_edit_form
           |> option.map(fn(tef) { msg.TransactionEditForm(..tef, amount: a) }),
+      ),
+      effect.none(),
+    )
+    msg.UserEditTransactionIsInflow(is_inflow) -> #(
+      Model(
+        ..model,
+        transaction_edit_form: model.transaction_edit_form
+          |> option.map(fn(tef) {
+            msg.TransactionEditForm(..tef, is_inflow: is_inflow)
+          }),
       ),
       effect.none(),
     )
@@ -522,7 +533,13 @@ fn transaction_form_to_transaction(
 ) -> Option(Transaction) {
   let date_option =
     tef.date |> date_utils.from_date_string |> option.from_result
-  let amount = tef.amount |> m.string_to_money
+
+  let sign = case tef.is_inflow {
+    True -> 1
+    False -> -1
+  }
+  let amount =
+    m.Money({ tef.amount |> m.string_to_money |> money_value } * sign)
   let category =
     categories
     |> list.find(fn(c) { c.name == tef.category_name })
@@ -539,6 +556,10 @@ fn transaction_form_to_transaction(
       ))
     _, _ -> None
   }
+}
+
+fn money_value(m: m.Money) -> Int {
+  m.value
 }
 
 // fn find_alloc_by_id(

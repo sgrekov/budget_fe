@@ -55,6 +55,7 @@ pub type Msg {
   UserTransactionEditDate(d: String)
   UserTransactionEditCategory(c: String)
   UserTransactionEditAmount(a: String)
+  UserEditTransactionIsInflow(is_inflow: Bool)
   UserInputCategoryUpdateName(n: String)
   UpdateCategoryName(cat: Category)
   DeleteCategory
@@ -127,6 +128,7 @@ pub type TransactionEditForm {
     payee: String,
     category_name: String,
     amount: String,
+    is_inflow: Bool,
   )
 }
 

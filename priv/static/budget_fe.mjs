@@ -8360,6 +8360,12 @@ var UserTransactionEditAmount = class extends CustomType {
     this.a = a2;
   }
 };
+var UserEditTransactionIsInflow = class extends CustomType {
+  constructor(is_inflow) {
+    super();
+    this.is_inflow = is_inflow;
+  }
+};
 var UserInputCategoryUpdateName = class extends CustomType {
   constructor(n) {
     super();
@@ -8501,13 +8507,14 @@ var ShiftLeft = class extends CustomType {
 var ShiftRight = class extends CustomType {
 };
 var TransactionEditForm = class extends CustomType {
-  constructor(id2, date, payee, category_name, amount) {
+  constructor(id2, date, payee, category_name, amount, is_inflow) {
     super();
     this.id = id2;
     this.date = date;
     this.payee = payee;
     this.category_name = category_name;
     this.amount = amount;
+    this.is_inflow = is_inflow;
   }
 };
 var TargetEdit = class extends CustomType {
@@ -9821,6 +9828,13 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               style(toList([["width", "160px"]]))
             ])
           ),
+          check_box(
+            "is inflow",
+            tef.is_inflow,
+            (var0) => {
+              return new UserEditTransactionIsInflow(var0);
+            }
+          ),
           (() => {
             let selected_id = (() => {
               let _pipe = model.selected_transaction;
@@ -10815,16 +10829,30 @@ function to_money(tf) {
     })() * sign
   );
 }
+function money_value(m) {
+  return m.value;
+}
 function transaction_form_to_transaction(tef, categories, current_user) {
   let date_option = (() => {
     let _pipe = tef.date;
     let _pipe$1 = from_date_string(_pipe);
     return from_result(_pipe$1);
   })();
-  let amount = (() => {
-    let _pipe = tef.amount;
-    return string_to_money(_pipe);
+  let sign = (() => {
+    let $ = tef.is_inflow;
+    if ($) {
+      return 1;
+    } else {
+      return -1;
+    }
   })();
+  let amount = new Money(
+    (() => {
+      let _pipe = tef.amount;
+      let _pipe$1 = string_to_money(_pipe);
+      return money_value(_pipe$1);
+    })() * sign
+  );
   let category = (() => {
     let _pipe = categories;
     let _pipe$1 = find(
@@ -11994,7 +12022,8 @@ function update(model, msg) {
               (() => {
                 let _pipe = t.value;
                 return money_to_string_no_sign(_pipe);
-              })()
+              })(),
+              t.value.value >= 0
             )
           ),
           _record.suggestions,
@@ -12046,7 +12075,8 @@ function update(model, msg) {
                   _record$1.date,
                   payee,
                   _record$1.category_name,
-                  _record$1.amount
+                  _record$1.amount,
+                  _record$1.is_inflow
                 );
               }
             );
@@ -12092,7 +12122,8 @@ function update(model, msg) {
                   d,
                   _record$1.payee,
                   _record$1.category_name,
-                  _record$1.amount
+                  _record$1.amount,
+                  _record$1.is_inflow
                 );
               }
             );
@@ -12138,7 +12169,55 @@ function update(model, msg) {
                   _record$1.date,
                   _record$1.payee,
                   _record$1.category_name,
-                  a2
+                  a2,
+                  _record$1.is_inflow
+                );
+              }
+            );
+          })(),
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          _record.category_group_change_input
+        );
+      })(),
+      none()
+    ];
+  } else if (msg instanceof UserEditTransactionIsInflow) {
+    let is_inflow = msg.is_inflow;
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.current_user,
+          _record.all_users,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          (() => {
+            let _pipe = model.transaction_edit_form;
+            return map(
+              _pipe,
+              (tef) => {
+                let _record$1 = tef;
+                return new TransactionEditForm(
+                  _record$1.id,
+                  _record$1.date,
+                  _record$1.payee,
+                  _record$1.category_name,
+                  _record$1.amount,
+                  is_inflow
                 );
               }
             );
@@ -12184,7 +12263,8 @@ function update(model, msg) {
                   _record$1.date,
                   _record$1.payee,
                   c,
-                  _record$1.amount
+                  _record$1.amount,
+                  _record$1.is_inflow
                 );
               }
             );
