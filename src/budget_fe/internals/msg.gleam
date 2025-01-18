@@ -36,6 +36,7 @@ pub type Msg {
   UserUpdatedTransactionPayee(payee: String)
   UserUpdatedTransactionCategory(cat: String)
   UserUpdatedTransactionAmount(amount: String)
+  UserUpdatedTransactionIsInflow(is_inflow: Bool)
   AddTransactionResult(c: Result(Transaction, lustre_http.HttpError))
   EditTarget(c: Category)
   SaveTarget(c: Category)

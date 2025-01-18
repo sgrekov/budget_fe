@@ -308,12 +308,13 @@ fn category_details_allocate_needed_ui(
   let target_money = target_money(cat)
   let assigned = category_assigned(cat, model.allocations, model.cycle)
   let add_diff = m.money_sum(assigned, target_money |> m.negate)
+  let new_amount = m.money_sum(assigned, add_diff |> m.positivate)
   case add_diff.is_neg {
     False -> html.text("")
     True -> {
       html.div([], [
         html.button(
-          [event.on_click(msg.AllocateNeeded(cat, add_diff, allocation))],
+          [event.on_click(msg.AllocateNeeded(cat, new_amount, allocation))],
           [
             element.text(
               "Allocate needed " <> add_diff |> m.money_to_string_no_sign,
@@ -533,21 +534,33 @@ fn ready_to_assign(
   |> m.money_to_string
 }
 
+fn check_box(
+  label: String,
+  is_checked: Bool,
+  msg: fn(Bool) -> Msg,
+) -> element.Element(Msg) {
+  html.div([attribute.class("form-check")], [
+    html.input([
+      attribute.id("flexCheckDefault"),
+      event.on_check(msg),
+      attribute.type_("checkbox"),
+      attribute.class("form-check-input"),
+      attribute.checked(is_checked),
+    ]),
+    html.label(
+      [attribute.for("flexCheckDefault"), attribute.class("form-check-label")],
+      [html.text(label)],
+    ),
+  ])
+}
+
 fn budget_transactions(model: Model) -> element.Element(Msg) {
   html.div([attribute.class("d-flex flex-column flex-fill")], [
-    html.div([attribute.class("form-check")], [
-      html.input([
-        attribute.id("flexCheckDefault"),
-        event.on_check(msg.UserInputShowAllTransactions),
-        attribute.type_("checkbox"),
-        attribute.class("form-check-input"),
-        attribute.checked(model.show_all_transactions),
-      ]),
-      html.label(
-        [attribute.for("flexCheckDefault"), attribute.class("form-check-label")],
-        [html.text("Show all transactions")],
-      ),
-    ]),
+    check_box(
+      "Show all transactions",
+      model.show_all_transactions,
+      msg.UserInputShowAllTransactions,
+    ),
     html.table([attribute.class("table table-sm table-hover")], [
       html.thead([], [
         html.tr([], [
@@ -780,12 +793,19 @@ fn add_transaction_ui(
         attribute.class("form-control"),
         attribute.type_("text"),
         attribute.style([#("width", "120px")]),
-        attribute.value(
-          transaction_edit_form.amount
-          |> option.map(fn(m) { m |> m.money_to_string_no_sign })
-          |> option.unwrap(""),
-        ),
+        // attribute.value(
+      //   transaction_edit_form.amount
+      //   |> option.map(fn(m) { m |> m.money_to_string_no_sign })
+      //   |> option.unwrap(""),
+      // ),
       ]),
+      check_box(
+        "is inflow",
+        transaction_edit_form.amount
+          |> option.map(fn(m) { m.is_neg })
+          |> option.unwrap(False),
+        msg.UserUpdatedTransactionIsInflow,
+      ),
       html.button([event.on_click(msg.AddTransaction)], [element.text("Add")]),
     ]),
   ])
@@ -955,7 +975,7 @@ fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
     False -> html.text("")
     True ->
       div_context(
-        " Add more " <> add_diff |> m.money_to_string,
+        " Add more " <> add_diff |> m.money_with_currency_no_sign,
         "rgb(235, 199, 16)",
       )
   }

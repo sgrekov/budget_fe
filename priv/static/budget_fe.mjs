@@ -5499,6 +5499,10 @@ function negate3(m) {
   let _record = m;
   return new Money(_record.s, _record.b, true);
 }
+function positivate(m) {
+  let _record = m;
+  return new Money(_record.s, _record.b, false);
+}
 function string_to_money(raw) {
   let $ = (() => {
     let $12 = slice(raw, 0, 1);
@@ -5546,6 +5550,15 @@ function string_to_money(raw) {
 }
 function money_to_string_no_sign(m) {
   return (() => {
+    let _pipe = m.s;
+    return to_string(_pipe);
+  })() + "." + (() => {
+    let _pipe = m.b;
+    return to_string(_pipe);
+  })();
+}
+function money_with_currency_no_sign(m) {
+  return "\u20AC" + (() => {
     let _pipe = m.s;
     return to_string(_pipe);
   })() + "." + (() => {
@@ -8300,6 +8313,12 @@ var UserUpdatedTransactionAmount = class extends CustomType {
     this.amount = amount;
   }
 };
+var UserUpdatedTransactionIsInflow = class extends CustomType {
+  constructor(is_inflow) {
+    super();
+    this.is_inflow = is_inflow;
+  }
+};
 var AddTransactionResult = class extends CustomType {
   constructor(c) {
     super();
@@ -9709,6 +9728,29 @@ function ready_to_assign(transactions, allocations, cycle, categories) {
   let _pipe = money_sum(income, negate3(outcome));
   return money_to_string(_pipe);
 }
+function check_box(label2, is_checked, msg) {
+  return div(
+    toList([class$("form-check")]),
+    toList([
+      input(
+        toList([
+          id("flexCheckDefault"),
+          on_check(msg),
+          type_("checkbox"),
+          class$("form-check-input"),
+          checked(is_checked)
+        ])
+      ),
+      label(
+        toList([
+          for$("flexCheckDefault"),
+          class$("form-check-label")
+        ]),
+        toList([text2(label2)])
+      )
+    ])
+  );
+}
 function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
   let $ = selected_id === t.id;
   if (!$) {
@@ -10031,21 +10073,21 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               id("addTransactionAmountId"),
               class$("form-control"),
               type_("text"),
-              style(toList([["width", "120px"]])),
-              value(
-                (() => {
-                  let _pipe = transaction_edit_form.amount;
-                  let _pipe$1 = map(
-                    _pipe,
-                    (m) => {
-                      let _pipe$12 = m;
-                      return money_to_string_no_sign(_pipe$12);
-                    }
-                  );
-                  return unwrap(_pipe$1, "");
-                })()
-              )
+              style(toList([["width", "120px"]]))
             ])
+          ),
+          check_box(
+            "is inflow",
+            (() => {
+              let _pipe = transaction_edit_form.amount;
+              let _pipe$1 = map(_pipe, (m) => {
+                return m.is_neg;
+              });
+              return unwrap(_pipe$1, false);
+            })(),
+            (var0) => {
+              return new UserUpdatedTransactionIsInflow(var0);
+            }
           ),
           button(
             toList([on_click(new AddTransaction())]),
@@ -10060,30 +10102,12 @@ function budget_transactions(model) {
   return div(
     toList([class$("d-flex flex-column flex-fill")]),
     toList([
-      div(
-        toList([class$("form-check")]),
-        toList([
-          input(
-            toList([
-              id("flexCheckDefault"),
-              on_check(
-                (var0) => {
-                  return new UserInputShowAllTransactions(var0);
-                }
-              ),
-              type_("checkbox"),
-              class$("form-check-input"),
-              checked(model.show_all_transactions)
-            ])
-          ),
-          label(
-            toList([
-              for$("flexCheckDefault"),
-              class$("form-check-label")
-            ]),
-            toList([text2("Show all transactions")])
-          )
-        ])
+      check_box(
+        "Show all transactions",
+        model.show_all_transactions,
+        (var0) => {
+          return new UserInputShowAllTransactions(var0);
+        }
       ),
       table(
         toList([class$("table table-sm table-hover")]),
@@ -10167,6 +10191,13 @@ function category_details_allocate_needed_ui(cat, allocation, model) {
       return negate3(_pipe);
     })()
   );
+  let new_amount = money_sum(
+    assigned,
+    (() => {
+      let _pipe = add_diff;
+      return positivate(_pipe);
+    })()
+  );
   let $ = add_diff.is_neg;
   if (!$) {
     return text2("");
@@ -10176,7 +10207,9 @@ function category_details_allocate_needed_ui(cat, allocation, model) {
       toList([
         button(
           toList([
-            on_click(new AllocateNeeded(cat, add_diff, allocation))
+            on_click(
+              new AllocateNeeded(cat, new_amount, allocation)
+            )
           ]),
           toList([
             text(
@@ -10264,7 +10297,7 @@ function category_balance(cat, model) {
       return div_context(
         " Add more " + (() => {
           let _pipe = add_diff;
-          return money_to_string(_pipe);
+          return money_with_currency_no_sign(_pipe);
         })(),
         "rgb(235, 199, 16)"
       );
@@ -11598,6 +11631,55 @@ function update(model, msg) {
                   }
                 );
                 return from_result(_pipe$1);
+              })(),
+              _record$1.is_inflow
+            );
+          })(),
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          _record.category_group_change_input
+        );
+      })(),
+      none()
+    ];
+  } else if (msg instanceof UserUpdatedTransactionIsInflow) {
+    let is_inflow = msg.is_inflow;
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.current_user,
+          _record.all_users,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          (() => {
+            let _record$1 = model.transaction_add_input;
+            return new TransactionForm(
+              _record$1.date,
+              _record$1.payee,
+              _record$1.category,
+              (() => {
+                let _pipe = model.transaction_add_input.amount;
+                return map(
+                  _pipe,
+                  (a2) => {
+                    let _record$2 = a2;
+                    return new Money(_record$2.s, _record$2.b, !is_inflow);
+                  }
+                );
               })(),
               _record$1.is_inflow
             );

@@ -233,6 +233,17 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
+    msg.UserUpdatedTransactionIsInflow(is_inflow) -> #(
+      Model(
+        ..model,
+        transaction_add_input: msg.TransactionForm(
+          ..model.transaction_add_input,
+          amount: model.transaction_add_input.amount
+            |> option.map(fn(a) { m.Money(..a, is_neg : !is_inflow ) }),
+        ),
+      ),
+      effect.none(),
+    )
     msg.EditTarget(_) -> #(
       Model(
         ..model,
