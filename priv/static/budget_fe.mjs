@@ -414,6 +414,9 @@ function clamp(x, min_bound, max_bound) {
   let _pipe$1 = min(_pipe, max_bound);
   return max(_pipe$1, min_bound);
 }
+function negate2(x) {
+  return -1 * x;
+}
 function random(max2) {
   let _pipe = random_uniform() * identity(max2);
   let _pipe$1 = floor(_pipe);
@@ -2780,6 +2783,14 @@ var string = /* @__PURE__ */ new Decoder(decode_string2);
 var bool2 = /* @__PURE__ */ new Decoder(decode_bool2);
 var int2 = /* @__PURE__ */ new Decoder(decode_int2);
 
+// build/dev/javascript/gleam_stdlib/gleam/io.mjs
+function debug(term) {
+  let _pipe = term;
+  let _pipe$1 = inspect2(_pipe);
+  print_debug(_pipe$1);
+  return term;
+}
+
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
 function guard(requirement, consequence, alternative) {
   if (requirement) {
@@ -2787,14 +2798,6 @@ function guard(requirement, consequence, alternative) {
   } else {
     return alternative();
   }
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/io.mjs
-function debug(term) {
-  let _pipe = term;
-  let _pipe$1 = inspect2(_pipe);
-  print_debug(_pipe$1);
-  return term;
 }
 
 // build/dev/javascript/gleam_regexp/gleam_regexp_ffi.mjs
@@ -5164,11 +5167,9 @@ var Transaction = class extends CustomType {
   }
 };
 var Money = class extends CustomType {
-  constructor(s, b, is_neg) {
+  constructor(value3) {
     super();
-    this.s = s;
-    this.b = b;
-    this.is_neg = is_neg;
+    this.value = value3;
   }
 };
 function user_decoder() {
@@ -5248,22 +5249,10 @@ function cycle_decoder() {
 }
 function money_decoder() {
   let money_decoder$1 = field2(
-    "s",
+    "money_value",
     int2,
-    (s) => {
-      return field2(
-        "b",
-        int2,
-        (b) => {
-          return field2(
-            "is_neg",
-            bool2,
-            (is_neg) => {
-              return success(new Money(s, b, is_neg));
-            }
-          );
-        }
-      );
+    (value3) => {
+      return success(new Money(value3));
     }
   );
   return money_decoder$1;
@@ -5419,35 +5408,7 @@ function transaction_decoder() {
   );
 }
 function money_sum(a2, b) {
-  let sign_a = (() => {
-    let $ = a2.is_neg;
-    if (!$) {
-      return 1;
-    } else {
-      return -1;
-    }
-  })();
-  let sign_b = (() => {
-    let $ = b.is_neg;
-    if (!$) {
-      return 1;
-    } else {
-      return -1;
-    }
-  })();
-  let a_cents = (a2.s * 100 + a2.b) * sign_a;
-  let b_cents = (b.s * 100 + b.b) * sign_b;
-  return new Money(
-    (() => {
-      let _pipe = divideInt(a_cents + b_cents, 100);
-      return absolute_value(_pipe);
-    })(),
-    (() => {
-      let _pipe = remainderInt(a_cents + b_cents, 100);
-      return absolute_value(_pipe);
-    })(),
-    a_cents + b_cents < 0
-  );
+  return new Money(a2.value + b.value);
 }
 function cycle_decrease(c) {
   let mon_num = month_to_number(c.month);
@@ -5483,33 +5444,18 @@ function calculate_current_cycle() {
   }
 }
 function divide_money(m, d) {
-  return new Money(divideInt(m.s, d), divideInt(m.b, d), m.is_neg);
+  return new Money(divideInt(m.value, d));
 }
-function int_to_money(i) {
-  return new Money(
-    (() => {
-      let _pipe = i;
-      return absolute_value(_pipe);
-    })(),
-    0,
-    i < 0
-  );
-}
-function negate3(m) {
-  let _record = m;
-  return new Money(_record.s, _record.b, true);
-}
-function positivate(m) {
-  let _record = m;
-  return new Money(_record.s, _record.b, false);
+function euro_int_to_money(i) {
+  return new Money(i * 100);
 }
 function string_to_money(raw) {
   let $ = (() => {
     let $12 = slice(raw, 0, 1);
     if ($12 === "-") {
-      return [true, slice(raw, 1, string_length(raw))];
+      return [-1, slice(raw, 1, string_length(raw))];
     } else {
-      return [false, raw];
+      return [1, raw];
     }
   })();
   let is_neg = $[0];
@@ -5531,59 +5477,45 @@ function string_to_money(raw) {
     if ($2.isOk() && $3.isOk()) {
       let s$2 = $2[0];
       let b$1 = $3[0];
-      return new Money(s$2, b$1, is_neg);
+      return new Money(is_neg * (s$2 * 100 + b$1));
     } else {
-      return new Money(0, 0, is_neg);
+      return new Money(0);
     }
   } else if ($1.atLeastLength(1)) {
     let s$1 = $1.head;
     let $2 = parse_int(s$1);
     if ($2.isOk()) {
       let s$2 = $2[0];
-      return new Money(s$2, 0, is_neg);
+      return new Money(is_neg * s$2 * 100);
     } else {
-      return new Money(0, 0, is_neg);
+      return new Money(0);
     }
   } else {
-    return new Money(0, 0, is_neg);
+    return new Money(0);
   }
 }
 function money_to_string_no_sign(m) {
   return (() => {
-    let _pipe = m.s;
+    let _pipe = divideInt(m.value, 100);
     return to_string(_pipe);
   })() + "." + (() => {
-    let _pipe = m.b;
+    let _pipe = remainderInt(m.value, 100);
     return to_string(_pipe);
   })();
 }
 function money_with_currency_no_sign(m) {
   return "\u20AC" + (() => {
-    let _pipe = m.s;
+    let _pipe = divideInt(m.value, 100);
     return to_string(_pipe);
   })() + "." + (() => {
-    let _pipe = m.b;
+    let _pipe = remainderInt(m.value, 100);
     return to_string(_pipe);
   })();
 }
-function is_zero(m) {
-  let $ = m.s;
-  let $1 = m.b;
-  if ($ === 0 && $1 === 0) {
-    return true;
-  } else {
-    return false;
-  }
-}
 function sign_symbols(m) {
-  let $ = m.is_neg;
+  let $ = m.value < 0;
   if ($) {
-    let $1 = is_zero(m);
-    if ($1) {
-      return "";
-    } else {
-      return "-";
-    }
+    return "-";
   } else {
     return "";
   }
@@ -5592,8 +5524,13 @@ function money_to_string(m) {
   let sign = sign_symbols(m);
   return sign + "\u20AC" + money_to_string_no_sign(m);
 }
-function is_zero_int(m) {
-  return m.s === 0;
+function is_zero_euro(m) {
+  let $ = m.value;
+  if ($ === 0) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 // build/dev/javascript/gleam_json/gleam_json_ffi.mjs
@@ -8105,13 +8042,7 @@ function expect_json2(decoder, to_msg) {
 
 // build/dev/javascript/budget_fe/budget_fe/internals/decoders.mjs
 function money_encode(money) {
-  return object2(
-    toList([
-      ["s", int3(money.s)],
-      ["b", int3(money.b)],
-      ["is_neg", bool3(money.is_neg)]
-    ])
-  );
+  return object2(toList([["money_value", int3(money.value)]]));
 }
 function transaction_encode(t) {
   return object2(
@@ -9607,7 +9538,7 @@ function category_activity(cat, transactions) {
   });
   return fold(
     _pipe$1,
-    int_to_money(0),
+    new Money(0),
     (m, t) => {
       return money_sum(m, t.value);
     }
@@ -9662,7 +9593,7 @@ function custom_target_money_in_month(m, date) {
 function target_money(category) {
   let $ = category.target;
   if ($ instanceof None) {
-    return int_to_money(0);
+    return new Money(0);
   } else if ($ instanceof Some && $[0] instanceof Custom) {
     let amount = $[0].target;
     let date_till = $[0].date;
@@ -9698,7 +9629,7 @@ function ready_to_assign(transactions, allocations, cycle, categories) {
     );
     return fold(
       _pipe$1,
-      int_to_money(0),
+      new Money(0),
       (m, t) => {
         return money_sum(m, t.value);
       }
@@ -9719,13 +9650,13 @@ function ready_to_assign(transactions, allocations, cycle, categories) {
     );
     return fold(
       _pipe$1,
-      int_to_money(0),
+      new Money(0),
       (m, t) => {
         return money_sum(m, t);
       }
     );
   })();
-  let _pipe = money_sum(income, negate3(outcome));
+  let _pipe = new Money(income.value - outcome.value);
   return money_to_string(_pipe);
 }
 function check_box(label2, is_checked, msg) {
@@ -10078,13 +10009,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
           ),
           check_box(
             "is inflow",
-            (() => {
-              let _pipe = transaction_edit_form.amount;
-              let _pipe$1 = map(_pipe, (m) => {
-                return m.is_neg;
-              });
-              return unwrap(_pipe$1, false);
-            })(),
+            transaction_edit_form.is_inflow,
             (var0) => {
               return new UserUpdatedTransactionIsInflow(var0);
             }
@@ -10175,7 +10100,7 @@ function category_assigned(c, allocations, cycle) {
   });
   return fold(
     _pipe$2,
-    int_to_money(0),
+    new Money(0),
     (m, t) => {
       return money_sum(m, t.amount);
     }
@@ -10184,21 +10109,14 @@ function category_assigned(c, allocations, cycle) {
 function category_details_allocate_needed_ui(cat, allocation, model) {
   let target_money$1 = target_money(cat);
   let assigned = category_assigned(cat, model.allocations, model.cycle);
-  let add_diff = money_sum(
-    assigned,
-    (() => {
-      let _pipe = target_money$1;
-      return negate3(_pipe);
+  let add_diff = new Money(assigned.value - target_money$1.value);
+  let new_amount = new Money(
+    assigned.value + (() => {
+      let _pipe = add_diff.value;
+      return absolute_value(_pipe);
     })()
   );
-  let new_amount = money_sum(
-    assigned,
-    (() => {
-      let _pipe = add_diff;
-      return positivate(_pipe);
-    })()
-  );
-  let $ = add_diff.is_neg;
+  let $ = add_diff.value < 0;
   if (!$) {
     return text2("");
   } else {
@@ -10228,7 +10146,7 @@ function category_details_cover_overspent_ui(cat, model) {
   let activity = category_activity(cat, current_cycle_transactions(model));
   let assigned = category_assigned(cat, model.allocations, model.cycle);
   let balance = money_sum(assigned, activity);
-  let $ = balance.is_neg;
+  let $ = balance.value < 0;
   if (!$) {
     return text2("");
   } else {
@@ -10269,12 +10187,12 @@ function category_balance(cat, model) {
   let color = (() => {
     let $ = (() => {
       let _pipe = balance;
-      return is_zero_int(_pipe);
+      return is_zero_euro(_pipe);
     })();
     if ($) {
       return "rgb(137, 143, 138)";
     } else {
-      let $1 = balance.is_neg;
+      let $1 = balance.value < 0;
       if ($1) {
         return "rgb(231, 41, 12)";
       } else {
@@ -10282,15 +10200,9 @@ function category_balance(cat, model) {
       }
     }
   })();
-  let add_diff = money_sum(
-    assigned,
-    (() => {
-      let _pipe = target_money$1;
-      return negate3(_pipe);
-    })()
-  );
+  let add_diff = new Money(assigned.value - target_money$1.value);
   let warn_text = (() => {
-    let $ = add_diff.is_neg;
+    let $ = add_diff.value < 0;
     if (!$) {
       return text2("");
     } else {
@@ -10864,7 +10776,7 @@ function init3(_) {
         new None(),
         false
       ),
-      new TargetEdit("", false, new Monthly(int_to_money(0))),
+      new TargetEdit("", false, new Monthly(new Money(0))),
       new None(),
       new None(),
       new_map(),
@@ -11627,7 +11539,12 @@ function update(model, msg) {
                 let _pipe$1 = map3(
                   _pipe,
                   (amount2) => {
-                    return int_to_money(amount2);
+                    return new Money(
+                      (() => {
+                        let _pipe$12 = amount2 * 100;
+                        return negate2(_pipe$12);
+                      })()
+                    );
                   }
                 );
                 return from_result(_pipe$1);
@@ -11676,8 +11593,18 @@ function update(model, msg) {
                 return map(
                   _pipe,
                   (a2) => {
-                    let _record$2 = a2;
-                    return new Money(_record$2.s, _record$2.b, !is_inflow);
+                    return new Money(
+                      (() => {
+                        if (is_inflow) {
+                          let _pipe$1 = a2.value;
+                          return absolute_value(_pipe$1);
+                        } else {
+                          let _pipe$1 = a2.value;
+                          let _pipe$2 = absolute_value(_pipe$1);
+                          return negate2(_pipe$2);
+                        }
+                      })()
+                    );
                   }
                 );
               })(),
@@ -11821,9 +11748,9 @@ function update(model, msg) {
       let $ = model.target_edit.target;
       if ($ instanceof Custom) {
         let date = $.date;
-        return new Custom(int_to_money(amount$1), date);
+        return new Custom(euro_int_to_money(amount$1), date);
       } else {
-        return new Monthly(int_to_money(amount$1));
+        return new Monthly(euro_int_to_money(amount$1));
       }
     })();
     return [
@@ -12645,7 +12572,7 @@ function update(model, msg) {
     return [
       model,
       (() => {
-        let $ = balance.is_neg;
+        let $ = balance.value < 0;
         if (!$) {
           return none();
         } else {

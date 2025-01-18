@@ -20,9 +20,7 @@ pub fn transaction_encode(t: m.Transaction) -> json.Json {
 
 pub fn money_encode(money: Money) -> json.Json {
   json.object([
-    #("s", json.int(money.s)),
-    #("b", json.int(money.b)),
-    #("is_neg", json.bool(money.is_neg)),
+    #("money_value", json.int(money.value)),
   ])
 }
 

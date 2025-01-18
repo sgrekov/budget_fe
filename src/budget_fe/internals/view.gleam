@@ -307,9 +307,12 @@ fn category_details_allocate_needed_ui(
 ) -> element.Element(Msg) {
   let target_money = target_money(cat)
   let assigned = category_assigned(cat, model.allocations, model.cycle)
-  let add_diff = m.money_sum(assigned, target_money |> m.negate)
-  let new_amount = m.money_sum(assigned, add_diff |> m.positivate)
-  case add_diff.is_neg {
+  let add_diff = m.Money(assigned.value - target_money.value)
+  // let new_amount = m.money_sum(assigned, add_diff |> m.positivate)
+  let new_amount =
+    m.Money(assigned.value + { add_diff.value |> int.absolute_value })
+
+  case add_diff.value < 0 {
     False -> html.text("")
     True -> {
       html.div([], [
@@ -334,7 +337,7 @@ fn category_details_cover_overspent_ui(
   let assigned = category_assigned(cat, model.allocations, model.cycle)
   let balance = m.money_sum(assigned, activity)
 
-  case balance.is_neg {
+  case balance.value < 0 {
     False -> html.text("")
     True -> {
       html.div([], [
@@ -436,7 +439,7 @@ fn category_details_target_ui(
 fn category_activity(cat: Category, transactions: List(Transaction)) -> Money {
   transactions
   |> list.filter(fn(t) { t.category_id == cat.id })
-  |> list.fold(m.int_to_money(0), fn(m, t) { m.money_sum(m, t.value) })
+  |> list.fold(m.Money(0), fn(m, t) { m.money_sum(m, t.value) })
 }
 
 fn target_switcher_ui(et: TargetEdit) -> element.Element(Msg) {
@@ -487,7 +490,7 @@ fn target_string(category: Category) -> String {
 
 fn target_money(category: Category) -> m.Money {
   case category.target {
-    option.None -> m.int_to_money(0)
+    option.None -> m.Money(0)
     option.Some(m.Custom(amount, date_till)) ->
       custom_target_money_in_month(amount, date_till)
     option.Some(m.Monthly(amount)) -> amount
@@ -518,7 +521,7 @@ fn ready_to_assign(
   let income =
     transactions
     |> list.filter(fn(t) { income_cat_ids |> list.contains(t.category_id) })
-    |> list.fold(m.int_to_money(0), fn(m, t) { m.money_sum(m, t.value) })
+    |> list.fold(m.Money(0), fn(m, t) { m.money_sum(m, t.value) })
 
   let outcome =
     allocations
@@ -528,9 +531,9 @@ fn ready_to_assign(
         False -> Error("")
       }
     })
-    |> list.fold(m.int_to_money(0), fn(m, t) { m.money_sum(m, t) })
+    |> list.fold(m.Money(0), fn(m, t) { m.money_sum(m, t) })
 
-  m.money_sum(income, m.negate(outcome))
+  m.Money(income.value - outcome.value)
   |> m.money_to_string
 }
 
@@ -801,9 +804,7 @@ fn add_transaction_ui(
       ]),
       check_box(
         "is inflow",
-        transaction_edit_form.amount
-          |> option.map(fn(m) { m.is_neg })
-          |> option.unwrap(False),
+        transaction_edit_form.is_inflow,
         msg.UserUpdatedTransactionIsInflow,
       ),
       html.button([event.on_click(msg.AddTransaction)], [element.text("Add")]),
@@ -954,7 +955,7 @@ fn category_assigned(
   allocations
   |> list.filter(fn(a) { a.date == cycle })
   |> list.filter(fn(a) { a.category_id == c.id })
-  |> list.fold(m.int_to_money(0), fn(m, t) { m.money_sum(m, t.amount) })
+  |> list.fold(m.Money(0), fn(m, t) { m.money_sum(m, t.amount) })
 }
 
 fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
@@ -962,16 +963,16 @@ fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
   let activity = category_activity(cat, current_cycle_transactions(model))
   let assigned = category_assigned(cat, model.allocations, model.cycle)
   let balance = m.money_sum(assigned, activity)
-  let color = case balance |> m.is_zero_int {
+  let color = case balance |> m.is_zero_euro {
     True -> "rgb(137, 143, 138)"
     _ ->
-      case balance.is_neg {
+      case balance.value < 0 {
         True -> "rgb(231, 41, 12)"
         False -> "rgba(64,185,78,1)"
       }
   }
-  let add_diff = m.money_sum(assigned, target_money |> m.negate)
-  let warn_text = case add_diff.is_neg {
+  let add_diff = m.Money(assigned.value - target_money.value)
+  let warn_text = case add_diff.value < 0 {
     False -> html.text("")
     True ->
       div_context(

@@ -49,7 +49,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
         option.None,
         False,
       ),
-      target_edit: msg.TargetEdit("", False, m.Monthly(m.int_to_money(0))),
+      target_edit: msg.TargetEdit("", False, m.Monthly(m.Money(0))),
       selected_transaction: option.None,
       transaction_edit_form: option.None,
       suggestions: dict.new(),
@@ -227,7 +227,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         transaction_add_input: msg.TransactionForm(
           ..model.transaction_add_input,
           amount: int.parse(amount)
-            |> result.map(fn(amount) { m.int_to_money(amount) })
+            |> result.map(fn(amount) { m.Money(amount * 100 |> int.negate) })
             |> option.from_result,
         ),
       ),
@@ -239,7 +239,12 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         transaction_add_input: msg.TransactionForm(
           ..model.transaction_add_input,
           amount: model.transaction_add_input.amount
-            |> option.map(fn(a) { m.Money(..a, is_neg : !is_inflow ) }),
+            |> option.map(fn(a) {
+              m.Money(case is_inflow {
+                True -> a.value |> int.absolute_value
+                False -> a.value |> int.absolute_value |> int.negate
+              })
+            }),
         ),
       ),
       effect.none(),
@@ -270,8 +275,8 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     msg.UserTargetUpdateAmount(amount) -> {
       let amount = amount |> int.parse |> result.unwrap(0)
       let target = case model.target_edit.target {
-        m.Custom(_, date) -> m.Custom(m.int_to_money(amount), date)
-        m.Monthly(_) -> m.Monthly(m.int_to_money(amount))
+        m.Custom(_, date) -> m.Custom(m.euro_int_to_money(amount), date)
+        m.Monthly(_) -> m.Monthly(m.euro_int_to_money(amount))
       }
       #(
         Model(
@@ -463,7 +468,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       model,
       eff.save_allocation_eff(alloc, amount_needed, cat.id, model.cycle),
     )
-    msg.CoverOverspent(cat, balance) -> #(model, case balance.is_neg {
+    msg.CoverOverspent(cat, balance) -> #(model, case balance.value < 0 {
       False -> effect.none()
       True -> eff.save_allocation_eff(option.None, balance, cat.id, model.cycle)
     })
