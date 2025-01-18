@@ -10194,8 +10194,8 @@ function div_context(text3, color) {
 function category_balance(cat, model) {
   let target_money$1 = target_money(cat);
   let activity = category_activity(cat, current_cycle_transactions(model));
-  let assigned = category_assigned(cat, model.allocations, model.cycle);
-  let balance = money_sum(assigned, activity);
+  let allocated = category_assigned(cat, model.allocations, model.cycle);
+  let balance = money_sum(allocated, activity);
   let color = (() => {
     let $ = (() => {
       let _pipe = balance;
@@ -10212,15 +10212,15 @@ function category_balance(cat, model) {
       }
     }
   })();
-  let add_diff = new Money(assigned.value - target_money$1.value);
+  let add_alloc_diff = new Money(allocated.value - target_money$1.value);
   let warn_text = (() => {
-    let $ = add_diff.value < 0;
+    let $ = add_alloc_diff.value < 0;
     if (!$) {
       return text2("");
     } else {
       return div_context(
         " Add more " + (() => {
-          let _pipe = add_diff;
+          let _pipe = add_alloc_diff;
           return money_with_currency_no_sign(_pipe);
         })(),
         "rgb(235, 199, 16)"

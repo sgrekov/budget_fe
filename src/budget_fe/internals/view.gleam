@@ -9,6 +9,7 @@ import budget_test.{
 import budget_test.{Allocation, Category, Cycle, Money, MonthInYear, Transaction}
 import date_utils
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
@@ -332,7 +333,7 @@ fn category_details_allocate_needed_ui(
 fn category_details_cover_overspent_ui(
   cat: Category,
   model: Model,
-  allocation : option.Option(Allocation),
+  allocation: option.Option(Allocation),
 ) -> element.Element(Msg) {
   let activity = category_activity(cat, current_cycle_transactions(model))
   let assigned = category_assigned(cat, model.allocations, model.cycle)
@@ -345,9 +346,11 @@ fn category_details_cover_overspent_ui(
         html.button(
           [
             event.on_click(msg.AllocateNeeded(
-              cat : cat,
-              needed_amount :m.Money(assigned.value + { balance.value |> int.absolute_value }),
-              alloc : allocation,
+              cat: cat,
+              needed_amount: m.Money(
+                assigned.value + { balance.value |> int.absolute_value },
+              ),
+              alloc: allocation,
             )),
           ],
           [
@@ -805,7 +808,7 @@ fn add_transaction_ui(
         attribute.id("addTransactionAmountId"),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "120px")]),        
+        attribute.style([#("width", "120px")]),
         attribute.value(transaction_edit_form.amount),
       ]),
       check_box(
@@ -967,8 +970,8 @@ fn category_assigned(
 fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
   let target_money = target_money(cat)
   let activity = category_activity(cat, current_cycle_transactions(model))
-  let assigned = category_assigned(cat, model.allocations, model.cycle)
-  let balance = m.money_sum(assigned, activity)
+  let allocated = category_assigned(cat, model.allocations, model.cycle)
+  let balance = m.money_sum(allocated, activity)
   let color = case balance |> m.is_zero_euro {
     True -> "rgb(137, 143, 138)"
     _ ->
@@ -977,12 +980,23 @@ fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
         False -> "rgba(64,185,78,1)"
       }
   }
-  let add_diff = m.Money(assigned.value - target_money.value)
-  let warn_text = case add_diff.value < 0 {
+  let add_alloc_diff = m.Money(allocated.value - target_money.value)
+  // case cat.name == "Shopping" {
+  //   True -> {
+  //     io.debug("allocated: " <> allocated.value |> int.to_string)
+  //     io.debug("target_money: " <> target_money.value |> int.to_string)
+  //     io.debug("add_alloc_diff: " <> add_alloc_diff.value |> int.to_string)
+  //   }
+  //   False -> {
+  //     io.debug("")
+  //   }
+  // }
+
+  let warn_text = case add_alloc_diff.value < 0 {
     False -> html.text("")
     True ->
       div_context(
-        " Add more " <> add_diff |> m.money_with_currency_no_sign,
+        " Add more " <> add_alloc_diff |> m.money_with_currency_no_sign,
         "rgb(235, 199, 16)",
       )
   }
