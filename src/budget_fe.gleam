@@ -12,7 +12,6 @@ import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/set
 import lustre
 import lustre/effect
 import modem
@@ -146,7 +145,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         model.transaction_add_input.category,
         model.transaction_add_input.amount |> m.string_to_money
       {
-        Some(cat), money -> #(
+        Some(cat), _ -> #(
           Model(
             ..model,
             transaction_add_input: msg.TransactionForm(
@@ -484,7 +483,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       model,
       eff.add_new_group_eff(model.new_category_group_name),
     )
-    msg.AddCategoryGroupResult(Ok(id)) -> #(
+    msg.AddCategoryGroupResult(Ok(_)) -> #(
       Model(
         ..model,
         new_category_group_name: "",

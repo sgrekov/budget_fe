@@ -9,7 +9,6 @@ import budget_test.{
 import budget_test.{Allocation, Category, Cycle, Money, MonthInYear, Transaction}
 import date_utils
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
@@ -23,55 +22,34 @@ import rada/date.{type Date} as d
 pub fn view(model: Model) -> element.Element(Msg) {
   html.div([attribute.class("container-fluid")], [
     html.div([attribute.class("col")], [
-      html.div([attribute.class("d-flex flex-row")], [
-        html.div([attribute.class("btn-group")], [
-          html.a(
-            [
-              attribute.attribute("aria-current", "page"),
-              attribute.class("btn btn-primary active"),
-              attribute.href("/"),
-            ],
-            [html.text("Budget")],
-          ),
-          html.a(
-            [
-              attribute.class("btn btn-primary"),
-              attribute.href("/transactions"),
-            ],
-            [html.text("Transactions")],
-          ),
-        ]),
+      html.div([attribute.class("d-flex flex-row p-3")], [
         cycle_display(model),
         html.div(
           [
-            attribute.class("bg-success text-white"),
-            attribute.style([#("width", "120px")]),
+            // border border-dark
+            attribute.class("d-flex flex-row  justify-content-center"),
+            attribute.style([#("width", "100%")]),
           ],
-          [
-            html.p([attribute.class("text-start fs-4")], [
-              element.text(ready_to_assign(
-                current_cycle_transactions(model),
-                model.allocations,
-                model.cycle,
-                model.categories,
-              )),
-            ]),
-            html.p([attribute.class("text-start")], [
-              element.text("Ready to Assign"),
-            ]),
-          ],
+          [ready_to_assign(model)],
         ),
         html.div(
           [
-            attribute.class("bg-info ms-auto text-white"),
-            attribute.style([#("width", "120px")]),
+            attribute.class("d-flex align-items-center fs-5"),
+            attribute.style([]),
           ],
           [
-            html.a([attribute.class(""), attribute.href("/user")], [
-              html.text(model.current_user.name),
-            ]),
+            html.a(
+              [
+                attribute.class("text-dark text-decoration-none"),
+                attribute.href("/user"),
+              ],
+              [html.text(model.current_user.name)],
+            ),
           ],
         ),
+      ]),
+      html.div([attribute.class("d-flex flex-row")], [
+        section_buttons(model.route),
       ]),
       html.div([attribute.class("d-flex flex-row")], [
         case model.route {
@@ -85,39 +63,138 @@ pub fn view(model: Model) -> element.Element(Msg) {
   ])
 }
 
+fn ready_to_assign(model: Model) -> element.Element(Msg) {
+  html.div(
+    [
+      attribute.class(" text-black rounded-3 p-2"),
+      attribute.style([
+        #("width", "200px"),
+        #("height", "fit-content"),
+        #("background-color", "rgb(187, 235, 156)"),
+      ]),
+    ],
+    [
+      html.div([attribute.class("text-center fs-3 fw-bold")], [
+        element.text(ready_to_assign_money(
+          current_cycle_transactions(model),
+          model.allocations,
+          model.cycle,
+          model.categories,
+        )),
+      ]),
+      html.div([attribute.class("text-center")], [
+        element.text("Ready to Assign"),
+      ]),
+    ],
+  )
+}
+
+fn section_buttons(route: msg.Route) -> element.Element(Msg) {
+  let #(cat_active, transactions_active) = case route {
+    msg.Home -> #("active", "")
+    msg.TransactionsRoute -> #("", "active")
+    msg.UserRoute -> #("", "")
+  }
+
+  html.div(
+    [
+      attribute.class("btn-group "),
+      attribute.style([#("height", "fit-content")]),
+    ],
+    [
+      html.a(
+        [
+          attribute.attribute("aria-current", "page"),
+          attribute.class("btn btn-primary " <> cat_active),
+          attribute.href("/"),
+        ],
+        [html.text("Budget")],
+      ),
+      html.a(
+        [
+          attribute.class("btn btn-primary " <> transactions_active),
+          attribute.href("/transactions"),
+        ],
+        [html.text("Transactions")],
+      ),
+    ],
+  )
+}
+
 fn row(fun: fn() -> List(element.Element(Msg))) -> element.Element(Msg) {
-  html.div([attribute.class("d-flex flex-row")], fun())
+  row2("", [], fun)
+}
+
+fn row2(
+  class: String,
+  style: List(#(String, String)),
+  fun: fn() -> List(element.Element(Msg)),
+) -> element.Element(Msg) {
+  html.div(
+    [attribute.class("d-flex flex-row " <> class), attribute.style(style)],
+    fun(),
+  )
 }
 
 fn column(fun: fn() -> List(element.Element(Msg))) -> element.Element(Msg) {
+  column2("", [], fun)
+}
+
+fn column2(
+  class: String,
+  style: List(#(String, String)),
+  fun: fn() -> List(element.Element(Msg)),
+) -> element.Element(Msg) {
   html.div(
     [
-      attribute.class("d-flex flex-column border border-dark"),
-      attribute.class("p-1"),
+      //border border-dark
+      attribute.class("d-flex flex-column  p-1" <> class),
+      attribute.style(style),
     ],
     fun(),
   )
 }
 
 fn cycle_display(model: Model) -> element.Element(Msg) {
-  row(fn() {
+  row2("", [#("height", "fit-content")], fn() {
     [
-      html.button([event.on_click(msg.CycleShift(msg.ShiftLeft))], [
-        element.text("<"),
-      ]),
+      html.button(
+        [
+          attribute.class("btn btn-secondary mt-2 me-2"),
+          attribute.style([#("height", "fit-content")]),
+          event.on_click(msg.CycleShift(msg.ShiftLeft)),
+        ],
+        [element.text("<")],
+      ),
       column(fn() {
         [
-          html.p([attribute.class("text-start fs-5")], [
-            element.text(model.cycle |> cycle_to_text()),
-          ]),
-          html.p([attribute.class("text-start fs-10")], [
-            element.text(current_cycle_bounds(model)),
-          ]),
+          html.div(
+            [
+              attribute.class("text-center fs-4"),
+              attribute.style([
+                #("justify-content", "center"),
+                #("width", "170px"),
+              ]),
+            ],
+            [element.text(model.cycle |> cycle_to_text())],
+          ),
+          html.div(
+            [
+              attribute.class("text-start fs-6"),
+              attribute.style([#("width", "200px")]),
+            ],
+            [element.text(current_cycle_bounds(model))],
+          ),
         ]
       }),
-      html.button([event.on_click(msg.CycleShift(msg.ShiftRight))], [
-        element.text(">"),
-      ]),
+      html.button(
+        [
+          attribute.class("btn btn-secondary mt-2 "),
+          attribute.style([#("height", "fit-content")]),
+          event.on_click(msg.CycleShift(msg.ShiftRight)),
+        ],
+        [element.text(">")],
+      ),
     ]
   })
 }
@@ -517,7 +594,7 @@ fn custom_target_money_in_month(m: m.Money, date: MonthInYear) -> m.Money {
   m.divide_money(m, months_count)
 }
 
-fn ready_to_assign(
+fn ready_to_assign_money(
   transactions: List(Transaction),
   allocations: List(Allocation),
   cycle: Cycle,
@@ -710,11 +787,7 @@ fn transaction_edit_ui(
         attribute.type_("text"),
         attribute.style([#("width", "160px")]),
       ]),
-      check_box(
-        "is inflow",
-        tef.is_inflow,
-        msg.UserEditTransactionIsInflow,
-      ),
+      check_box("is inflow", tef.is_inflow, msg.UserEditTransactionIsInflow),
       {
         let selected_id = model.selected_transaction |> option.unwrap("")
         manage_transaction_buttons(

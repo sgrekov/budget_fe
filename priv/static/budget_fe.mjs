@@ -2641,8 +2641,8 @@ function list2(inner) {
       return list(
         data,
         inner.function,
-        (p2, k) => {
-          return push_path2(p2, toList([k]));
+        (p, k) => {
+          return push_path2(p, toList([k]));
         },
         0,
         toList([])
@@ -2780,14 +2780,6 @@ var string = /* @__PURE__ */ new Decoder(decode_string2);
 var bool2 = /* @__PURE__ */ new Decoder(decode_bool2);
 var int2 = /* @__PURE__ */ new Decoder(decode_int2);
 
-// build/dev/javascript/gleam_stdlib/gleam/io.mjs
-function debug(term) {
-  let _pipe = term;
-  let _pipe$1 = inspect2(_pipe);
-  print_debug(_pipe$1);
-  return term;
-}
-
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
 function guard(requirement, consequence, alternative) {
   if (requirement) {
@@ -2795,6 +2787,14 @@ function guard(requirement, consequence, alternative) {
   } else {
     return alternative();
   }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/io.mjs
+function debug(term) {
+  let _pipe = term;
+  let _pipe$1 = inspect2(_pipe);
+  print_debug(_pipe$1);
+  return term;
 }
 
 // build/dev/javascript/gleam_regexp/gleam_regexp_ffi.mjs
@@ -2907,9 +2907,9 @@ var Span = class extends CustomType {
   }
 };
 var NoMatchFound = class extends CustomType {
-  constructor(row2, col, lexeme) {
+  constructor(row, col, lexeme) {
     super();
-    this.row = row2;
+    this.row = row;
     this.col = col;
     this.lexeme = lexeme;
   }
@@ -2921,12 +2921,12 @@ var Lexer = class extends CustomType {
   }
 };
 var State = class extends CustomType {
-  constructor(source, tokens, current, row2, col) {
+  constructor(source, tokens, current, row, col) {
     super();
     this.source = source;
     this.tokens = tokens;
     this.current = current;
-    this.row = row2;
+    this.row = row;
     this.col = col;
   }
 };
@@ -2979,11 +2979,11 @@ function next_col(col, str) {
     return col + 1;
   }
 }
-function next_row(row2, str) {
+function next_row(row, str) {
   if (str === "\n") {
-    return row2 + 1;
+    return row + 1;
   } else {
-    return row2;
+    return row;
   }
 }
 function do_run(loop$lexer, loop$mode, loop$state) {
@@ -3019,7 +3019,7 @@ function do_run(loop$lexer, loop$mode, loop$state) {
       let start_row = $1[0];
       let start_col = $1[1];
       let lexeme = $1[2];
-      let row2 = next_row(state.row, lookahead);
+      let row = next_row(state.row, lookahead);
       let col = next_col(state.col, lookahead);
       let $2 = do_match(mode, lexeme, lookahead, matchers);
       if ($2 instanceof Keep) {
@@ -3033,7 +3033,7 @@ function do_run(loop$lexer, loop$mode, loop$state) {
           rest,
           prepend(token$1, state.tokens),
           [state.row, state.col, lookahead],
-          row2,
+          row,
           col
         );
       } else if ($2 instanceof Skip) {
@@ -3043,7 +3043,7 @@ function do_run(loop$lexer, loop$mode, loop$state) {
           rest,
           state.tokens,
           [start_row, start_col, lexeme + lookahead],
-          row2,
+          row,
           col
         );
       } else if ($2 instanceof Drop) {
@@ -3054,7 +3054,7 @@ function do_run(loop$lexer, loop$mode, loop$state) {
           rest,
           state.tokens,
           [state.row, state.col, lookahead],
-          row2,
+          row,
           col
         );
       } else {
@@ -3064,7 +3064,7 @@ function do_run(loop$lexer, loop$mode, loop$state) {
           rest,
           state.tokens,
           [start_row, start_col, lexeme + lookahead],
-          row2,
+          row,
           col
         );
       }
@@ -5605,8 +5605,8 @@ function spidermonkeyUnexpectedByteError(err, json) {
   if (!match)
     return null;
   const line = Number(match[2]);
-  const column2 = Number(match[3]);
-  const position = getPositionFromMultiline(line, column2, json);
+  const column3 = Number(match[3]);
+  const position = getPositionFromMultiline(line, column3, json);
   const byte = toHex(json[position]);
   return new UnexpectedByte(byte, position);
 }
@@ -5621,16 +5621,16 @@ function jsCoreUnexpectedByteError(err) {
 function toHex(char) {
   return "0x" + char.charCodeAt(0).toString(16).toUpperCase();
 }
-function getPositionFromMultiline(line, column2, string3) {
+function getPositionFromMultiline(line, column3, string3) {
   if (line === 1)
-    return column2 - 1;
+    return column3 - 1;
   let currentLn = 1;
   let position = 0;
   string3.split("").find((char, idx) => {
     if (char === "\n")
       currentLn += 1;
     if (currentLn === line) {
-      position = idx + column2;
+      position = idx + column3;
       return true;
     }
     return false;
@@ -8337,9 +8337,9 @@ var TransactionEditResult = class extends CustomType {
   }
 };
 var UserTransactionEditPayee = class extends CustomType {
-  constructor(p2) {
+  constructor(p) {
     super();
-    this.p = p2;
+    this.p = p;
   }
 };
 var UserTransactionEditDate = class extends CustomType {
@@ -9199,9 +9199,6 @@ function text2(content) {
 function div(attrs, children2) {
   return element("div", attrs, children2);
 }
-function p(attrs, children2) {
-  return element("p", attrs, children2);
-}
 function a(attrs, children2) {
   return element("a", attrs, children2);
 }
@@ -9283,17 +9280,62 @@ function on_check(msg) {
 }
 
 // build/dev/javascript/budget_fe/budget_fe/internals/view.mjs
-function row(fun) {
-  return div(toList([class$("d-flex flex-row")]), fun());
-}
-function column(fun) {
+function section_buttons(route) {
+  let $ = (() => {
+    if (route instanceof Home) {
+      return ["active", ""];
+    } else if (route instanceof TransactionsRoute) {
+      return ["", "active"];
+    } else {
+      return ["", ""];
+    }
+  })();
+  let cat_active = $[0];
+  let transactions_active = $[1];
   return div(
     toList([
-      class$("d-flex flex-column border border-dark"),
-      class$("p-1")
+      class$("btn-group "),
+      style(toList([["height", "fit-content"]]))
+    ]),
+    toList([
+      a(
+        toList([
+          attribute("aria-current", "page"),
+          class$("btn btn-primary " + cat_active),
+          href("/")
+        ]),
+        toList([text2("Budget")])
+      ),
+      a(
+        toList([
+          class$("btn btn-primary " + transactions_active),
+          href("/transactions")
+        ]),
+        toList([text2("Transactions")])
+      )
+    ])
+  );
+}
+function row2(class$2, style2, fun) {
+  return div(
+    toList([
+      class$("d-flex flex-row " + class$2),
+      style(style2)
     ]),
     fun()
   );
+}
+function column2(class$2, style2, fun) {
+  return div(
+    toList([
+      class$("d-flex flex-column  p-1" + class$2),
+      style(style2)
+    ]),
+    fun()
+  );
+}
+function column(fun) {
+  return column2("", toList([]), fun);
 }
 function category_cycle_allocation(allocations, cycle, c) {
   let _pipe = allocations;
@@ -9422,18 +9464,29 @@ function current_cycle_bounds(model) {
   })();
 }
 function cycle_display(model) {
-  return row(
+  return row2(
+    "",
+    toList([["height", "fit-content"]]),
     () => {
       return toList([
         button(
-          toList([on_click(new CycleShift(new ShiftLeft()))]),
+          toList([
+            class$("btn btn-secondary mt-2 me-2"),
+            style(toList([["height", "fit-content"]])),
+            on_click(new CycleShift(new ShiftLeft()))
+          ]),
           toList([text("<")])
         ),
         column(
           () => {
             return toList([
-              p(
-                toList([class$("text-start fs-5")]),
+              div(
+                toList([
+                  class$("text-center fs-4"),
+                  style(
+                    toList([["justify-content", "center"], ["width", "170px"]])
+                  )
+                ]),
                 toList([
                   text(
                     (() => {
@@ -9443,15 +9496,22 @@ function cycle_display(model) {
                   )
                 ])
               ),
-              p(
-                toList([class$("text-start fs-10")]),
+              div(
+                toList([
+                  class$("text-start fs-6"),
+                  style(toList([["width", "200px"]]))
+                ]),
                 toList([text(current_cycle_bounds(model))])
               )
             ]);
           }
         ),
         button(
-          toList([on_click(new CycleShift(new ShiftRight()))]),
+          toList([
+            class$("btn btn-secondary mt-2 "),
+            style(toList([["height", "fit-content"]])),
+            on_click(new CycleShift(new ShiftRight()))
+          ]),
           toList([text(">")])
         )
       ]);
@@ -9497,8 +9557,8 @@ function category_details_change_group_ui(cat, model) {
           });
           return map2(
             _pipe$1,
-            (p2) => {
-              return option(toList([value(p2)]), "");
+            (p) => {
+              return option(toList([value(p)]), "");
             }
           );
         })()
@@ -9608,7 +9668,7 @@ function target_money(category) {
     return amount;
   }
 }
-function ready_to_assign(transactions, allocations, cycle, categories) {
+function ready_to_assign_money(transactions, allocations, cycle, categories) {
   let income_cat_ids = (() => {
     let _pipe2 = categories;
     return filter_map(
@@ -9663,6 +9723,39 @@ function ready_to_assign(transactions, allocations, cycle, categories) {
   })();
   let _pipe = new Money(income.value - outcome.value);
   return money_to_string(_pipe);
+}
+function ready_to_assign(model) {
+  return div(
+    toList([
+      class$(" text-black rounded-3 p-2"),
+      style(
+        toList([
+          ["width", "200px"],
+          ["height", "fit-content"],
+          ["background-color", "rgb(187, 235, 156)"]
+        ])
+      )
+    ]),
+    toList([
+      div(
+        toList([class$("text-center fs-3 fw-bold")]),
+        toList([
+          text(
+            ready_to_assign_money(
+              current_cycle_transactions(model),
+              model.allocations,
+              model.cycle,
+              model.categories
+            )
+          )
+        ])
+      ),
+      div(
+        toList([class$("text-center")]),
+        toList([text("Ready to Assign")])
+      )
+    ])
+  );
 }
 function check_box(label2, is_checked, msg) {
   return div(
@@ -9768,8 +9861,8 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               });
               return map2(
                 _pipe$1,
-                (p2) => {
-                  return option(toList([value(p2)]), "");
+                (p) => {
+                  return option(toList([value(p)]), "");
                 }
               );
             })()
@@ -9803,8 +9896,8 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               });
               return map2(
                 _pipe$1,
-                (p2) => {
-                  return option(toList([value(p2)]), "");
+                (p) => {
+                  return option(toList([value(p)]), "");
                 }
               );
             })()
@@ -9958,8 +10051,8 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               let _pipe$2 = unique(_pipe$1);
               return map2(
                 _pipe$2,
-                (p2) => {
-                  return option(toList([value(p2)]), "");
+                (p) => {
+                  return option(toList([value(p)]), "");
                 }
               );
             })()
@@ -9994,8 +10087,8 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               });
               return map2(
                 _pipe$1,
-                (p2) => {
-                  return option(toList([value(p2)]), p2);
+                (p) => {
+                  return option(toList([value(p)]), p);
                 }
               );
             })()
@@ -10694,67 +10787,36 @@ function view(model) {
         toList([class$("col")]),
         toList([
           div(
-            toList([class$("d-flex flex-row")]),
+            toList([class$("d-flex flex-row p-3")]),
             toList([
-              div(
-                toList([class$("btn-group")]),
-                toList([
-                  a(
-                    toList([
-                      attribute("aria-current", "page"),
-                      class$("btn btn-primary active"),
-                      href("/")
-                    ]),
-                    toList([text2("Budget")])
-                  ),
-                  a(
-                    toList([
-                      class$("btn btn-primary"),
-                      href("/transactions")
-                    ]),
-                    toList([text2("Transactions")])
-                  )
-                ])
-              ),
               cycle_display(model),
               div(
                 toList([
-                  class$("bg-success text-white"),
-                  style(toList([["width", "120px"]]))
+                  class$("d-flex flex-row  justify-content-center"),
+                  style(toList([["width", "100%"]]))
                 ]),
-                toList([
-                  p(
-                    toList([class$("text-start fs-4")]),
-                    toList([
-                      text(
-                        ready_to_assign(
-                          current_cycle_transactions(model),
-                          model.allocations,
-                          model.cycle,
-                          model.categories
-                        )
-                      )
-                    ])
-                  ),
-                  p(
-                    toList([class$("text-start")]),
-                    toList([text("Ready to Assign")])
-                  )
-                ])
+                toList([ready_to_assign(model)])
               ),
               div(
                 toList([
-                  class$("bg-info ms-auto text-white"),
-                  style(toList([["width", "120px"]]))
+                  class$("d-flex align-items-center fs-5"),
+                  style(toList([]))
                 ]),
                 toList([
                   a(
-                    toList([class$(""), href("/user")]),
+                    toList([
+                      class$("text-dark text-decoration-none"),
+                      href("/user")
+                    ]),
                     toList([text2(model.current_user.name)])
                   )
                 ])
               )
             ])
+          ),
+          div(
+            toList([class$("d-flex flex-row")]),
+            toList([section_buttons(model.route)])
           ),
           div(
             toList([class$("d-flex flex-row")]),
@@ -11344,7 +11406,6 @@ function update(model, msg) {
     })();
     if ($ instanceof Some) {
       let cat = $[0];
-      let money = $1;
       return [
         (() => {
           let _record = model;
@@ -12709,7 +12770,6 @@ function update(model, msg) {
   } else if (msg instanceof CreateCategoryGroup) {
     return [model, add_new_group_eff(model.new_category_group_name)];
   } else if (msg instanceof AddCategoryGroupResult && msg.c.isOk()) {
-    let id2 = msg.c[0];
     return [
       (() => {
         let _record = model;
@@ -12871,7 +12931,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      23,
+      22,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
