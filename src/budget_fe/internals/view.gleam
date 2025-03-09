@@ -333,23 +333,44 @@ fn category_details(
       ]),
       html.button([event.on_click(msg.DeleteCategory)], [element.text("Delete")]),
     ]),
-    html.div([attribute.class("row")], [
-      html.div([attribute.class("col")], [
-        html.div([], [html.text("Activity")]),
-        html.div([], [
-          html.text(
-            category_activity(category, current_cycle_transactions(model))
-            |> m.money_to_string,
-          ),
-        ]),
-      ]),
-    ]),
+    category_activity_ui(category, model),
     category_details_target_ui(category, model.target_edit),
     category_details_allocation_ui(sc, allocation),
     category_details_allocate_needed_ui(category, allocation, model),
     category_details_cover_overspent_ui(category, model, allocation),
     category_details_change_group_ui(category, model),
   ])
+}
+
+// fn category_edit_delete_ui(category: Category, sc: SelectedCategory) -> element.Element(Msg) {
+//   html.div([], [
+//       html.input([
+//         event.on_input(msg.UserInputCategoryUpdateName),
+//         attribute.placeholder("category name"),
+//         attribute.class("form-control"),
+//         attribute.type_("text"),
+//         attribute.style([#("width", "200px")]),
+//         attribute.value(sc.input_name),
+//       ]),
+//       html.button([event.on_click(msg.UpdateCategoryName(category))], [
+//         element.text("Update"),
+//       ]),
+//       html.button([event.on_click(msg.DeleteCategory)], [element.text("Delete")]),
+//     ])
+// }
+
+fn category_activity_ui(cat: Category, model: Model) -> element.Element(Msg) {
+  html.div([attribute.class("row")], [
+      html.div([attribute.class("col")], [
+        html.div([], [html.text("Activity")]),
+        html.div([], [
+          html.text(
+            category_activity(cat, current_cycle_transactions(model))
+            |> m.money_to_string,
+          ),
+        ]),
+      ]),
+    ])
 }
 
 fn category_details_change_group_ui(

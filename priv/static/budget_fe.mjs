@@ -23,28 +23,27 @@ var List = class {
   }
   // @internal
   atLeastLength(desired) {
-    for (let _ of this) {
-      if (desired <= 0)
-        return true;
-      desired--;
-    }
-    return desired <= 0;
+    let current = this;
+    while (desired-- > 0 && current)
+      current = current.tail;
+    return current !== void 0;
   }
   // @internal
   hasLength(desired) {
-    for (let _ of this) {
-      if (desired <= 0)
-        return false;
-      desired--;
-    }
-    return desired === 0;
+    let current = this;
+    while (desired-- > 0 && current)
+      current = current.tail;
+    return desired === -1 && current instanceof Empty;
   }
   // @internal
   countLength() {
+    let current = this;
     let length4 = 0;
-    for (let _ of this)
+    while (current) {
+      current = current.tail;
       length4++;
-    return length4;
+    }
+    return length4 - 1;
   }
 };
 function prepend(element2, tail) {
@@ -77,104 +76,203 @@ var NonEmpty = class extends List {
     this.tail = tail;
   }
 };
-var BitArray = class _BitArray {
-  constructor(buffer) {
+var BitArray = class {
+  /**
+   * The size in bits of this bit array's data.
+   *
+   * @type {number}
+   */
+  bitSize;
+  /**
+   * The size in bytes of this bit array's data. If this bit array doesn't store
+   * a whole number of bytes then this value is rounded up.
+   *
+   * @type {number}
+   */
+  byteSize;
+  /**
+   * The number of unused high bits in the first byte of this bit array's
+   * buffer prior to the start of its data. The value of any unused high bits is
+   * undefined.
+   *
+   * The bit offset will be in the range 0-7.
+   *
+   * @type {number}
+   */
+  bitOffset;
+  /**
+   * The raw bytes that hold this bit array's data.
+   *
+   * If `bitOffset` is not zero then there are unused high bits in the first
+   * byte of this buffer.
+   *
+   * If `bitOffset + bitSize` is not a multiple of 8 then there are unused low
+   * bits in the last byte of this buffer.
+   *
+   * @type {Uint8Array}
+   */
+  rawBuffer;
+  /**
+   * Constructs a new bit array from a `Uint8Array`, an optional size in
+   * bits, and an optional bit offset.
+   *
+   * If no bit size is specified it is taken as `buffer.length * 8`, i.e. all
+   * bytes in the buffer make up the new bit array's data.
+   *
+   * If no bit offset is specified it defaults to zero, i.e. there are no unused
+   * high bits in the first byte of the buffer.
+   *
+   * @param {Uint8Array} buffer
+   * @param {number} [bitSize]
+   * @param {number} [bitOffset]
+   */
+  constructor(buffer, bitSize, bitOffset) {
     if (!(buffer instanceof Uint8Array)) {
-      throw "BitArray can only be constructed from a Uint8Array";
+      throw globalThis.Error(
+        "BitArray can only be constructed from a Uint8Array"
+      );
     }
-    this.buffer = buffer;
+    this.bitSize = bitSize ?? buffer.length * 8;
+    this.byteSize = Math.trunc((this.bitSize + 7) / 8);
+    this.bitOffset = bitOffset ?? 0;
+    if (this.bitSize < 0) {
+      throw globalThis.Error(`BitArray bit size is invalid: ${this.bitSize}`);
+    }
+    if (this.bitOffset < 0 || this.bitOffset > 7) {
+      throw globalThis.Error(
+        `BitArray bit offset is invalid: ${this.bitOffset}`
+      );
+    }
+    if (buffer.length !== Math.trunc((this.bitOffset + this.bitSize + 7) / 8)) {
+      throw globalThis.Error("BitArray buffer length is invalid");
+    }
+    this.rawBuffer = buffer;
   }
-  // @internal
-  get length() {
-    return this.buffer.length;
-  }
-  // @internal
+  /**
+   * Returns a specific byte in this bit array. If the byte index is out of
+   * range then `undefined` is returned.
+   *
+   * When returning the final byte of a bit array with a bit size that's not a
+   * multiple of 8, the content of the unused low bits are undefined.
+   *
+   * @param {number} index
+   * @returns {number | undefined}
+   */
   byteAt(index4) {
-    return this.buffer[index4];
+    if (index4 < 0 || index4 >= this.byteSize) {
+      return void 0;
+    }
+    return bitArrayByteAt(this.rawBuffer, this.bitOffset, index4);
   }
-  // @internal
-  floatFromSlice(start3, end, isBigEndian) {
-    return byteArrayToFloat(this.buffer, start3, end, isBigEndian);
+  /** @internal */
+  equals(other) {
+    if (this.bitSize !== other.bitSize) {
+      return false;
+    }
+    const wholeByteCount = Math.trunc(this.bitSize / 8);
+    if (this.bitOffset === 0 && other.bitOffset === 0) {
+      for (let i = 0; i < wholeByteCount; i++) {
+        if (this.rawBuffer[i] !== other.rawBuffer[i]) {
+          return false;
+        }
+      }
+      const trailingBitsCount = this.bitSize % 8;
+      if (trailingBitsCount) {
+        const unusedLowBitCount = 8 - trailingBitsCount;
+        if (this.rawBuffer[wholeByteCount] >> unusedLowBitCount !== other.rawBuffer[wholeByteCount] >> unusedLowBitCount) {
+          return false;
+        }
+      }
+    } else {
+      for (let i = 0; i < wholeByteCount; i++) {
+        const a2 = bitArrayByteAt(this.rawBuffer, this.bitOffset, i);
+        const b = bitArrayByteAt(other.rawBuffer, other.bitOffset, i);
+        if (a2 !== b) {
+          return false;
+        }
+      }
+      const trailingBitsCount = this.bitSize % 8;
+      if (trailingBitsCount) {
+        const a2 = bitArrayByteAt(
+          this.rawBuffer,
+          this.bitOffset,
+          wholeByteCount
+        );
+        const b = bitArrayByteAt(
+          other.rawBuffer,
+          other.bitOffset,
+          wholeByteCount
+        );
+        const unusedLowBitCount = 8 - trailingBitsCount;
+        if (a2 >> unusedLowBitCount !== b >> unusedLowBitCount) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
-  // @internal
-  intFromSlice(start3, end, isBigEndian, isSigned) {
-    return byteArrayToInt(this.buffer, start3, end, isBigEndian, isSigned);
-  }
-  // @internal
-  binaryFromSlice(start3, end) {
-    const buffer = new Uint8Array(
-      this.buffer.buffer,
-      this.buffer.byteOffset + start3,
-      end - start3
+  /**
+   * Returns this bit array's internal buffer.
+   *
+   * @deprecated Use `BitArray.byteAt()` or `BitArray.rawBuffer` instead.
+   *
+   * @returns {Uint8Array}
+   */
+  get buffer() {
+    bitArrayPrintDeprecationWarning(
+      "buffer",
+      "Use BitArray.byteAt() or BitArray.rawBuffer instead"
     );
-    return new _BitArray(buffer);
+    if (this.bitOffset !== 0 || this.bitSize % 8 !== 0) {
+      throw new globalThis.Error(
+        "BitArray.buffer does not support unaligned bit arrays"
+      );
+    }
+    return this.rawBuffer;
   }
-  // @internal
-  sliceAfter(index4) {
-    const buffer = new Uint8Array(
-      this.buffer.buffer,
-      this.buffer.byteOffset + index4,
-      this.buffer.byteLength - index4
+  /**
+   * Returns the length in bytes of this bit array's internal buffer.
+   *
+   * @deprecated Use `BitArray.bitSize` or `BitArray.byteSize` instead.
+   *
+   * @returns {number}
+   */
+  get length() {
+    bitArrayPrintDeprecationWarning(
+      "length",
+      "Use BitArray.bitSize or BitArray.byteSize instead"
     );
-    return new _BitArray(buffer);
+    if (this.bitOffset !== 0 || this.bitSize % 8 !== 0) {
+      throw new globalThis.Error(
+        "BitArray.length does not support unaligned bit arrays"
+      );
+    }
+    return this.rawBuffer.length;
   }
 };
+function bitArrayByteAt(buffer, bitOffset, index4) {
+  if (bitOffset === 0) {
+    return buffer[index4] ?? 0;
+  } else {
+    const a2 = buffer[index4] << bitOffset & 255;
+    const b = buffer[index4 + 1] >> 8 - bitOffset;
+    return a2 | b;
+  }
+}
 var UtfCodepoint = class {
   constructor(value3) {
     this.value = value3;
   }
 };
-function byteArrayToInt(byteArray, start3, end, isBigEndian, isSigned) {
-  const byteSize = end - start3;
-  if (byteSize <= 6) {
-    let value3 = 0;
-    if (isBigEndian) {
-      for (let i = start3; i < end; i++) {
-        value3 = value3 * 256 + byteArray[i];
-      }
-    } else {
-      for (let i = end - 1; i >= start3; i--) {
-        value3 = value3 * 256 + byteArray[i];
-      }
-    }
-    if (isSigned) {
-      const highBit = 2 ** (byteSize * 8 - 1);
-      if (value3 >= highBit) {
-        value3 -= highBit * 2;
-      }
-    }
-    return value3;
-  } else {
-    let value3 = 0n;
-    if (isBigEndian) {
-      for (let i = start3; i < end; i++) {
-        value3 = (value3 << 8n) + BigInt(byteArray[i]);
-      }
-    } else {
-      for (let i = end - 1; i >= start3; i--) {
-        value3 = (value3 << 8n) + BigInt(byteArray[i]);
-      }
-    }
-    if (isSigned) {
-      const highBit = 1n << BigInt(byteSize * 8 - 1);
-      if (value3 >= highBit) {
-        value3 -= highBit * 2n;
-      }
-    }
-    return Number(value3);
+var isBitArrayDeprecationMessagePrinted = {};
+function bitArrayPrintDeprecationWarning(name, message) {
+  if (isBitArrayDeprecationMessagePrinted[name]) {
+    return;
   }
-}
-function byteArrayToFloat(byteArray, start3, end, isBigEndian) {
-  const view2 = new DataView(byteArray.buffer);
-  const byteSize = end - start3;
-  if (byteSize === 8) {
-    return view2.getFloat64(start3, !isBigEndian);
-  } else if (byteSize === 4) {
-    return view2.getFloat32(start3, !isBigEndian);
-  } else {
-    const msg = `Sized floats must be 32-bit or 64-bit on JavaScript, got size of ${byteSize * 8} bits`;
-    throw new globalThis.Error(msg);
-  }
+  console.warn(
+    `Deprecated BitArray.${name} property used in JavaScript FFI code. ${message}.`
+  );
+  isBitArrayDeprecationMessagePrinted[name] = true;
 }
 var Result = class _Result extends CustomType {
   // @internal
@@ -243,7 +341,7 @@ function unequalDates(a2, b) {
   return a2 instanceof Date && (a2 > b || a2 < b);
 }
 function unequalBuffers(a2, b) {
-  return a2.buffer instanceof ArrayBuffer && a2.BYTES_PER_ELEMENT && !(a2.byteLength === b.byteLength && a2.every((n, i) => n === b[i]));
+  return !(a2 instanceof BitArray) && a2.buffer instanceof ArrayBuffer && a2.BYTES_PER_ELEMENT && !(a2.byteLength === b.byteLength && a2.every((n, i) => n === b[i]));
 }
 function unequalArrays(a2, b) {
   return Array.isArray(a2) && a2.length !== b.length;
@@ -9609,6 +9707,33 @@ function category_activity(cat, transactions) {
     }
   );
 }
+function category_activity_ui(cat, model) {
+  return div(
+    toList([class$("row")]),
+    toList([
+      div(
+        toList([class$("col")]),
+        toList([
+          div(toList([]), toList([text2("Activity")])),
+          div(
+            toList([]),
+            toList([
+              text2(
+                (() => {
+                  let _pipe = category_activity(
+                    cat,
+                    current_cycle_transactions(model)
+                  );
+                  return money_to_string(_pipe);
+                })()
+              )
+            ])
+          )
+        ])
+      )
+    ])
+  );
+}
 function target_switcher_ui(et) {
   let $ = (() => {
     let $1 = et.target;
@@ -10729,31 +10854,7 @@ function category_details(category, model, sc, allocation) {
           )
         ])
       ),
-      div(
-        toList([class$("row")]),
-        toList([
-          div(
-            toList([class$("col")]),
-            toList([
-              div(toList([]), toList([text2("Activity")])),
-              div(
-                toList([]),
-                toList([
-                  text2(
-                    (() => {
-                      let _pipe = category_activity(
-                        category,
-                        current_cycle_transactions(model)
-                      );
-                      return money_to_string(_pipe);
-                    })()
-                  )
-                ])
-              )
-            ])
-          )
-        ])
-      ),
+      category_activity_ui(category, model),
       category_details_target_ui(category, model.target_edit),
       category_details_allocation_ui(sc, allocation),
       category_details_allocate_needed_ui(category, allocation, model),
