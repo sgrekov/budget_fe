@@ -8864,6 +8864,22 @@ function initial_eff() {
     )
   );
 }
+function select_category_eff() {
+  return from(
+    (dispatch) => {
+      let _pipe = new SelectCategory(
+        new Category(
+          "f254cdd0-003d-48c3-8eed-77e86c99fcc0",
+          "Shopping2",
+          new Some(new Monthly(new Money(4e3))),
+          false,
+          "bcd5d6e1-dd6e-44fd-8dd6-4dea104a8e0a"
+        )
+      );
+      return dispatch(_pipe);
+    }
+  );
+}
 function add_transaction_eff(transaction_form, amount, cat, current_user) {
   let url = "http://localhost:8000/transaction/add";
   let t = new Transaction(
@@ -9627,9 +9643,42 @@ function current_cycle_transactions(model) {
     }
   );
 }
-function category_details_change_group_ui(cat, model) {
+function category_details_name_ui(category, sc) {
   return div(
     toList([]),
+    toList([
+      input(
+        toList([
+          on_input(
+            (var0) => {
+              return new UserInputCategoryUpdateName(var0);
+            }
+          ),
+          placeholder("category name"),
+          class$("form-control"),
+          type_("text"),
+          style(toList([["width", "200px"]])),
+          value(sc.input_name),
+          class$("mb-2")
+        ])
+      ),
+      button(
+        toList([
+          class$("me-3"),
+          on_click(new UpdateCategoryName(category))
+        ]),
+        toList([text("Update")])
+      ),
+      button(
+        toList([on_click(new DeleteCategory())]),
+        toList([text("Delete")])
+      )
+    ])
+  );
+}
+function category_details_change_group_ui(cat, model) {
+  return div(
+    toList([class$("mt-3")]),
     toList([
       text2("Change group"),
       input(
@@ -9662,7 +9711,10 @@ function category_details_change_group_ui(cat, model) {
         })()
       ),
       button(
-        toList([on_click(new ChangeGroupForCategory(cat))]),
+        toList([
+          class$("mt-1"),
+          on_click(new ChangeGroupForCategory(cat))
+        ]),
         toList([text("Change group")])
       )
     ])
@@ -9670,7 +9722,7 @@ function category_details_change_group_ui(cat, model) {
 }
 function category_details_allocation_ui(sc, allocation) {
   return div(
-    toList([]),
+    toList([class$("mt-3")]),
     toList([
       text2("Allocated: "),
       input(
@@ -9688,7 +9740,10 @@ function category_details_allocation_ui(sc, allocation) {
         ])
       ),
       button(
-        toList([on_click(new SaveAllocation(allocation))]),
+        toList([
+          class$("mt-1"),
+          on_click(new SaveAllocation(allocation))
+        ]),
         toList([text("Save")])
       )
     ])
@@ -9709,7 +9764,7 @@ function category_activity(cat, transactions) {
 }
 function category_activity_ui(cat, model) {
   return div(
-    toList([class$("row")]),
+    toList([class$("row mt-3")]),
     toList([
       div(
         toList([class$("col")]),
@@ -9749,7 +9804,7 @@ function target_switcher_ui(et) {
     toList([
       attribute("aria-label", "Basic example"),
       role("group"),
-      class$("btn-group")
+      class$("btn-group mt-1")
     ]),
     toList([
       button(
@@ -9884,7 +9939,7 @@ function ready_to_assign(model) {
 }
 function check_box(label2, is_checked, msg) {
   return div(
-    toList([class$("form-check")]),
+    toList([class$("ms-2"), class$("form-check")]),
     toList([
       input(
         toList([
@@ -9911,7 +9966,7 @@ function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
     return text2("");
   } else {
     return div(
-      toList([]),
+      toList([class$("mt-1")]),
       toList([
         (() => {
           if (is_edit) {
@@ -9929,7 +9984,10 @@ function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
           }
         })(),
         button(
-          toList([on_click(new DeleteTransaction(t.id))]),
+          toList([
+            class$("ms-1"),
+            on_click(new DeleteTransaction(t.id))
+          ]),
           toList([text("Delete")])
         )
       ])
@@ -10246,7 +10304,10 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
             }
           ),
           button(
-            toList([on_click(new AddTransaction())]),
+            toList([
+              class$("ms-1"),
+              on_click(new AddTransaction())
+            ]),
             toList([text("Add")])
           )
         ])
@@ -10352,7 +10413,7 @@ function category_details_allocate_needed_ui(cat, allocation, model) {
     return text2("");
   } else {
     return div(
-      toList([]),
+      toList([class$("mt-3")]),
       toList([
         button(
           toList([
@@ -10382,7 +10443,7 @@ function category_details_cover_overspent_ui(cat, model, allocation) {
     return text2("");
   } else {
     return div(
-      toList([]),
+      toList([class$("mt-3")]),
       toList([
         button(
           toList([
@@ -10568,7 +10629,10 @@ function group_ui(group, model) {
       }
     })();
     return button(
-      toList([on_click(new ShowAddCategoryUI(group.id))]),
+      toList([
+        class$("ms-1"),
+        on_click(new ShowAddCategoryUI(group.id))
+      ]),
       toList([text(btn_label)])
     );
   })();
@@ -10624,6 +10688,7 @@ function budget_categories(model) {
                     })();
                     return button(
                       toList([
+                        class$("ms-2"),
                         on_click(new ShowAddCategoryGroupUI())
                       ]),
                       toList([text(btn_label)])
@@ -10723,137 +10788,119 @@ function target_string(category) {
   }
 }
 function category_details_target_ui(c, et) {
-  let $ = et.cat_id;
-  let $1 = et.enabled;
-  if ($1) {
-    return div(
-      toList([class$("col")]),
-      toList([
-        div(
-          toList([]),
-          toList([
-            text2("Target"),
-            button(
-              toList([on_click(new SaveTarget(c))]),
-              toList([text("Save")])
-            ),
-            button(
-              toList([on_click(new DeleteTarget(c))]),
-              toList([text("Delete")])
-            )
-          ])
-        ),
-        target_switcher_ui(et),
-        (() => {
-          let $2 = et.target;
-          if ($2 instanceof Custom) {
-            return div(
-              toList([]),
-              toList([
-                text2("Amount needed for date: "),
-                input(
-                  toList([
-                    on_input(
-                      (var0) => {
-                        return new UserTargetUpdateAmount(var0);
-                      }
-                    ),
-                    placeholder("amount"),
-                    class$("form-control"),
-                    type_("text"),
-                    style(toList([["width", "120px"]]))
-                  ])
-                ),
-                input(
-                  toList([
-                    on_input(
-                      (var0) => {
-                        return new UserTargetUpdateCustomDate(var0);
-                      }
-                    ),
-                    placeholder("date"),
-                    class$("form-control"),
-                    type_("date")
-                  ])
-                )
-              ])
-            );
-          } else {
-            return div(
-              toList([]),
-              toList([
-                text2("Amount monthly: "),
-                input(
-                  toList([
-                    on_input(
-                      (var0) => {
-                        return new UserTargetUpdateAmount(var0);
-                      }
-                    ),
-                    placeholder("amount"),
-                    class$("form-control"),
-                    type_("text"),
-                    style(toList([["width", "120px"]])),
-                    style(toList([["width", "120px"]])),
-                    style(toList([["width", "120px"]]))
-                  ])
-                )
-              ])
-            );
-          }
-        })()
-      ])
-    );
-  } else {
-    return div(
-      toList([class$("col")]),
-      toList([
-        div(
-          toList([]),
-          toList([
-            text2("Target"),
-            button(
-              toList([on_click(new EditTarget(c))]),
-              toList([text("Edit")])
-            )
-          ])
-        ),
-        div(toList([]), toList([text2(target_string(c))]))
-      ])
-    );
-  }
+  return div(
+    toList([class$("col mt-3")]),
+    (() => {
+      let $ = et.cat_id;
+      let $1 = et.enabled;
+      if ($1) {
+        return toList([
+          div(
+            toList([]),
+            toList([
+              text2("Target"),
+              button(
+                toList([
+                  class$("ms-3 me-1"),
+                  on_click(new SaveTarget(c))
+                ]),
+                toList([text("Save")])
+              ),
+              button(
+                toList([on_click(new DeleteTarget(c))]),
+                toList([text("Delete")])
+              )
+            ])
+          ),
+          target_switcher_ui(et),
+          (() => {
+            let $2 = et.target;
+            if ($2 instanceof Custom) {
+              return div(
+                toList([class$("mt-1")]),
+                toList([
+                  text2("Amount needed for date: "),
+                  input(
+                    toList([
+                      on_input(
+                        (var0) => {
+                          return new UserTargetUpdateAmount(var0);
+                        }
+                      ),
+                      placeholder("amount"),
+                      class$("form-control"),
+                      type_("text"),
+                      style(toList([["width", "120px"]]))
+                    ])
+                  ),
+                  input(
+                    toList([
+                      on_input(
+                        (var0) => {
+                          return new UserTargetUpdateCustomDate(var0);
+                        }
+                      ),
+                      placeholder("date"),
+                      class$("form-control mt-1"),
+                      type_("date")
+                    ])
+                  )
+                ])
+              );
+            } else {
+              return div(
+                toList([class$("mt-1")]),
+                toList([
+                  text2("Amount monthly: "),
+                  input(
+                    toList([
+                      on_input(
+                        (var0) => {
+                          return new UserTargetUpdateAmount(var0);
+                        }
+                      ),
+                      placeholder("amount"),
+                      class$("form-control"),
+                      type_("text"),
+                      style(toList([["width", "120px"]])),
+                      style(toList([["width", "120px"]])),
+                      style(toList([["width", "120px"]]))
+                    ])
+                  )
+                ])
+              );
+            }
+          })()
+        ]);
+      } else {
+        return toList([
+          div(
+            toList([]),
+            toList([
+              text2("Target"),
+              button(
+                toList([
+                  class$("ms-3"),
+                  on_click(new EditTarget(c))
+                ]),
+                toList([text("Edit")])
+              )
+            ])
+          ),
+          div(
+            toList([class$("mt-2")]),
+            toList([text2(target_string(c))])
+          )
+        ]);
+      }
+    })()
+  );
 }
 function category_details(category, model, sc, allocation) {
   return div(
-    toList([class$("col")]),
+    toList([class$("col p-3")]),
     toList([
-      div(
-        toList([]),
-        toList([
-          input(
-            toList([
-              on_input(
-                (var0) => {
-                  return new UserInputCategoryUpdateName(var0);
-                }
-              ),
-              placeholder("category name"),
-              class$("form-control"),
-              type_("text"),
-              style(toList([["width", "200px"]])),
-              value(sc.input_name)
-            ])
-          ),
-          button(
-            toList([on_click(new UpdateCategoryName(category))]),
-            toList([text("Update")])
-          ),
-          button(
-            toList([on_click(new DeleteCategory())]),
-            toList([text("Delete")])
-          )
-        ])
-      ),
+      category_details_name_ui(category, sc),
       category_activity_ui(category, model),
       category_details_target_ui(category, model.target_edit),
       category_details_allocation_ui(sc, allocation),
@@ -10968,7 +11015,11 @@ function init3(_) {
       ""
     ),
     batch(
-      toList([init2(on_route_change), initial_eff()])
+      toList([
+        init2(on_route_change),
+        initial_eff(),
+        select_category_eff()
+      ])
     )
   ];
 }

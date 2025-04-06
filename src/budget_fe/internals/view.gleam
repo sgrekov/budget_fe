@@ -121,9 +121,9 @@ fn section_buttons(route: msg.Route) -> element.Element(Msg) {
   )
 }
 
-fn row(fun: fn() -> List(element.Element(Msg))) -> element.Element(Msg) {
-  row2("", [], fun)
-}
+// fn row(fun: fn() -> List(element.Element(Msg))) -> element.Element(Msg) {
+//   row2("", [], fun)
+// }
 
 fn row2(
   class: String,
@@ -318,21 +318,8 @@ fn category_details(
   sc: SelectedCategory,
   allocation: option.Option(Allocation),
 ) -> element.Element(Msg) {
-  html.div([attribute.class("col")], [
-    html.div([], [
-      html.input([
-        event.on_input(msg.UserInputCategoryUpdateName),
-        attribute.placeholder("category name"),
-        attribute.class("form-control"),
-        attribute.type_("text"),
-        attribute.style([#("width", "200px")]),
-        attribute.value(sc.input_name),
-      ]),
-      html.button([event.on_click(msg.UpdateCategoryName(category))], [
-        element.text("Update"),
-      ]),
-      html.button([event.on_click(msg.DeleteCategory)], [element.text("Delete")]),
-    ]),
+  html.div([attribute.class("col p-3")], [
+    category_details_name_ui(category, sc),
     category_activity_ui(category, model),
     category_details_target_ui(category, model.target_edit),
     category_details_allocation_ui(sc, allocation),
@@ -342,42 +329,50 @@ fn category_details(
   ])
 }
 
-// fn category_edit_delete_ui(category: Category, sc: SelectedCategory) -> element.Element(Msg) {
-//   html.div([], [
-//       html.input([
-//         event.on_input(msg.UserInputCategoryUpdateName),
-//         attribute.placeholder("category name"),
-//         attribute.class("form-control"),
-//         attribute.type_("text"),
-//         attribute.style([#("width", "200px")]),
-//         attribute.value(sc.input_name),
-//       ]),
-//       html.button([event.on_click(msg.UpdateCategoryName(category))], [
-//         element.text("Update"),
-//       ]),
-//       html.button([event.on_click(msg.DeleteCategory)], [element.text("Delete")]),
-//     ])
-// }
+fn category_details_name_ui(
+  category: Category,
+  sc: SelectedCategory,
+) -> element.Element(Msg) {
+  html.div([], [
+    html.input([
+      event.on_input(msg.UserInputCategoryUpdateName),
+      attribute.placeholder("category name"),
+      attribute.class("form-control"),
+      attribute.type_("text"),
+      attribute.style([#("width", "200px")]),
+      attribute.value(sc.input_name),
+      attribute.class("mb-2"),
+    ]),
+    html.button(
+      [
+        attribute.class("me-3"),
+        event.on_click(msg.UpdateCategoryName(category)),
+      ],
+      [element.text("Update")],
+    ),
+    html.button([event.on_click(msg.DeleteCategory)], [element.text("Delete")]),
+  ])
+}
 
 fn category_activity_ui(cat: Category, model: Model) -> element.Element(Msg) {
-  html.div([attribute.class("row")], [
-      html.div([attribute.class("col")], [
-        html.div([], [html.text("Activity")]),
-        html.div([], [
-          html.text(
-            category_activity(cat, current_cycle_transactions(model))
-            |> m.money_to_string,
-          ),
-        ]),
+  html.div([attribute.class("row mt-3")], [
+    html.div([attribute.class("col")], [
+      html.div([], [html.text("Activity")]),
+      html.div([], [
+        html.text(
+          category_activity(cat, current_cycle_transactions(model))
+          |> m.money_to_string,
+        ),
       ]),
-    ])
+    ]),
+  ])
 }
 
 fn category_details_change_group_ui(
   cat: Category,
   model: Model,
 ) -> element.Element(Msg) {
-  html.div([], [
+  html.div([attribute.class("mt-3")], [
     html.text("Change group"),
     html.input([
       event.on_input(msg.UserInputCategoryGroupChange),
@@ -393,9 +388,10 @@ fn category_details_change_group_ui(
         |> list.map(fn(t) { t.name })
         |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
     ),
-    html.button([event.on_click(msg.ChangeGroupForCategory(cat))], [
-      element.text("Change group"),
-    ]),
+    html.button(
+      [attribute.class("mt-1"), event.on_click(msg.ChangeGroupForCategory(cat))],
+      [element.text("Change group")],
+    ),
   ])
 }
 
@@ -414,7 +410,7 @@ fn category_details_allocate_needed_ui(
   case add_diff.value < 0 {
     False -> html.text("")
     True -> {
-      html.div([], [
+      html.div([attribute.class("mt-3")], [
         html.button(
           [event.on_click(msg.AllocateNeeded(cat, new_amount, allocation))],
           [
@@ -440,7 +436,7 @@ fn category_details_cover_overspent_ui(
   case balance.value < 0 {
     False -> html.text("")
     True -> {
-      html.div([], [
+      html.div([attribute.class("mt-3")], [
         html.button(
           [
             event.on_click(msg.AllocateNeeded(
@@ -466,7 +462,7 @@ fn category_details_allocation_ui(
   sc: SelectedCategory,
   allocation: option.Option(Allocation),
 ) -> element.Element(Msg) {
-  html.div([], [
+  html.div([attribute.class("mt-3")], [
     html.text("Allocated: "),
     html.input([
       event.on_input(msg.UserAllocationUpdate),
@@ -476,9 +472,13 @@ fn category_details_allocation_ui(
       attribute.style([#("width", "120px")]),
       attribute.value(sc.allocation),
     ]),
-    html.button([event.on_click(msg.SaveAllocation(allocation: allocation))], [
-      element.text("Save"),
-    ]),
+    html.button(
+      [
+        attribute.class("mt-1"),
+        event.on_click(msg.SaveAllocation(allocation: allocation)),
+      ],
+      [element.text("Save")],
+    ),
   ])
 }
 
@@ -486,14 +486,16 @@ fn category_details_target_ui(
   c: Category,
   et: TargetEdit,
 ) -> element.Element(Msg) {
-  case et.cat_id, et.enabled {
+  html.div([attribute.class("col mt-3")], case et.cat_id, et.enabled {
+    // edit mode
     _, True -> {
-      html.div([attribute.class("col")], [
+      [
         html.div([], [
           html.text("Target"),
-          html.button([event.on_click(msg.SaveTarget(c))], [
-            element.text("Save"),
-          ]),
+          html.button(
+            [attribute.class("ms-3 me-1"), event.on_click(msg.SaveTarget(c))],
+            [element.text("Save")],
+          ),
           html.button([event.on_click(msg.DeleteTarget(c))], [
             element.text("Delete"),
           ]),
@@ -501,7 +503,7 @@ fn category_details_target_ui(
         target_switcher_ui(et),
         case et.target {
           m.Custom(_, _) ->
-            html.div([], [
+            html.div([attribute.class("mt-1")], [
               html.text("Amount needed for date: "),
               html.input([
                 event.on_input(msg.UserTargetUpdateAmount),
@@ -513,12 +515,12 @@ fn category_details_target_ui(
               html.input([
                 event.on_input(msg.UserTargetUpdateCustomDate),
                 attribute.placeholder("date"),
-                attribute.class("form-control"),
+                attribute.class("form-control mt-1"),
                 attribute.type_("date"),
               ]),
             ])
           m.Monthly(_) ->
-            html.div([], [
+            html.div([attribute.class("mt-1")], [
               html.text("Amount monthly: "),
               html.input([
                 event.on_input(msg.UserTargetUpdateAmount),
@@ -531,20 +533,22 @@ fn category_details_target_ui(
               ]),
             ])
         },
-      ])
+      ]
     }
+    // view mode
     _, _ -> {
-      html.div([attribute.class("col")], [
+      [
         html.div([], [
           html.text("Target"),
-          html.button([event.on_click(msg.EditTarget(c))], [
-            element.text("Edit"),
-          ]),
+          html.button(
+            [attribute.class("ms-3"), event.on_click(msg.EditTarget(c))],
+            [element.text("Edit")],
+          ),
         ]),
-        html.div([], [html.text(target_string(c))]),
-      ])
+        html.div([attribute.class("mt-2")], [html.text(target_string(c))]),
+      ]
     }
-  }
+  })
 }
 
 fn category_activity(cat: Category, transactions: List(Transaction)) -> Money {
@@ -562,7 +566,7 @@ fn target_switcher_ui(et: TargetEdit) -> element.Element(Msg) {
     [
       attribute.attribute("aria-label", "Basic example"),
       attribute.role("group"),
-      attribute.class("btn-group"),
+      attribute.class("btn-group mt-1"),
     ],
     [
       html.button(
@@ -653,7 +657,7 @@ fn check_box(
   is_checked: Bool,
   msg: fn(Bool) -> Msg,
 ) -> element.Element(Msg) {
-  html.div([attribute.class("form-check")], [
+  html.div([attribute.class("ms-2"), attribute.class("form-check")], [
     html.input([
       attribute.id("flexCheckDefault"),
       event.on_check(msg),
@@ -831,7 +835,7 @@ fn manage_transaction_buttons(
   case selected_id == t.id {
     False -> html.text("")
     True ->
-      html.div([], [
+      html.div([attribute.class("mt-1")], [
         case is_edit {
           True ->
             html.button([event.on_click(msg.UpdateTransaction)], [
@@ -843,9 +847,10 @@ fn manage_transaction_buttons(
               [element.text("Edit")],
             )
         },
-        html.button([event.on_click(msg.DeleteTransaction(t.id))], [
-          element.text("Delete"),
-        ]),
+        html.button(
+          [attribute.class("ms-1"), event.on_click(msg.DeleteTransaction(t.id))],
+          [element.text("Delete")],
+        ),
       ])
   }
 }
@@ -915,7 +920,10 @@ fn add_transaction_ui(
         transaction_edit_form.is_inflow,
         msg.UserUpdatedTransactionIsInflow,
       ),
-      html.button([event.on_click(msg.AddTransaction)], [element.text("Add")]),
+      html.button(
+        [attribute.class("ms-1"), event.on_click(msg.AddTransaction)],
+        [element.text("Add")],
+      ),
     ]),
   ])
 }
@@ -935,9 +943,13 @@ fn budget_categories(model: Model) -> element.Element(Msg) {
               True -> "-"
               False -> "+"
             }
-            html.button([event.on_click(msg.ShowAddCategoryGroupUI)], [
-              element.text(btn_label),
-            ])
+            html.button(
+              [
+                attribute.class("ms-2"),
+                event.on_click(msg.ShowAddCategoryGroupUI),
+              ],
+              [element.text(btn_label)],
+            )
           },
         ]),
         html.th([], [html.text("Balance")]),
@@ -1014,9 +1026,10 @@ fn group_ui(group: m.CategoryGroup, model: Model) -> List(element.Element(Msg)) 
       True -> "-"
       False -> "+"
     }
-    html.button([event.on_click(msg.ShowAddCategoryUI(group.id))], [
-      element.text(btn_label),
-    ])
+    html.button(
+      [attribute.class("ms-1"), event.on_click(msg.ShowAddCategoryUI(group.id))],
+      [element.text(btn_label)],
+    )
   }
 
   let group_ui =

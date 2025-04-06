@@ -49,7 +49,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       new_category_group_name: "",
       category_group_change_input: "",
     ),
-    effect.batch([modem.init(eff.on_route_change), eff.initial_eff()]),
+    effect.batch([modem.init(eff.on_route_change), eff.initial_eff(), eff.select_category_eff()]),
   )
 }
 

@@ -48,6 +48,19 @@ pub fn initial_eff() -> effect.Effect(Msg) {
   )
 }
 
+pub fn select_category_eff() -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    msg.SelectCategory(m.Category(
+      id: "f254cdd0-003d-48c3-8eed-77e86c99fcc0",
+      name: "Shopping2",
+      target: Some(m.Monthly(target: m.Money(value: 4000))),
+      inflow: False,
+      group_id: "bcd5d6e1-dd6e-44fd-8dd6-4dea104a8e0a",
+    ))
+    |> dispatch
+  })
+}
+
 pub fn add_transaction_eff(
   transaction_form: TransactionForm,
   amount: m.Money,
