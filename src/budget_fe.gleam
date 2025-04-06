@@ -1,7 +1,7 @@
 import budget_fe/internals/effects as eff
 import budget_fe/internals/msg.{type Model, type Msg, Model}
 import budget_fe/internals/view as v
-import budget_test.{
+import budget_shared.{
   type Allocation, type Category, type Cycle, type MonthInYear, type Transaction,
   type User, Allocation, Category, Cycle, MonthInYear, Transaction, User,
 } as m
@@ -49,7 +49,11 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       new_category_group_name: "",
       category_group_change_input: "",
     ),
-    effect.batch([modem.init(eff.on_route_change), eff.initial_eff(), eff.select_category_eff()]),
+    effect.batch([
+      modem.init(eff.on_route_change),
+      eff.initial_eff(),
+      eff.select_category_eff(),
+    ]),
   )
 }
 
@@ -394,12 +398,13 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         option.Some(transaction) -> eff.update_transaction_eff(transaction)
       },
     )
-    msg.DeleteCategory -> #(Model(..model, selected_category: option.None), case
-      model.selected_category
-    {
-      option.None -> effect.none()
-      option.Some(sc) -> eff.delete_category_eff(sc.id)
-    })
+    msg.DeleteCategory -> #(
+      Model(..model, selected_category: option.None),
+      case model.selected_category {
+        option.None -> effect.none()
+        option.Some(sc) -> eff.delete_category_eff(sc.id)
+      },
+    )
     msg.UpdateCategoryName(cat) -> #(
       Model(..model, selected_category: option.None),
       case model.selected_category {

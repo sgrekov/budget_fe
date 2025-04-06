@@ -1,4 +1,4 @@
-import budget_test.{
+import budget_shared.{
   type Allocation, type Category, type CategoryGroup, type Cycle, type Money,
   type Target, type Transaction, type User, Allocation, Category, Cycle, Money,
   Transaction, User,

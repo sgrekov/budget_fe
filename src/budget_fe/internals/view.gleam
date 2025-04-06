@@ -2,11 +2,13 @@ import budget_fe/internals/msg
 import budget_fe/internals/msg.{
   type Model, type Msg, type SelectedCategory, type TargetEdit,
 } as _
-import budget_test.{
+import budget_shared.{
   type Allocation, type Category, type Cycle, type Money, type MonthInYear,
   type Transaction,
 } as m
-import budget_test.{Allocation, Category, Cycle, Money, MonthInYear, Transaction}
+import budget_shared.{
+  Allocation, Category, Cycle, Money, MonthInYear, Transaction,
+}
 import date_utils
 import gleam/int
 import gleam/list

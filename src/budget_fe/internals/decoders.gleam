@@ -1,4 +1,4 @@
-import budget_test.{
+import budget_shared.{
   type Category, type Cycle, type Money, type MonthInYear, Category, Cycle,
   Money, MonthInYear,
 } as m
@@ -19,9 +19,7 @@ pub fn transaction_encode(t: m.Transaction) -> json.Json {
 }
 
 pub fn money_encode(money: Money) -> json.Json {
-  json.object([
-    #("money_value", json.int(money.value)),
-  ])
+  json.object([#("money_value", json.int(money.value))])
 }
 
 pub fn id_decoder() -> decode.Decoder(String) {

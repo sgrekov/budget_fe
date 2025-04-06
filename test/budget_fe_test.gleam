@@ -1,4 +1,4 @@
-import budget_test as m
+import budget_shared as m
 import gleeunit
 import gleeunit/should
 
@@ -10,7 +10,6 @@ pub fn main() {
 pub fn money_sum_test() {
   m.money_sum(m.euro_int_to_money(0), m.euro_int_to_money(0))
   |> should.equal(m.euro_int_to_money(0))
-
   // m.money_sum(m.float_to_money(1, 2), m.float_to_money(1, 3))
   // |> should.equal(m.float_to_money(2, 5))
 
