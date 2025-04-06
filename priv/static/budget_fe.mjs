@@ -9643,112 +9643,6 @@ function current_cycle_transactions(model) {
     }
   );
 }
-function category_details_name_ui(category, sc) {
-  return div(
-    toList([]),
-    toList([
-      input(
-        toList([
-          on_input(
-            (var0) => {
-              return new UserInputCategoryUpdateName(var0);
-            }
-          ),
-          placeholder("category name"),
-          class$("form-control"),
-          type_("text"),
-          style(toList([["width", "200px"]])),
-          value(sc.input_name),
-          class$("mb-2")
-        ])
-      ),
-      button(
-        toList([
-          class$("me-3"),
-          on_click(new UpdateCategoryName(category))
-        ]),
-        toList([text("Update")])
-      ),
-      button(
-        toList([on_click(new DeleteCategory())]),
-        toList([text("Delete")])
-      )
-    ])
-  );
-}
-function category_details_change_group_ui(cat, model) {
-  return div(
-    toList([class$("mt-3")]),
-    toList([
-      text2("Change group"),
-      input(
-        toList([
-          on_input(
-            (var0) => {
-              return new UserInputCategoryGroupChange(var0);
-            }
-          ),
-          placeholder("group"),
-          class$("form-control"),
-          type_("text"),
-          style(toList([["width", "160px"]])),
-          attribute("list", "group_list")
-        ])
-      ),
-      datalist(
-        toList([id("group_list")]),
-        (() => {
-          let _pipe = model.categories_groups;
-          let _pipe$1 = map2(_pipe, (t) => {
-            return t.name;
-          });
-          return map2(
-            _pipe$1,
-            (p) => {
-              return option(toList([value(p)]), "");
-            }
-          );
-        })()
-      ),
-      button(
-        toList([
-          class$("mt-1"),
-          on_click(new ChangeGroupForCategory(cat))
-        ]),
-        toList([text("Change group")])
-      )
-    ])
-  );
-}
-function category_details_allocation_ui(sc, allocation) {
-  return div(
-    toList([class$("mt-3")]),
-    toList([
-      text2("Allocated: "),
-      input(
-        toList([
-          on_input(
-            (var0) => {
-              return new UserAllocationUpdate(var0);
-            }
-          ),
-          placeholder("amount"),
-          class$("form-control"),
-          type_("text"),
-          style(toList([["width", "120px"]])),
-          value(sc.allocation)
-        ])
-      ),
-      button(
-        toList([
-          class$("mt-1"),
-          on_click(new SaveAllocation(allocation))
-        ]),
-        toList([text("Save")])
-      )
-    ])
-  );
-}
 function category_activity(cat, transactions) {
   let _pipe = transactions;
   let _pipe$1 = filter(_pipe, (t) => {
@@ -9760,33 +9654,6 @@ function category_activity(cat, transactions) {
     (m, t) => {
       return money_sum(m, t.value);
     }
-  );
-}
-function category_activity_ui(cat, model) {
-  return div(
-    toList([class$("row mt-3")]),
-    toList([
-      div(
-        toList([class$("col")]),
-        toList([
-          div(toList([]), toList([text2("Activity")])),
-          div(
-            toList([]),
-            toList([
-              text2(
-                (() => {
-                  let _pipe = category_activity(
-                    cat,
-                    current_cycle_transactions(model)
-                  );
-                  return money_to_string(_pipe);
-                })()
-              )
-            ])
-          )
-        ])
-      )
-    ])
   );
 }
 function target_switcher_ui(et) {
@@ -10787,9 +10654,136 @@ function target_string(category) {
     return "Monthly: " + money_to_string(amount);
   }
 }
+var edit_name_side_panel_color = "rgb(227, 216, 241)";
+function category_details_name_ui(category, sc) {
+  return div(
+    toList([
+      class$("rounded-3 p-2 mt-3"),
+      style(
+        toList([
+          ["height", "fit-content"],
+          ["background-color", edit_name_side_panel_color]
+        ])
+      )
+    ]),
+    toList([
+      input(
+        toList([
+          on_input(
+            (var0) => {
+              return new UserInputCategoryUpdateName(var0);
+            }
+          ),
+          placeholder("category name"),
+          class$("form-control"),
+          type_("text"),
+          style(toList([["width", "200px"]])),
+          value(sc.input_name),
+          class$("mb-2")
+        ])
+      ),
+      button(
+        toList([
+          class$("me-3"),
+          on_click(new UpdateCategoryName(category))
+        ]),
+        toList([text("Update")])
+      ),
+      button(
+        toList([on_click(new DeleteCategory())]),
+        toList([text("Delete")])
+      )
+    ])
+  );
+}
+function category_details_change_group_ui(cat, model) {
+  return div(
+    toList([
+      class$("mt-3 rounded-3 p-2"),
+      style(
+        toList([["background-color", edit_name_side_panel_color]])
+      )
+    ]),
+    toList([
+      text2("Change group"),
+      input(
+        toList([
+          on_input(
+            (var0) => {
+              return new UserInputCategoryGroupChange(var0);
+            }
+          ),
+          placeholder("group"),
+          class$("form-control"),
+          type_("text"),
+          style(toList([["width", "160px"]])),
+          attribute("list", "group_list")
+        ])
+      ),
+      datalist(
+        toList([id("group_list")]),
+        (() => {
+          let _pipe = model.categories_groups;
+          let _pipe$1 = map2(_pipe, (t) => {
+            return t.name;
+          });
+          return map2(
+            _pipe$1,
+            (p) => {
+              return option(toList([value(p)]), "");
+            }
+          );
+        })()
+      ),
+      button(
+        toList([
+          class$("mt-1"),
+          on_click(new ChangeGroupForCategory(cat))
+        ]),
+        toList([text("Change group")])
+      )
+    ])
+  );
+}
+var side_panel_color = "rgb(134, 217, 192)";
+function category_details_allocation_ui(sc, allocation) {
+  return div(
+    toList([
+      class$("mt-3 rounded-3 p-2"),
+      style(toList([["background-color", side_panel_color]]))
+    ]),
+    toList([
+      text2("Allocated: "),
+      input(
+        toList([
+          on_input(
+            (var0) => {
+              return new UserAllocationUpdate(var0);
+            }
+          ),
+          placeholder("amount"),
+          class$("form-control"),
+          type_("text"),
+          style(toList([["width", "120px"]])),
+          value(sc.allocation)
+        ])
+      ),
+      button(
+        toList([
+          class$("mt-1"),
+          on_click(new SaveAllocation(allocation))
+        ]),
+        toList([text("Save")])
+      )
+    ])
+  );
+}
 function category_details_target_ui(c, et) {
   return div(
-    toList([class$("col mt-3")]),
+    toList([
+      class$("mt-3 rounded-3 p-2 col mt-3"),
+      style(toList([["background-color", side_panel_color]]))
+    ]),
     (() => {
       let $ = et.cat_id;
       let $1 = et.enabled;
@@ -10896,16 +10890,49 @@ function category_details_target_ui(c, et) {
     })()
   );
 }
+var activity_side_panel_color = "rgb(197, 219, 212)";
+function category_activity_ui(cat, model) {
+  return div(
+    toList([
+      class$("mt-3 rounded-3 p-2"),
+      style(
+        toList([["background-color", activity_side_panel_color]])
+      )
+    ]),
+    toList([
+      div(
+        toList([class$("col")]),
+        toList([
+          div(toList([]), toList([text2("Activity")])),
+          div(
+            toList([]),
+            toList([
+              text2(
+                (() => {
+                  let _pipe = category_activity(
+                    cat,
+                    current_cycle_transactions(model)
+                  );
+                  return money_to_string(_pipe);
+                })()
+              )
+            ])
+          )
+        ])
+      )
+    ])
+  );
+}
 function category_details(category, model, sc, allocation) {
   return div(
     toList([class$("col p-3")]),
     toList([
-      category_details_name_ui(category, sc),
       category_activity_ui(category, model),
       category_details_target_ui(category, model.target_edit),
       category_details_allocation_ui(sc, allocation),
       category_details_allocate_needed_ui(category, allocation, model),
       category_details_cover_overspent_ui(category, model, allocation),
+      category_details_name_ui(category, sc),
       category_details_change_group_ui(category, model)
     ])
   );

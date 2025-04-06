@@ -319,12 +319,12 @@ fn category_details(
   allocation: option.Option(Allocation),
 ) -> element.Element(Msg) {
   html.div([attribute.class("col p-3")], [
-    category_details_name_ui(category, sc),
     category_activity_ui(category, model),
     category_details_target_ui(category, model.target_edit),
     category_details_allocation_ui(sc, allocation),
     category_details_allocate_needed_ui(category, allocation, model),
     category_details_cover_overspent_ui(category, model, allocation),
+    category_details_name_ui(category, sc),
     category_details_change_group_ui(category, model),
   ])
 }
@@ -333,66 +333,90 @@ fn category_details_name_ui(
   category: Category,
   sc: SelectedCategory,
 ) -> element.Element(Msg) {
-  html.div([], [
-    html.input([
-      event.on_input(msg.UserInputCategoryUpdateName),
-      attribute.placeholder("category name"),
-      attribute.class("form-control"),
-      attribute.type_("text"),
-      attribute.style([#("width", "200px")]),
-      attribute.value(sc.input_name),
-      attribute.class("mb-2"),
-    ]),
-    html.button(
-      [
-        attribute.class("me-3"),
-        event.on_click(msg.UpdateCategoryName(category)),
-      ],
-      [element.text("Update")],
-    ),
-    html.button([event.on_click(msg.DeleteCategory)], [element.text("Delete")]),
-  ])
+  html.div(
+    [
+      attribute.class("rounded-3 p-2 mt-3"),
+      attribute.style([
+        #("height", "fit-content"),
+        #("background-color", edit_name_side_panel_color),
+      ]),
+    ],
+    [
+      html.input([
+        event.on_input(msg.UserInputCategoryUpdateName),
+        attribute.placeholder("category name"),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+        attribute.style([#("width", "200px")]),
+        attribute.value(sc.input_name),
+        attribute.class("mb-2"),
+      ]),
+      html.button(
+        [
+          attribute.class("me-3"),
+          event.on_click(msg.UpdateCategoryName(category)),
+        ],
+        [element.text("Update")],
+      ),
+      html.button([event.on_click(msg.DeleteCategory)], [element.text("Delete")]),
+    ],
+  )
 }
 
 fn category_activity_ui(cat: Category, model: Model) -> element.Element(Msg) {
-  html.div([attribute.class("row mt-3")], [
-    html.div([attribute.class("col")], [
-      html.div([], [html.text("Activity")]),
-      html.div([], [
-        html.text(
-          category_activity(cat, current_cycle_transactions(model))
-          |> m.money_to_string,
-        ),
+  html.div(
+    [
+      attribute.class("mt-3 rounded-3 p-2"),
+      attribute.style([#("background-color", activity_side_panel_color)]),
+    ],
+    [
+      html.div([attribute.class("col")], [
+        html.div([], [html.text("Activity")]),
+        html.div([], [
+          html.text(
+            category_activity(cat, current_cycle_transactions(model))
+            |> m.money_to_string,
+          ),
+        ]),
       ]),
-    ]),
-  ])
+    ],
+  )
 }
 
 fn category_details_change_group_ui(
   cat: Category,
   model: Model,
 ) -> element.Element(Msg) {
-  html.div([attribute.class("mt-3")], [
-    html.text("Change group"),
-    html.input([
-      event.on_input(msg.UserInputCategoryGroupChange),
-      attribute.placeholder("group"),
-      attribute.class("form-control"),
-      attribute.type_("text"),
-      attribute.style([#("width", "160px")]),
-      attribute.attribute("list", "group_list"),
-    ]),
-    html.datalist(
-      [attribute.id("group_list")],
-      model.categories_groups
-        |> list.map(fn(t) { t.name })
-        |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
-    ),
-    html.button(
-      [attribute.class("mt-1"), event.on_click(msg.ChangeGroupForCategory(cat))],
-      [element.text("Change group")],
-    ),
-  ])
+  html.div(
+    [
+      attribute.class("mt-3 rounded-3 p-2"),
+      attribute.style([#("background-color", edit_name_side_panel_color)]),
+    ],
+    [
+      html.text("Change group"),
+      html.input([
+        event.on_input(msg.UserInputCategoryGroupChange),
+        attribute.placeholder("group"),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+        attribute.style([#("width", "160px")]),
+        attribute.attribute("list", "group_list"),
+      ]),
+      html.datalist(
+        [attribute.id("group_list")],
+        model.categories_groups
+          |> list.map(fn(t) { t.name })
+          |> list.map(fn(p) { html.option([attribute.value(p)], "") }),
+      ),
+      html.button(
+        [
+          attribute.class("mt-1"),
+          event.on_click(msg.ChangeGroupForCategory(cat)),
+        ],
+        [element.text("Change group")],
+      ),
+    ],
+  )
 }
 
 fn category_details_allocate_needed_ui(
@@ -462,93 +486,111 @@ fn category_details_allocation_ui(
   sc: SelectedCategory,
   allocation: option.Option(Allocation),
 ) -> element.Element(Msg) {
-  html.div([attribute.class("mt-3")], [
-    html.text("Allocated: "),
-    html.input([
-      event.on_input(msg.UserAllocationUpdate),
-      attribute.placeholder("amount"),
-      attribute.class("form-control"),
-      attribute.type_("text"),
-      attribute.style([#("width", "120px")]),
-      attribute.value(sc.allocation),
-    ]),
-    html.button(
-      [
-        attribute.class("mt-1"),
-        event.on_click(msg.SaveAllocation(allocation: allocation)),
-      ],
-      [element.text("Save")],
-    ),
-  ])
+  html.div(
+    [
+      attribute.class("mt-3 rounded-3 p-2"),
+      attribute.style([#("background-color", side_panel_color)]),
+    ],
+    [
+      html.text("Allocated: "),
+      html.input([
+        event.on_input(msg.UserAllocationUpdate),
+        attribute.placeholder("amount"),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+        attribute.style([#("width", "120px")]),
+        attribute.value(sc.allocation),
+      ]),
+      html.button(
+        [
+          attribute.class("mt-1"),
+          event.on_click(msg.SaveAllocation(allocation: allocation)),
+        ],
+        [element.text("Save")],
+      ),
+    ],
+  )
 }
+
+const edit_name_side_panel_color = "rgb(227, 216, 241)"
+
+const side_panel_color = "rgb(134, 217, 192)"
+
+const activity_side_panel_color = "rgb(197, 219, 212)"
 
 fn category_details_target_ui(
   c: Category,
   et: TargetEdit,
 ) -> element.Element(Msg) {
-  html.div([attribute.class("col mt-3")], case et.cat_id, et.enabled {
-    // edit mode
-    _, True -> {
-      [
-        html.div([], [
-          html.text("Target"),
-          html.button(
-            [attribute.class("ms-3 me-1"), event.on_click(msg.SaveTarget(c))],
-            [element.text("Save")],
-          ),
-          html.button([event.on_click(msg.DeleteTarget(c))], [
-            element.text("Delete"),
+  html.div(
+    [
+      attribute.class("mt-3 rounded-3 p-2 col mt-3"),
+      attribute.style([#("background-color", side_panel_color)]),
+    ],
+    case et.cat_id, et.enabled {
+      // edit mode
+      _, True -> {
+        [
+          html.div([], [
+            html.text("Target"),
+            html.button(
+              [attribute.class("ms-3 me-1"), event.on_click(msg.SaveTarget(c))],
+              [element.text("Save")],
+            ),
+            html.button([event.on_click(msg.DeleteTarget(c))], [
+              element.text("Delete"),
+            ]),
           ]),
-        ]),
-        target_switcher_ui(et),
-        case et.target {
-          m.Custom(_, _) ->
-            html.div([attribute.class("mt-1")], [
-              html.text("Amount needed for date: "),
-              html.input([
-                event.on_input(msg.UserTargetUpdateAmount),
-                attribute.placeholder("amount"),
-                attribute.class("form-control"),
-                attribute.type_("text"),
-                attribute.style([#("width", "120px")]),
-              ]),
-              html.input([
-                event.on_input(msg.UserTargetUpdateCustomDate),
-                attribute.placeholder("date"),
-                attribute.class("form-control mt-1"),
-                attribute.type_("date"),
-              ]),
-            ])
-          m.Monthly(_) ->
-            html.div([attribute.class("mt-1")], [
-              html.text("Amount monthly: "),
-              html.input([
-                event.on_input(msg.UserTargetUpdateAmount),
-                attribute.placeholder("amount"),
-                attribute.class("form-control"),
-                attribute.type_("text"),
-                attribute.style([#("width", "120px")]),
-                attribute.style([#("width", "120px")]),
-                attribute.style([#("width", "120px")]),
-              ]),
-            ])
-        },
-      ]
-    }
-    // view mode
-    _, _ -> {
-      [
-        html.div([], [
-          html.text("Target"),
-          html.button(
-            [attribute.class("ms-3"), event.on_click(msg.EditTarget(c))],
-            [element.text("Edit")],
-          ),
-        ]),
-        html.div([attribute.class("mt-2")], [html.text(target_string(c))]),
-      ]
-    }
-  })
+          target_switcher_ui(et),
+          case et.target {
+            m.Custom(_, _) ->
+              html.div([attribute.class("mt-1")], [
+                html.text("Amount needed for date: "),
+                html.input([
+                  event.on_input(msg.UserTargetUpdateAmount),
+                  attribute.placeholder("amount"),
+                  attribute.class("form-control"),
+                  attribute.type_("text"),
+                  attribute.style([#("width", "120px")]),
+                ]),
+                html.input([
+                  event.on_input(msg.UserTargetUpdateCustomDate),
+                  attribute.placeholder("date"),
+                  attribute.class("form-control mt-1"),
+                  attribute.type_("date"),
+                ]),
+              ])
+            m.Monthly(_) ->
+              html.div([attribute.class("mt-1")], [
+                html.text("Amount monthly: "),
+                html.input([
+                  event.on_input(msg.UserTargetUpdateAmount),
+                  attribute.placeholder("amount"),
+                  attribute.class("form-control"),
+                  attribute.type_("text"),
+                  attribute.style([#("width", "120px")]),
+                  attribute.style([#("width", "120px")]),
+                  attribute.style([#("width", "120px")]),
+                ]),
+              ])
+          },
+        ]
+      }
+      // view mode
+      _, _ -> {
+        [
+          html.div([], [
+            html.text("Target"),
+            html.button(
+              [attribute.class("ms-3"), event.on_click(msg.EditTarget(c))],
+              [element.text("Edit")],
+            ),
+          ]),
+          html.div([attribute.class("mt-2")], [html.text(target_string(c))]),
+        ]
+      }
+    },
+  )
 }
 
 fn category_activity(cat: Category, transactions: List(Transaction)) -> Money {
