@@ -1,4 +1,3 @@
-import budget_fe/internals/decoders
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_shared.{
   type Allocation, type Category, type Cycle, type Target, type Transaction,
@@ -83,7 +82,7 @@ pub fn add_transaction_eff(
   // io.debug(t)
   lustre_http.post(
     url,
-    decoders.transaction_encode(t),
+    m.transaction_encode(t),
     lustre_http.expect_json(m.transaction_decoder(), msg.AddTransactionResult),
   )
 }
@@ -173,8 +172,8 @@ fn create_allocation_eff(
   // io.debug(t)
   lustre_http.post(
     url,
-    decoders.allocation_encode(None, money, category_id, cycle),
-    lustre_http.expect_json(decoders.id_decoder(), msg.SaveAllocationResult),
+    m.new_allocation_encode(money, category_id, cycle),
+    lustre_http.expect_json(m.id_decoder(), msg.SaveAllocationResult),
   )
 }
 
@@ -189,15 +188,17 @@ fn update_allocation_eff(a: Allocation, amount: m.Money) -> effect.Effect(Msg) {
       lustre_http.send(
         req
           |> request.set_body(
-            json.to_string(decoders.allocation_encode(
-              option.Some(a.id),
-              amount,
-              a.category_id,
-              a.date,
-            )),
+            json.to_string(
+              m.allocation_encode(Allocation(
+                a.id,
+                amount,
+                a.category_id,
+                a.date,
+              )),
+            ),
           )
           |> request.set_header("Content-Type", "application/json"),
-        lustre_http.expect_json(decoders.id_decoder(), msg.SaveAllocationResult),
+        lustre_http.expect_json(m.id_decoder(), msg.SaveAllocationResult),
       )
     _ -> effect.none()
   }
@@ -213,7 +214,7 @@ pub fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
     Ok(req) ->
       lustre_http.send(
         req,
-        lustre_http.expect_json(decoders.id_decoder(), msg.CategoryDeleteResult),
+        lustre_http.expect_json(m.id_decoder(), msg.CategoryDeleteResult),
       )
     _ -> effect.none()
   }
@@ -229,12 +230,9 @@ pub fn update_transaction_eff(t: m.Transaction) -> effect.Effect(Msg) {
     Ok(req) ->
       lustre_http.send(
         req
-          |> request.set_body(json.to_string(decoders.transaction_encode(t)))
+          |> request.set_body(json.to_string(m.transaction_encode(t)))
           |> request.set_header("Content-Type", "application/json"),
-        lustre_http.expect_json(
-          decoders.id_decoder(),
-          msg.TransactionEditResult,
-        ),
+        lustre_http.expect_json(m.id_decoder(), msg.TransactionEditResult),
       )
     _ -> effect.none()
   }
@@ -250,10 +248,7 @@ pub fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {
     Ok(req) ->
       lustre_http.send(
         req,
-        lustre_http.expect_json(
-          decoders.id_decoder(),
-          msg.TransactionDeleteResult,
-        ),
+        lustre_http.expect_json(m.id_decoder(), msg.TransactionDeleteResult),
       )
     _ -> effect.none()
   }
@@ -272,12 +267,12 @@ pub fn save_target_eff(
       lustre_http.send(
         req
           |> request.set_body(
-            json.to_string(decoders.category_encode(
+            json.to_string(m.category_encode(
               Category(..category, target: target_edit),
             )),
           )
           |> request.set_header("Content-Type", "application/json"),
-        lustre_http.expect_json(decoders.id_decoder(), msg.CategorySaveTarget),
+        lustre_http.expect_json(m.id_decoder(), msg.CategorySaveTarget),
       )
     _ -> effect.none()
   }
@@ -293,7 +288,7 @@ pub fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
     Ok(req) ->
       lustre_http.send(
         req,
-        lustre_http.expect_json(decoders.id_decoder(), msg.CategorySaveTarget),
+        lustre_http.expect_json(m.id_decoder(), msg.CategorySaveTarget),
       )
     _ -> effect.none()
   }
