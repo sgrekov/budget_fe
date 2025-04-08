@@ -172,7 +172,12 @@ fn create_allocation_eff(
   // io.debug(t)
   lustre_http.post(
     url,
-    m.new_allocation_encode(money, category_id, cycle),
+    m.allocation_form_encode(m.AllocationForm(
+      option.None,
+      money,
+      category_id,
+      cycle,
+    )),
     lustre_http.expect_json(m.id_decoder(), msg.SaveAllocationResult),
   )
 }

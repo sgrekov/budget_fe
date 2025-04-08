@@ -5421,6 +5421,15 @@ var Allocation = class extends CustomType {
     this.date = date;
   }
 };
+var AllocationForm = class extends CustomType {
+  constructor(id2, amount, category_id, date) {
+    super();
+    this.id = id2;
+    this.amount = amount;
+    this.category_id = category_id;
+    this.date = date;
+  }
+};
 var Cycle = class extends CustomType {
   constructor(year2, month2) {
     super();
@@ -5538,13 +5547,12 @@ function allocation_encode(a2) {
     ])
   );
 }
-function new_allocation_encode(amount, cat_id, cycle) {
+function allocation_form_encode(af) {
   return object2(
     toList([
-      ["id", null$()],
-      ["amount", money_encode(amount)],
-      ["category_id", string4(cat_id)],
-      ["date", cycle_encode(cycle)]
+      ["amount", money_encode(af.amount)],
+      ["category_id", string4(af.category_id)],
+      ["date", cycle_encode(af.date)]
     ])
   );
 }
@@ -8940,7 +8948,9 @@ function create_allocation_eff(money, category_id, cycle) {
   let url = "http://localhost:8000/allocation/add";
   return post(
     url,
-    new_allocation_encode(money, category_id, cycle),
+    allocation_form_encode(
+      new AllocationForm(new None(), money, category_id, cycle)
+    ),
     expect_json(
       id_decoder(),
       (var0) => {
