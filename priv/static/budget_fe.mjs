@@ -272,446 +272,6 @@ function bitArrayPrintDeprecationWarning(name, message) {
   );
   isBitArrayDeprecationMessagePrinted[name] = true;
 }
-function bitArraySlice(bitArray, start3, end) {
-  end ??= bitArray.bitSize;
-  bitArrayValidateRange(bitArray, start3, end);
-  if (start3 === end) {
-    return new BitArray(new Uint8Array());
-  }
-  if (start3 === 0 && end === bitArray.bitSize) {
-    return bitArray;
-  }
-  start3 += bitArray.bitOffset;
-  end += bitArray.bitOffset;
-  const startByteIndex = Math.trunc(start3 / 8);
-  const endByteIndex = Math.trunc((end + 7) / 8);
-  const byteLength = endByteIndex - startByteIndex;
-  let buffer;
-  if (startByteIndex === 0 && byteLength === bitArray.rawBuffer.byteLength) {
-    buffer = bitArray.rawBuffer;
-  } else {
-    buffer = new Uint8Array(
-      bitArray.rawBuffer.buffer,
-      bitArray.rawBuffer.byteOffset + startByteIndex,
-      byteLength
-    );
-  }
-  return new BitArray(buffer, end - start3, start3 % 8);
-}
-function bitArraySliceToInt(bitArray, start3, end, isBigEndian, isSigned) {
-  bitArrayValidateRange(bitArray, start3, end);
-  if (start3 === end) {
-    return 0;
-  }
-  start3 += bitArray.bitOffset;
-  end += bitArray.bitOffset;
-  const isStartByteAligned = start3 % 8 === 0;
-  const isEndByteAligned = end % 8 === 0;
-  if (isStartByteAligned && isEndByteAligned) {
-    return intFromAlignedSlice(
-      bitArray,
-      start3 / 8,
-      end / 8,
-      isBigEndian,
-      isSigned
-    );
-  }
-  const size = end - start3;
-  const startByteIndex = Math.trunc(start3 / 8);
-  const endByteIndex = Math.trunc((end - 1) / 8);
-  if (startByteIndex == endByteIndex) {
-    const mask2 = 255 >> start3 % 8;
-    const unusedLowBitCount = (8 - end % 8) % 8;
-    let value3 = (bitArray.rawBuffer[startByteIndex] & mask2) >> unusedLowBitCount;
-    if (isSigned) {
-      const highBit = 2 ** (size - 1);
-      if (value3 >= highBit) {
-        value3 -= highBit * 2;
-      }
-    }
-    return value3;
-  }
-  if (size <= 53) {
-    return intFromUnalignedSliceUsingNumber(
-      bitArray.rawBuffer,
-      start3,
-      end,
-      isBigEndian,
-      isSigned
-    );
-  } else {
-    return intFromUnalignedSliceUsingBigInt(
-      bitArray.rawBuffer,
-      start3,
-      end,
-      isBigEndian,
-      isSigned
-    );
-  }
-}
-function toBitArray(segments) {
-  if (segments.length === 0) {
-    return new BitArray(new Uint8Array());
-  }
-  if (segments.length === 1) {
-    const segment = segments[0];
-    if (segment instanceof BitArray) {
-      return segment;
-    }
-    if (segment instanceof Uint8Array) {
-      return new BitArray(segment);
-    }
-    return new BitArray(new Uint8Array(
-      /** @type {number[]} */
-      segments
-    ));
-  }
-  let bitSize = 0;
-  let areAllSegmentsNumbers = true;
-  for (const segment of segments) {
-    if (segment instanceof BitArray) {
-      bitSize += segment.bitSize;
-      areAllSegmentsNumbers = false;
-    } else if (segment instanceof Uint8Array) {
-      bitSize += segment.byteLength * 8;
-      areAllSegmentsNumbers = false;
-    } else {
-      bitSize += 8;
-    }
-  }
-  if (areAllSegmentsNumbers) {
-    return new BitArray(new Uint8Array(
-      /** @type {number[]} */
-      segments
-    ));
-  }
-  const buffer = new Uint8Array(Math.trunc((bitSize + 7) / 8));
-  let cursor = 0;
-  for (let segment of segments) {
-    const isCursorByteAligned = cursor % 8 === 0;
-    if (segment instanceof BitArray) {
-      if (isCursorByteAligned && segment.bitOffset === 0) {
-        buffer.set(segment.rawBuffer, cursor / 8);
-        cursor += segment.bitSize;
-        const trailingBitsCount = segment.bitSize % 8;
-        if (trailingBitsCount !== 0) {
-          const lastByteIndex = Math.trunc(cursor / 8);
-          buffer[lastByteIndex] >>= 8 - trailingBitsCount;
-          buffer[lastByteIndex] <<= 8 - trailingBitsCount;
-        }
-      } else {
-        appendUnalignedBits(
-          segment.rawBuffer,
-          segment.bitSize,
-          segment.bitOffset
-        );
-      }
-    } else if (segment instanceof Uint8Array) {
-      if (isCursorByteAligned) {
-        buffer.set(segment, cursor / 8);
-        cursor += segment.byteLength * 8;
-      } else {
-        appendUnalignedBits(segment, segment.byteLength * 8, 0);
-      }
-    } else {
-      if (isCursorByteAligned) {
-        buffer[cursor / 8] = segment;
-        cursor += 8;
-      } else {
-        appendUnalignedBits(new Uint8Array([segment]), 8, 0);
-      }
-    }
-  }
-  function appendUnalignedBits(unalignedBits, size, offset) {
-    if (size === 0) {
-      return;
-    }
-    const byteSize = Math.trunc(size + 7 / 8);
-    const highBitsCount = cursor % 8;
-    const lowBitsCount = 8 - highBitsCount;
-    let byteIndex = Math.trunc(cursor / 8);
-    for (let i = 0; i < byteSize; i++) {
-      let byte = bitArrayByteAt(unalignedBits, offset, i);
-      if (size < 8) {
-        byte >>= 8 - size;
-        byte <<= 8 - size;
-      }
-      buffer[byteIndex] |= byte >> highBitsCount;
-      let appendedBitsCount = size - Math.max(0, size - lowBitsCount);
-      size -= appendedBitsCount;
-      cursor += appendedBitsCount;
-      if (size === 0) {
-        break;
-      }
-      buffer[++byteIndex] = byte << lowBitsCount;
-      appendedBitsCount = size - Math.max(0, size - highBitsCount);
-      size -= appendedBitsCount;
-      cursor += appendedBitsCount;
-    }
-  }
-  return new BitArray(buffer, bitSize);
-}
-function sizedInt(value3, size, isBigEndian) {
-  if (size <= 0) {
-    return new Uint8Array();
-  }
-  if (size === 8) {
-    return new Uint8Array([value3]);
-  }
-  if (size < 8) {
-    value3 <<= 8 - size;
-    return new BitArray(new Uint8Array([value3]), size);
-  }
-  const buffer = new Uint8Array(Math.trunc((size + 7) / 8));
-  const trailingBitsCount = size % 8;
-  const unusedBitsCount = 8 - trailingBitsCount;
-  if (size <= 32) {
-    if (isBigEndian) {
-      let i = buffer.length - 1;
-      if (trailingBitsCount) {
-        buffer[i--] = value3 << unusedBitsCount & 255;
-        value3 >>= trailingBitsCount;
-      }
-      for (; i >= 0; i--) {
-        buffer[i] = value3;
-        value3 >>= 8;
-      }
-    } else {
-      let i = 0;
-      const wholeByteCount = Math.trunc(size / 8);
-      for (; i < wholeByteCount; i++) {
-        buffer[i] = value3;
-        value3 >>= 8;
-      }
-      if (trailingBitsCount) {
-        buffer[i] = value3 << unusedBitsCount;
-      }
-    }
-  } else {
-    const bigTrailingBitsCount = BigInt(trailingBitsCount);
-    const bigUnusedBitsCount = BigInt(unusedBitsCount);
-    let bigValue = BigInt(value3);
-    if (isBigEndian) {
-      let i = buffer.length - 1;
-      if (trailingBitsCount) {
-        buffer[i--] = Number(bigValue << bigUnusedBitsCount);
-        bigValue >>= bigTrailingBitsCount;
-      }
-      for (; i >= 0; i--) {
-        buffer[i] = Number(bigValue);
-        bigValue >>= 8n;
-      }
-    } else {
-      let i = 0;
-      const wholeByteCount = Math.trunc(size / 8);
-      for (; i < wholeByteCount; i++) {
-        buffer[i] = Number(bigValue);
-        bigValue >>= 8n;
-      }
-      if (trailingBitsCount) {
-        buffer[i] = Number(bigValue << bigUnusedBitsCount);
-      }
-    }
-  }
-  if (trailingBitsCount) {
-    return new BitArray(buffer, size);
-  }
-  return buffer;
-}
-function intFromAlignedSlice(bitArray, start3, end, isBigEndian, isSigned) {
-  const byteSize = end - start3;
-  if (byteSize <= 6) {
-    return intFromAlignedSliceUsingNumber(
-      bitArray.rawBuffer,
-      start3,
-      end,
-      isBigEndian,
-      isSigned
-    );
-  } else {
-    return intFromAlignedSliceUsingBigInt(
-      bitArray.rawBuffer,
-      start3,
-      end,
-      isBigEndian,
-      isSigned
-    );
-  }
-}
-function intFromAlignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
-  const byteSize = end - start3;
-  let value3 = 0;
-  if (isBigEndian) {
-    for (let i = start3; i < end; i++) {
-      value3 *= 256;
-      value3 += buffer[i];
-    }
-  } else {
-    for (let i = end - 1; i >= start3; i--) {
-      value3 *= 256;
-      value3 += buffer[i];
-    }
-  }
-  if (isSigned) {
-    const highBit = 2 ** (byteSize * 8 - 1);
-    if (value3 >= highBit) {
-      value3 -= highBit * 2;
-    }
-  }
-  return value3;
-}
-function intFromAlignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
-  const byteSize = end - start3;
-  let value3 = 0n;
-  if (isBigEndian) {
-    for (let i = start3; i < end; i++) {
-      value3 *= 256n;
-      value3 += BigInt(buffer[i]);
-    }
-  } else {
-    for (let i = end - 1; i >= start3; i--) {
-      value3 *= 256n;
-      value3 += BigInt(buffer[i]);
-    }
-  }
-  if (isSigned) {
-    const highBit = 1n << BigInt(byteSize * 8 - 1);
-    if (value3 >= highBit) {
-      value3 -= highBit * 2n;
-    }
-  }
-  return Number(value3);
-}
-function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
-  const isStartByteAligned = start3 % 8 === 0;
-  let size = end - start3;
-  let byteIndex = Math.trunc(start3 / 8);
-  let value3 = 0;
-  if (isBigEndian) {
-    if (!isStartByteAligned) {
-      const leadingBitsCount = 8 - start3 % 8;
-      value3 = buffer[byteIndex++] & (1 << leadingBitsCount) - 1;
-      size -= leadingBitsCount;
-    }
-    while (size >= 8) {
-      value3 *= 256;
-      value3 += buffer[byteIndex++];
-      size -= 8;
-    }
-    if (size > 0) {
-      value3 *= 2 ** size;
-      value3 += buffer[byteIndex] >> 8 - size;
-    }
-  } else {
-    if (isStartByteAligned) {
-      let size2 = end - start3;
-      let scale = 1;
-      while (size2 >= 8) {
-        value3 += buffer[byteIndex++] * scale;
-        scale *= 256;
-        size2 -= 8;
-      }
-      value3 += (buffer[byteIndex] >> 8 - size2) * scale;
-    } else {
-      const highBitsCount = start3 % 8;
-      const lowBitsCount = 8 - highBitsCount;
-      let size2 = end - start3;
-      let scale = 1;
-      while (size2 >= 8) {
-        const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
-        value3 += (byte & 255) * scale;
-        scale *= 256;
-        size2 -= 8;
-        byteIndex++;
-      }
-      if (size2 > 0) {
-        const lowBitsUsed = size2 - Math.max(0, size2 - lowBitsCount);
-        let trailingByte = (buffer[byteIndex] & (1 << lowBitsCount) - 1) >> lowBitsCount - lowBitsUsed;
-        size2 -= lowBitsUsed;
-        if (size2 > 0) {
-          trailingByte *= 2 ** size2;
-          trailingByte += buffer[byteIndex + 1] >> 8 - size2;
-        }
-        value3 += trailingByte * scale;
-      }
-    }
-  }
-  if (isSigned) {
-    const highBit = 2 ** (end - start3 - 1);
-    if (value3 >= highBit) {
-      value3 -= highBit * 2;
-    }
-  }
-  return value3;
-}
-function intFromUnalignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
-  const isStartByteAligned = start3 % 8 === 0;
-  let size = end - start3;
-  let byteIndex = Math.trunc(start3 / 8);
-  let value3 = 0n;
-  if (isBigEndian) {
-    if (!isStartByteAligned) {
-      const leadingBitsCount = 8 - start3 % 8;
-      value3 = BigInt(buffer[byteIndex++] & (1 << leadingBitsCount) - 1);
-      size -= leadingBitsCount;
-    }
-    while (size >= 8) {
-      value3 *= 256n;
-      value3 += BigInt(buffer[byteIndex++]);
-      size -= 8;
-    }
-    if (size > 0) {
-      value3 <<= BigInt(size);
-      value3 += BigInt(buffer[byteIndex] >> 8 - size);
-    }
-  } else {
-    if (isStartByteAligned) {
-      let size2 = end - start3;
-      let shift = 0n;
-      while (size2 >= 8) {
-        value3 += BigInt(buffer[byteIndex++]) << shift;
-        shift += 8n;
-        size2 -= 8;
-      }
-      value3 += BigInt(buffer[byteIndex] >> 8 - size2) << shift;
-    } else {
-      const highBitsCount = start3 % 8;
-      const lowBitsCount = 8 - highBitsCount;
-      let size2 = end - start3;
-      let shift = 0n;
-      while (size2 >= 8) {
-        const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
-        value3 += BigInt(byte & 255) << shift;
-        shift += 8n;
-        size2 -= 8;
-        byteIndex++;
-      }
-      if (size2 > 0) {
-        const lowBitsUsed = size2 - Math.max(0, size2 - lowBitsCount);
-        let trailingByte = (buffer[byteIndex] & (1 << lowBitsCount) - 1) >> lowBitsCount - lowBitsUsed;
-        size2 -= lowBitsUsed;
-        if (size2 > 0) {
-          trailingByte <<= size2;
-          trailingByte += buffer[byteIndex + 1] >> 8 - size2;
-        }
-        value3 += BigInt(trailingByte) << shift;
-      }
-    }
-  }
-  if (isSigned) {
-    const highBit = 2n ** BigInt(end - start3 - 1);
-    if (value3 >= highBit) {
-      value3 -= highBit * 2n;
-    }
-  }
-  return Number(value3);
-}
-function bitArrayValidateRange(bitArray, start3, end) {
-  if (start3 < 0 || start3 > bitArray.bitSize || end < start3 || end > bitArray.bitSize) {
-    const msg = `Invalid bit array slice: start = ${start3}, end = ${end}, bit size = ${bitArray.bitSize}`;
-    throw new globalThis.Error(msg);
-  }
-}
 var Result = class _Result extends CustomType {
   // @internal
   static isResult(data) {
@@ -728,7 +288,7 @@ var Ok = class extends Result {
     return true;
   }
 };
-var Error2 = class extends Result {
+var Error = class extends Result {
   constructor(detail) {
     super();
     this[0] = detail;
@@ -848,7 +408,7 @@ function to_result(option2, e) {
     let a2 = option2[0];
     return new Ok(a2);
   } else {
-    return new Error2(e);
+    return new Error(e);
   }
 }
 function from_result(result) {
@@ -886,7 +446,7 @@ function flatten(option2) {
 
 // build/dev/javascript/gleam_stdlib/gleam/dict.mjs
 function do_has_key(key, dict3) {
-  return !isEqual(map_get(dict3, key), new Error2(void 0));
+  return !isEqual(map_get(dict3, key), new Error(void 0));
 }
 function has_key(dict3, key) {
   return do_has_key(key, dict3);
@@ -1192,7 +752,7 @@ function find(loop$list, loop$is_desired) {
     let list3 = loop$list;
     let is_desired = loop$is_desired;
     if (list3.hasLength(0)) {
-      return new Error2(void 0);
+      return new Error(void 0);
     } else {
       let first$1 = list3.head;
       let rest$1 = list3.tail;
@@ -1589,7 +1149,7 @@ function map3(result, fun) {
     return new Ok(fun(x));
   } else {
     let e = result[0];
-    return new Error2(e);
+    return new Error(e);
   }
 }
 function map_error(result, fun) {
@@ -1598,7 +1158,7 @@ function map_error(result, fun) {
     return new Ok(x);
   } else {
     let error = result[0];
-    return new Error2(fun(error));
+    return new Error(fun(error));
   }
 }
 function try$(result, fun) {
@@ -1607,7 +1167,7 @@ function try$(result, fun) {
     return fun(x);
   } else {
     let e = result[0];
-    return new Error2(e);
+    return new Error(e);
   }
 }
 function then$(result, fun) {
@@ -1656,7 +1216,7 @@ function bool(data) {
 function do_any(decoders) {
   return (data) => {
     if (decoders.hasLength(0)) {
-      return new Error2(
+      return new Error(
         toList([new DecodeError("another type", classify_dynamic(data), toList([]))])
       );
     } else {
@@ -1731,23 +1291,23 @@ function hashByReference(o) {
   if (known !== void 0) {
     return known;
   }
-  const hash2 = referenceUID++;
+  const hash = referenceUID++;
   if (referenceUID === 2147483647) {
     referenceUID = 0;
   }
-  referenceMap.set(o, hash2);
-  return hash2;
+  referenceMap.set(o, hash);
+  return hash;
 }
 function hashMerge(a2, b) {
   return a2 ^ b + 2654435769 + (a2 << 6) + (a2 >> 2) | 0;
 }
 function hashString(s) {
-  let hash2 = 0;
+  let hash = 0;
   const len = s.length;
   for (let i = 0; i < len; i++) {
-    hash2 = Math.imul(31, hash2) + s.charCodeAt(i) | 0;
+    hash = Math.imul(31, hash) + s.charCodeAt(i) | 0;
   }
-  return hash2;
+  return hash;
 }
 function hashNumber(n) {
   tempDataView.setFloat64(0, n);
@@ -1837,11 +1397,11 @@ var EMPTY = {
   bitmap: 0,
   array: []
 };
-function mask(hash2, shift) {
-  return hash2 >>> shift & MASK;
+function mask(hash, shift) {
+  return hash >>> shift & MASK;
 }
-function bitpos(hash2, shift) {
-  return 1 << mask(hash2, shift);
+function bitpos(hash, shift) {
+  return 1 << mask(hash, shift);
 }
 function bitcount(x) {
   x -= x >> 1 & 1431655765;
@@ -1913,18 +1473,18 @@ function createNode(shift, key1, val1, key2hash, key2, val2) {
     addedLeaf
   );
 }
-function assoc(root, shift, hash2, key, val, addedLeaf) {
+function assoc(root, shift, hash, key, val, addedLeaf) {
   switch (root.type) {
     case ARRAY_NODE:
-      return assocArray(root, shift, hash2, key, val, addedLeaf);
+      return assocArray(root, shift, hash, key, val, addedLeaf);
     case INDEX_NODE:
-      return assocIndex(root, shift, hash2, key, val, addedLeaf);
+      return assocIndex(root, shift, hash, key, val, addedLeaf);
     case COLLISION_NODE:
-      return assocCollision(root, shift, hash2, key, val, addedLeaf);
+      return assocCollision(root, shift, hash, key, val, addedLeaf);
   }
 }
-function assocArray(root, shift, hash2, key, val, addedLeaf) {
-  const idx = mask(hash2, shift);
+function assocArray(root, shift, hash, key, val, addedLeaf) {
+  const idx = mask(hash, shift);
   const node = root.array[idx];
   if (node === void 0) {
     addedLeaf.val = true;
@@ -1956,11 +1516,11 @@ function assocArray(root, shift, hash2, key, val, addedLeaf) {
       array: cloneAndSet(
         root.array,
         idx,
-        createNode(shift + SHIFT, node.k, node.v, hash2, key, val)
+        createNode(shift + SHIFT, node.k, node.v, hash, key, val)
       )
     };
   }
-  const n = assoc(node, shift + SHIFT, hash2, key, val, addedLeaf);
+  const n = assoc(node, shift + SHIFT, hash, key, val, addedLeaf);
   if (n === node) {
     return root;
   }
@@ -1970,13 +1530,13 @@ function assocArray(root, shift, hash2, key, val, addedLeaf) {
     array: cloneAndSet(root.array, idx, n)
   };
 }
-function assocIndex(root, shift, hash2, key, val, addedLeaf) {
-  const bit = bitpos(hash2, shift);
+function assocIndex(root, shift, hash, key, val, addedLeaf) {
+  const bit = bitpos(hash, shift);
   const idx = index(root.bitmap, bit);
   if ((root.bitmap & bit) !== 0) {
     const node = root.array[idx];
     if (node.type !== ENTRY) {
-      const n = assoc(node, shift + SHIFT, hash2, key, val, addedLeaf);
+      const n = assoc(node, shift + SHIFT, hash, key, val, addedLeaf);
       if (n === node) {
         return root;
       }
@@ -2008,15 +1568,15 @@ function assocIndex(root, shift, hash2, key, val, addedLeaf) {
       array: cloneAndSet(
         root.array,
         idx,
-        createNode(shift + SHIFT, nodeKey, node.v, hash2, key, val)
+        createNode(shift + SHIFT, nodeKey, node.v, hash, key, val)
       )
     };
   } else {
     const n = root.array.length;
     if (n >= MAX_INDEX_NODE) {
       const nodes = new Array(32);
-      const jdx = mask(hash2, shift);
-      nodes[jdx] = assocIndex(EMPTY, shift + SHIFT, hash2, key, val, addedLeaf);
+      const jdx = mask(hash, shift);
+      nodes[jdx] = assocIndex(EMPTY, shift + SHIFT, hash, key, val, addedLeaf);
       let j = 0;
       let bitmap = root.bitmap;
       for (let i = 0; i < 32; i++) {
@@ -2046,8 +1606,8 @@ function assocIndex(root, shift, hash2, key, val, addedLeaf) {
     }
   }
 }
-function assocCollision(root, shift, hash2, key, val, addedLeaf) {
-  if (hash2 === root.hash) {
+function assocCollision(root, shift, hash, key, val, addedLeaf) {
+  if (hash === root.hash) {
     const idx = collisionIndexOf(root, key);
     if (idx !== -1) {
       const entry = root.array[idx];
@@ -2056,7 +1616,7 @@ function assocCollision(root, shift, hash2, key, val, addedLeaf) {
       }
       return {
         type: COLLISION_NODE,
-        hash: hash2,
+        hash,
         array: cloneAndSet(root.array, idx, { type: ENTRY, k: key, v: val })
       };
     }
@@ -2064,7 +1624,7 @@ function assocCollision(root, shift, hash2, key, val, addedLeaf) {
     addedLeaf.val = true;
     return {
       type: COLLISION_NODE,
-      hash: hash2,
+      hash,
       array: cloneAndSet(root.array, size, { type: ENTRY, k: key, v: val })
     };
   }
@@ -2075,7 +1635,7 @@ function assocCollision(root, shift, hash2, key, val, addedLeaf) {
       array: [root]
     },
     shift,
-    hash2,
+    hash,
     key,
     val,
     addedLeaf
@@ -2090,39 +1650,39 @@ function collisionIndexOf(root, key) {
   }
   return -1;
 }
-function find2(root, shift, hash2, key) {
+function find2(root, shift, hash, key) {
   switch (root.type) {
     case ARRAY_NODE:
-      return findArray(root, shift, hash2, key);
+      return findArray(root, shift, hash, key);
     case INDEX_NODE:
-      return findIndex(root, shift, hash2, key);
+      return findIndex(root, shift, hash, key);
     case COLLISION_NODE:
       return findCollision(root, key);
   }
 }
-function findArray(root, shift, hash2, key) {
-  const idx = mask(hash2, shift);
+function findArray(root, shift, hash, key) {
+  const idx = mask(hash, shift);
   const node = root.array[idx];
   if (node === void 0) {
     return void 0;
   }
   if (node.type !== ENTRY) {
-    return find2(node, shift + SHIFT, hash2, key);
+    return find2(node, shift + SHIFT, hash, key);
   }
   if (isEqual(key, node.k)) {
     return node;
   }
   return void 0;
 }
-function findIndex(root, shift, hash2, key) {
-  const bit = bitpos(hash2, shift);
+function findIndex(root, shift, hash, key) {
+  const bit = bitpos(hash, shift);
   if ((root.bitmap & bit) === 0) {
     return void 0;
   }
   const idx = index(root.bitmap, bit);
   const node = root.array[idx];
   if (node.type !== ENTRY) {
-    return find2(node, shift + SHIFT, hash2, key);
+    return find2(node, shift + SHIFT, hash, key);
   }
   if (isEqual(key, node.k)) {
     return node;
@@ -2136,18 +1696,18 @@ function findCollision(root, key) {
   }
   return root.array[idx];
 }
-function without(root, shift, hash2, key) {
+function without(root, shift, hash, key) {
   switch (root.type) {
     case ARRAY_NODE:
-      return withoutArray(root, shift, hash2, key);
+      return withoutArray(root, shift, hash, key);
     case INDEX_NODE:
-      return withoutIndex(root, shift, hash2, key);
+      return withoutIndex(root, shift, hash, key);
     case COLLISION_NODE:
       return withoutCollision(root, key);
   }
 }
-function withoutArray(root, shift, hash2, key) {
-  const idx = mask(hash2, shift);
+function withoutArray(root, shift, hash, key) {
+  const idx = mask(hash, shift);
   const node = root.array[idx];
   if (node === void 0) {
     return root;
@@ -2158,7 +1718,7 @@ function withoutArray(root, shift, hash2, key) {
       return root;
     }
   } else {
-    n = without(node, shift + SHIFT, hash2, key);
+    n = without(node, shift + SHIFT, hash, key);
     if (n === node) {
       return root;
     }
@@ -2207,15 +1767,15 @@ function withoutArray(root, shift, hash2, key) {
     array: cloneAndSet(root.array, idx, n)
   };
 }
-function withoutIndex(root, shift, hash2, key) {
-  const bit = bitpos(hash2, shift);
+function withoutIndex(root, shift, hash, key) {
+  const bit = bitpos(hash, shift);
   if ((root.bitmap & bit) === 0) {
     return root;
   }
   const idx = index(root.bitmap, bit);
   const node = root.array[idx];
   if (node.type !== ENTRY) {
-    const n = without(node, shift + SHIFT, hash2, key);
+    const n = without(node, shift + SHIFT, hash, key);
     if (n === node) {
       return root;
     }
@@ -2434,7 +1994,7 @@ function parse_int(value3) {
   if (/^[-+]?(\d+)$/.test(value3)) {
     return new Ok(parseInt(value3));
   } else {
-    return new Error2(Nil);
+    return new Error(Nil);
   }
 }
 function to_string(term) {
@@ -2507,7 +2067,7 @@ function pop_grapheme(string5) {
   if (first2) {
     return new Ok([first2, string5.slice(first2.length)]);
   } else {
-    return new Error2(Nil);
+    return new Error(Nil);
   }
 }
 function pop_codeunit(str) {
@@ -2587,8 +2147,21 @@ function print_debug(string5) {
     console.log(string5);
   }
 }
+function floor(float4) {
+  return Math.floor(float4);
+}
+function round2(float4) {
+  return Math.round(float4);
+}
 function truncate(float4) {
   return Math.trunc(float4);
+}
+function random_uniform() {
+  const random_uniform_result = Math.random();
+  if (random_uniform_result === 1) {
+    return random_uniform();
+  }
+  return random_uniform_result;
 }
 function new_map() {
   return Dict.new();
@@ -2599,7 +2172,7 @@ function map_to_list(map8) {
 function map_get(map8, key) {
   const value3 = map8.get(key, NOT_FOUND);
   if (value3 === NOT_FOUND) {
-    return new Error2(Nil);
+    return new Error(Nil);
   }
   return new Ok(value3);
 }
@@ -2638,7 +2211,7 @@ function decoder_error(expected, got) {
   return decoder_error_no_classify(expected, classify_dynamic(got));
 }
 function decoder_error_no_classify(expected, got) {
-  return new Error2(
+  return new Error(
     List.fromArray([new DecodeError(expected, got, List.fromArray([]))])
   );
 }
@@ -2670,6 +2243,12 @@ function try_get_field(value3, field4, or_else) {
   } catch {
     return or_else();
   }
+}
+function bitwise_and(x, y) {
+  return Number(BigInt(x) & BigInt(y));
+}
+function bitwise_or(x, y) {
+  return Number(BigInt(x) | BigInt(y));
 }
 function inspect(v) {
   const t = typeof v;
@@ -2782,6 +2361,19 @@ function bit_array_inspect(bits, acc) {
   return acc;
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/float.mjs
+function negate(x) {
+  return -1 * x;
+}
+function round(x) {
+  let $ = x >= 0;
+  if ($) {
+    return round2(x);
+  } else {
+    return 0 - round2(negate(x));
+  }
+}
+
 // build/dev/javascript/gleam_stdlib/gleam/int.mjs
 function absolute_value(x) {
   let $ = x >= 0;
@@ -2828,9 +2420,14 @@ function clamp(x, min_bound, max_bound) {
   let _pipe$1 = min(_pipe, max_bound);
   return max(_pipe$1, min_bound);
 }
+function random(max2) {
+  let _pipe = random_uniform() * identity(max2);
+  let _pipe$1 = floor(_pipe);
+  return round(_pipe$1);
+}
 function divide(dividend, divisor) {
   if (divisor === 0) {
-    return new Error2(void 0);
+    return new Error(void 0);
   } else {
     let divisor$1 = divisor;
     return new Ok(divideInt(dividend, divisor$1));
@@ -2961,13 +2558,13 @@ function index2(data, key) {
       if (i === key) return new Ok(new Some(value3));
       i++;
     }
-    return new Error2("Indexable");
+    return new Error("Indexable");
   }
   if (key_is_int && Array.isArray(data) || data && typeof data === "object" || data && Object.getPrototypeOf(data) === Object.prototype) {
     if (key in data) return new Ok(new Some(data[key]));
     return new Ok(new None());
   }
-  return new Error2(key_is_int ? "Indexable" : "Dict");
+  return new Error(key_is_int ? "Indexable" : "Dict");
 }
 function list(data, decode2, pushPath, index5, emptyList) {
   if (!(data instanceof List || Array.isArray(data))) {
@@ -2995,24 +2592,24 @@ function dict(data) {
     return new Ok(Dict.fromMap(data));
   }
   if (data == null) {
-    return new Error2("Dict");
+    return new Error("Dict");
   }
   if (typeof data !== "object") {
-    return new Error2("Dict");
+    return new Error("Dict");
   }
   const proto = Object.getPrototypeOf(data);
   if (proto === Object.prototype || proto === null) {
     return new Ok(Dict.fromObject(data));
   }
-  return new Error2("Dict");
+  return new Error("Dict");
 }
 function int(data) {
   if (Number.isInteger(data)) return new Ok(data);
-  return new Error2(0);
+  return new Error(0);
 }
 function string2(data) {
   if (typeof data === "string") return new Ok(data);
-  return new Error2(0);
+  return new Error(0);
 }
 function is_null(data) {
   return data === null || data === void 0;
@@ -3040,7 +2637,7 @@ function run(data, decoder) {
   if (errors.hasLength(0)) {
     return new Ok(maybe_invalid_data);
   } else {
-    return new Error2(errors);
+    return new Error(errors);
   }
 }
 function success(data) {
@@ -3328,7 +2925,7 @@ function decode(string5) {
     const result = JSON.parse(string5);
     return new Ok(result);
   } catch (err) {
-    return new Error2(getJsonDecodeError(err, string5));
+    return new Error(getJsonDecodeError(err, string5));
   }
 }
 function getJsonDecodeError(stdErr, json) {
@@ -3491,7 +3088,7 @@ function compile(pattern, options) {
     return new Ok(new RegExp(pattern, flags));
   } catch (error) {
     const number = (error.columnNumber || 0) | 0;
-    return new Error2(new CompileError(error.message, number));
+    return new Error(new CompileError(error.message, number));
   }
 }
 
@@ -3681,9 +3278,9 @@ function do_run(loop$lexer, loop$mode, loop$state) {
       let lexeme = $1[2];
       let $2 = do_match(mode, lexeme, "", matchers);
       if ($2 instanceof NoMatch) {
-        return new Error2(new NoMatchFound(start_row, start_col, lexeme));
+        return new Error(new NoMatchFound(start_row, start_col, lexeme));
       } else if ($2 instanceof Skip) {
-        return new Error2(new NoMatchFound(start_row, start_col, lexeme));
+        return new Error(new NoMatchFound(start_row, start_col, lexeme));
       } else if ($2 instanceof Drop) {
         return new Ok(reverse(state.tokens));
       } else {
@@ -3778,7 +3375,7 @@ function get2(array3, index5) {
   if ($) {
     return new Ok(get(array3, index5));
   } else {
-    return new Error2(void 0);
+    return new Error(void 0);
   }
 }
 
@@ -4104,7 +3701,7 @@ function run3(src, parser3) {
     return new Ok(a2);
   } else {
     let bag = $[1];
-    return new Error2(to_deadends(bag, toList([])));
+    return new Error(to_deadends(bag, toList([])));
   }
 }
 function add_bag_to_step(step, left) {
@@ -4468,7 +4065,7 @@ function from_string2(str) {
           if ($) {
             return new Ok(new Alpha(lexeme));
           } else {
-            return new Error2(void 0);
+            return new Error(void 0);
           }
         }
       ),
@@ -4490,7 +4087,7 @@ function from_string2(str) {
       keep(
         (lexeme, _) => {
           if (lexeme === "") {
-            return new Error2(void 0);
+            return new Error(void 0);
           } else {
             return new Ok(new Text(lexeme));
           }
@@ -5443,7 +5040,7 @@ function from_ordinal_parts(year2, ordinal) {
   })();
   let $ = !is_between_int(ordinal, 1, days_in_year);
   if ($) {
-    return new Error2(
+    return new Error(
       "Invalid ordinal date: " + ("ordinal-day " + to_string(ordinal) + " is out of range") + (" (1 to " + to_string(
         days_in_year
       ) + ")") + (" for " + to_string(year2)) + ("; received (year " + to_string(
@@ -5466,7 +5063,7 @@ function from_week_parts(week_year2, week_number2, weekday_number2) {
   let $ = is_between_int(week_number2, 1, weeks_in_year);
   let $1 = is_between_int(weekday_number2, 1, 7);
   if (!$) {
-    return new Error2(
+    return new Error(
       "Invalid week date: " + ("week " + to_string(week_number2) + " is out of range") + (" (1 to " + to_string(
         weeks_in_year
       ) + ")") + (" for " + to_string(week_year2)) + ("; received (year " + to_string(
@@ -5476,7 +5073,7 @@ function from_week_parts(week_year2, week_number2, weekday_number2) {
       ) + ")")
     );
   } else if ($ && !$1) {
-    return new Error2(
+    return new Error(
       "Invalid week date: " + ("weekday " + to_string(weekday_number2) + " is out of range") + " (1 to 7)" + ("; received (year " + to_string(
         week_year2
       ) + ", week " + to_string(week_number2) + ", weekday " + to_string(
@@ -5638,7 +5235,7 @@ function from_calendar_parts(year2, month_number2, day2) {
     days_in_month(year2, number_to_month(month_number2))
   );
   if (!$) {
-    return new Error2(
+    return new Error(
       "Invalid date: " + ("month " + to_string(month_number2) + " is out of range") + " (1 to 12)" + ("; received (year " + to_string(
         year2
       ) + ", month " + to_string(month_number2) + ", day " + to_string(
@@ -5646,7 +5243,7 @@ function from_calendar_parts(year2, month_number2, day2) {
       ) + ")")
     );
   } else if ($ && !$1) {
-    return new Error2(
+    return new Error(
       "Invalid date: " + ("day " + to_string(day2) + " is out of range") + (" (1 to " + to_string(
         days_in_month(year2, number_to_month(month_number2))
       ) + ")") + (" for " + (() => {
@@ -5739,12 +5336,12 @@ function from_iso_string(str) {
                   _pipe$1,
                   (_) => {
                     return succeed(
-                      new Error2("Expected a date only, not a date and time")
+                      new Error("Expected a date only, not a date and time")
                     );
                   }
                 );
               })(),
-              succeed(new Error2("Expected a date only"))
+              succeed(new Error("Expected a date only"))
             ])
           );
         }
@@ -5756,9 +5353,9 @@ function from_iso_string(str) {
     return new Ok(value3);
   } else if (result.isOk() && !result[0].isOk()) {
     let err = result[0][0];
-    return new Error2(err);
+    return new Error(err);
   } else {
-    return new Error2("Expected a date in ISO 8601 format");
+    return new Error("Expected a date in ISO 8601 format");
   }
 }
 function today() {
@@ -6403,7 +6000,7 @@ var Event = class extends CustomType {
 };
 function attribute_to_event_handler(attribute2) {
   if (attribute2 instanceof Attribute) {
-    return new Error2(void 0);
+    return new Error(void 0);
   } else {
     let name = attribute2[0];
     let handler = attribute2[1];
@@ -6937,9 +6534,9 @@ var LustreClientApplication = class _LustreClientApplication {
    * @returns {Gleam.Ok<(action: Lustre.Action<Lustre.Client, Msg>>) => void>}
    */
   static start({ init: init4, update: update2, view: view2 }, selector, flags) {
-    if (!is_browser()) return new Error2(new NotABrowser());
+    if (!is_browser()) return new Error(new NotABrowser());
     const root = selector instanceof HTMLElement ? selector : document.querySelector(selector);
-    if (!root) return new Error2(new ElementNotFound(selector));
+    if (!root) return new Error(new ElementNotFound(selector));
     const app = new _LustreClientApplication(root, init4(flags), update2, view2);
     return new Ok((action) => app.send(action));
   }
@@ -7095,7 +6692,7 @@ var LustreServerApplication = class _LustreServerApplication {
         const decoder = this.#onAttributeChange.get(attr[0]);
         if (!decoder) continue;
         const msg = decoder(attr[1]);
-        if (msg instanceof Error2) continue;
+        if (msg instanceof Error) continue;
         this.#queue.push(msg);
       }
       this.#tick();
@@ -7115,7 +6712,7 @@ var LustreServerApplication = class _LustreServerApplication {
       const handler = this.#handlers.get(action[0]);
       if (!handler) return;
       const msg = handler(action[1]);
-      if (msg instanceof Error2) return;
+      if (msg instanceof Error) return;
       this.#queue.push(msg[0]);
       this.#tick();
     } else if (action instanceof Subscribe) {
@@ -7202,7 +6799,7 @@ function application(init4, update2, view2) {
 function start2(app, selector, flags) {
   return guard(
     !is_browser(),
-    new Error2(new NotABrowser()),
+    new Error(new NotABrowser()),
     () => {
       return start(app, selector, flags);
     }
@@ -7475,7 +7072,7 @@ function parse_port_loop(loop$uri_string, loop$pieces, loop$port) {
         })()
       );
     } else {
-      return new Error2(void 0);
+      return new Error(void 0);
     }
   }
 }
@@ -7511,7 +7108,7 @@ function parse_port(uri_string, pieces) {
     let rest = uri_string.slice(2);
     return parse_port_loop(rest, pieces, 9);
   } else if (uri_string.startsWith(":")) {
-    return new Error2(void 0);
+    return new Error(void 0);
   } else if (uri_string.startsWith("?")) {
     let rest = uri_string.slice(1);
     return parse_query_with_question_mark(rest, pieces);
@@ -7523,7 +7120,7 @@ function parse_port(uri_string, pieces) {
   } else if (uri_string === "") {
     return new Ok(pieces);
   } else {
-    return new Error2(void 0);
+    return new Error(void 0);
   }
 }
 function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
@@ -7908,7 +7505,7 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
       })();
       return parse_fragment(rest, pieces$1);
     } else if (uri_string.startsWith(":") && size === 0) {
-      return new Error2(void 0);
+      return new Error(void 0);
     } else if (uri_string.startsWith(":")) {
       let rest = uri_string.slice(1);
       let scheme = string_codeunit_slice(original, 0, size);
@@ -8083,7 +7680,7 @@ var defaults = {
 var initial_location = globalThis?.window?.location?.href;
 var do_initial_uri = () => {
   if (!initial_location) {
-    return new Error2(void 0);
+    return new Error(void 0);
   } else {
     return new Ok(uri_from_url(new URL(initial_location)));
   }
@@ -8240,7 +7837,7 @@ function scheme_from_string(scheme) {
   } else if ($ === "https") {
     return new Ok(new Https());
   } else {
-    return new Error2(void 0);
+    return new Error(void 0);
   }
 }
 
@@ -8400,7 +7997,7 @@ function try_await(promise, callback) {
         return callback(a2);
       } else {
         let e = result[0];
-        return resolve(new Error2(e));
+        return resolve(new Error(e));
       }
     }
   );
@@ -8411,7 +8008,7 @@ async function raw_send(request) {
   try {
     return new Ok(await fetch(request));
   } catch (error) {
-    return new Error2(new NetworkError(error.toString()));
+    return new Error(new NetworkError(error.toString()));
   }
 }
 function from_fetch_response(response) {
@@ -8441,7 +8038,7 @@ async function read_text_body(response) {
   try {
     body = await response.body.text();
   } catch (error) {
-    return new Error2(new UnableToReadBody());
+    return new Error(new UnableToReadBody());
   }
   return new Ok(response.withFields({ body }));
 }
@@ -8515,14 +8112,14 @@ function do_send(req, expect, dispatch) {
         let res = response[0];
         return expect.run(new Ok(res));
       } else {
-        return expect.run(new Error2(new NetworkError2()));
+        return expect.run(new Error(new NetworkError2()));
       }
     }
   );
   let _pipe$3 = rescue(
     _pipe$2,
     (_) => {
-      return expect.run(new Error2(new NetworkError2()));
+      return expect.run(new Error(new NetworkError2()));
     }
   );
   tap(_pipe$3, dispatch);
@@ -8536,7 +8133,7 @@ function get3(url, expect) {
         let req = $[0];
         return do_send(req, expect, dispatch);
       } else {
-        return dispatch(expect.run(new Error2(new BadUrl(url))));
+        return dispatch(expect.run(new Error(new BadUrl(url))));
       }
     }
   );
@@ -8557,7 +8154,7 @@ function post(url, body, expect) {
         let _pipe$3 = set_body(_pipe$2, to_string2(body));
         return do_send(_pipe$3, expect, dispatch);
       } else {
-        return dispatch(expect.run(new Error2(new BadUrl(url))));
+        return dispatch(expect.run(new Error(new BadUrl(url))));
       }
     }
   );
@@ -8573,16 +8170,16 @@ function response_to_result(response) {
     let body = response.body;
     return new Ok(body);
   } else if (response instanceof Response && response.status === 401) {
-    return new Error2(new Unauthorized());
+    return new Error(new Unauthorized());
   } else if (response instanceof Response && response.status === 404) {
-    return new Error2(new NotFound());
+    return new Error(new NotFound());
   } else if (response instanceof Response && response.status === 500) {
     let body = response.body;
-    return new Error2(new InternalServerError(body));
+    return new Error(new InternalServerError(body));
   } else {
     let code = response.status;
     let body = response.body;
-    return new Error2(new OtherError(code, body));
+    return new Error(new OtherError(code, body));
   }
 }
 function expect_json(decoder, to_msg) {
@@ -8599,7 +8196,7 @@ function expect_json(decoder, to_msg) {
             return new Ok(json);
           } else {
             let json_error = $[0];
-            return new Error2(new JsonError(json_error));
+            return new Error(new JsonError(json_error));
           }
         }
       );
@@ -8607,127 +8204,6 @@ function expect_json(decoder, to_msg) {
     }
   );
 }
-
-// build/dev/javascript/gleam_crypto/gleam_crypto_ffi.mjs
-import * as crypto from "node:crypto";
-function webCrypto() {
-  if (!globalThis.crypto?.getRandomValues) {
-    throw new Error("WebCrypto API not supported on this JavaScript runtime");
-  }
-  return globalThis.crypto;
-}
-function strongRandomBytes(n) {
-  const array3 = new Uint8Array(n);
-  webCrypto().getRandomValues(array3);
-  return new BitArray(array3);
-}
-
-// build/dev/javascript/youid/youid/uuid.mjs
-var Uuid = class extends CustomType {
-  constructor(value3) {
-    super();
-    this.value = value3;
-  }
-};
-var String2 = class extends CustomType {
-};
-var Urn = class extends CustomType {
-};
-function to_string_help(loop$ints, loop$position, loop$acc, loop$separator) {
-  while (true) {
-    let ints = loop$ints;
-    let position = loop$position;
-    let acc = loop$acc;
-    let separator = loop$separator;
-    if (position === 8) {
-      loop$ints = ints;
-      loop$position = position + 1;
-      loop$acc = acc + separator;
-      loop$separator = separator;
-    } else if (position === 13) {
-      loop$ints = ints;
-      loop$position = position + 1;
-      loop$acc = acc + separator;
-      loop$separator = separator;
-    } else if (position === 18) {
-      loop$ints = ints;
-      loop$position = position + 1;
-      loop$acc = acc + separator;
-      loop$separator = separator;
-    } else if (position === 23) {
-      loop$ints = ints;
-      loop$position = position + 1;
-      loop$acc = acc + separator;
-      loop$separator = separator;
-    } else {
-      if (ints.bitSize >= 4) {
-        let i = bitArraySliceToInt(ints, 0, 4, true, false);
-        let rest = bitArraySlice(ints, 4);
-        let string5 = (() => {
-          let _pipe = to_base16(i);
-          return lowercase(_pipe);
-        })();
-        loop$ints = rest;
-        loop$position = position + 1;
-        loop$acc = acc + string5;
-        loop$separator = separator;
-      } else {
-        return acc;
-      }
-    }
-  }
-}
-var rfc_variant = 2;
-var urn_id = "urn:uuid:";
-function format2(uuid, format3) {
-  let separator = (() => {
-    if (format3 instanceof String2) {
-      return "-";
-    } else {
-      return "";
-    }
-  })();
-  let start3 = (() => {
-    if (format3 instanceof Urn) {
-      return urn_id;
-    } else {
-      return "";
-    }
-  })();
-  return to_string_help(uuid.value, 0, start3, separator);
-}
-var v4_version = 4;
-function v4() {
-  let $ = strongRandomBytes(16);
-  if (!($.bitSize == 128)) {
-    throw makeError(
-      "let_assert",
-      "youid/uuid",
-      256,
-      "v4",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let a2 = bitArraySliceToInt($, 0, 48, true, false);
-  let b = bitArraySliceToInt($, 52, 64, true, false);
-  let c = bitArraySliceToInt($, 66, 128, true, false);
-  let value3 = toBitArray([
-    sizedInt(a2, 48, true),
-    sizedInt(v4_version, 4, true),
-    sizedInt(b, 12, true),
-    sizedInt(rfc_variant, 2, true),
-    sizedInt(c, 62, true)
-  ]);
-  return new Uuid(value3);
-}
-function v4_string() {
-  let _pipe = v4();
-  return format2(_pipe, new String2());
-}
-var nil = /* @__PURE__ */ new Uuid(
-  /* @__PURE__ */ toBitArray([sizedInt(0, 128, true)])
-);
 
 // build/dev/javascript/budget_fe/budget_fe/internals/msg.mjs
 var Home = class extends CustomType {
@@ -9238,7 +8714,7 @@ var Ok2 = class extends Result2 {
     return true;
   }
 };
-var Error3 = class extends Result2 {
+var Error2 = class extends Result2 {
   constructor(detail) {
     super();
     this[0] = detail;
@@ -9252,7 +8728,7 @@ var Error3 = class extends Result2 {
 // build/dev/javascript/budget_fe/budget_fe/internals/app.ffi.mjs
 function read_localstorage(key) {
   const value3 = window.localStorage.getItem(key);
-  return value3 ? new Ok2(value3) : new Error3(void 0);
+  return value3 ? new Ok2(value3) : new Error2(void 0);
 }
 function write_localstorage(key, value3) {
   window.localStorage.setItem(key, value3);
@@ -9288,6 +8764,41 @@ function select_category_eff() {
       return dispatch(_pipe);
     }
   );
+}
+function format_uuid(src) {
+  return slice(src, 0, 8) + "-" + slice(src, 8, 4) + "-" + slice(
+    src,
+    12,
+    4
+  ) + "-" + slice(src, 16, 4) + "-" + slice(src, 20, 12);
+}
+function guidv4() {
+  let a2 = (() => {
+    let _pipe = random(4294967295);
+    let _pipe$1 = to_base16(_pipe);
+    return pad_start(_pipe$1, 8, "0");
+  })();
+  let b = (() => {
+    let _pipe = random(4294967295);
+    let _pipe$1 = bitwise_and(_pipe, 1073741823);
+    let _pipe$2 = bitwise_or(_pipe$1, 2147483648);
+    let _pipe$3 = to_base16(_pipe$2);
+    return pad_start(_pipe$3, 8, "0");
+  })();
+  let c = (() => {
+    let _pipe = random(4294967295);
+    let _pipe$1 = bitwise_and(_pipe, 1073741823);
+    let _pipe$2 = bitwise_or(_pipe$1, 2147483648);
+    let _pipe$3 = to_base16(_pipe$2);
+    return pad_start(_pipe$3, 8, "0");
+  })();
+  let d = (() => {
+    let _pipe = random(4294967295);
+    let _pipe$1 = to_base16(_pipe);
+    return pad_start(_pipe$1, 8, "0");
+  })();
+  let concatened = a2 + b + c + d;
+  return format_uuid(concatened);
 }
 function read_localstorage2(key) {
   return from(
@@ -9336,7 +8847,7 @@ function initial_eff() {
 function add_transaction_eff(transaction_form, amount, cat, current_user) {
   let url = root_url() + "transaction/add";
   let a2 = new Transaction(
-    v4_string(),
+    guidv4(),
     (() => {
       let _pipe = transaction_form.date;
       let _pipe$1 = from_date_string(_pipe);
@@ -10163,7 +9674,7 @@ function ready_to_assign_money(transactions, allocations, cycle, categories) {
         if ($) {
           return new Ok(c.id);
         } else {
-          return new Error2("");
+          return new Error("");
         }
       }
     );
@@ -10194,7 +9705,7 @@ function ready_to_assign_money(transactions, allocations, cycle, categories) {
         if ($) {
           return new Ok(a2.amount);
         } else {
-          return new Error2("");
+          return new Error("");
         }
       }
     );
