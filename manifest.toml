@@ -3,7 +3,7 @@
 
 packages = [
   { name = "argv", version = "1.0.2", build_tools = ["gleam"], requirements = [], otp_app = "argv", source = "hex", outer_checksum = "BA1FF0929525DEBA1CE67256E5ADF77A7CDDFE729E3E3F57A5BDCAA031DED09D" },
-  { name = "budget_shared", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_json", "gleam_stdlib", "rada"], source = "local", path = "../budget_shared" },
+  { name = "budget_shared", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_json", "gleam_stdlib", "rada"], source = "git", repo = "https://github.com/sgrekov/BudgetDomain.git", commit = "6c10e976b87857ddd9f79c169a933de25d47e1cd" },
   { name = "decode", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "decode", source = "hex", outer_checksum = "9FFAD3F60600C6777072C3836B9FD965961D7C76C5D6007918AE0F82C1B21BE3" },
   { name = "directories", version = "1.1.0", build_tools = ["gleam"], requirements = ["envoy", "gleam_stdlib", "platform", "simplifile"], otp_app = "directories", source = "hex", outer_checksum = "BDA521A4EB9EE3A7894F0DC863797878E91FF5C7826F7084B2E731E208BDB076" },
   { name = "envoy", version = "1.0.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "envoy", source = "hex", outer_checksum = "95FD059345AA982E89A0B6E2A3BF1CF43E17A7048DCD85B5B65D3B9E4E39D359" },
@@ -51,7 +51,7 @@ packages = [
 ]
 
 [requirements]
-budget_shared = { path = "../budget_shared" }
+budget_shared = { git = "https://github.com/sgrekov/BudgetDomain.git", ref = "6c10e976b87857ddd9f79c169a933de25d47e1cd" }
 decode = { version = ">= 1.1.0 and < 2.0.0" }
 gleam_http = { version = ">= 3.7.2 and < 4.0.0" }
 gleam_json = { version = "~> 2.3.0" }

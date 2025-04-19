@@ -31,16 +31,24 @@ fn uri_to_route(uri: Uri) -> msg.Route {
   }
 }
 
+const is_prod: Bool = True
+
+fn root_url() -> String {
+  case is_prod {
+    True -> "https://budget-be.fly.dev/"
+    False -> "http://localho.st:8080/"
+  }
+}
+
 pub fn initial_eff() -> effect.Effect(Msg) {
   let path = case initial_uri() {
     Ok(uri) -> uri_to_route(uri)
     _ -> msg.Home
   }
-  let url = "http://localho.st:8000/"
 
   let decoder = decode.list(m.user_decoder())
   lustre_http.get(
-    url,
+    root_url(),
     lustre_http.expect_json(decoder, fn(users) {
       msg.Initial(users, m.calculate_current_cycle(), path)
     }),
@@ -66,7 +74,7 @@ pub fn add_transaction_eff(
   cat: Category,
   current_user: User,
 ) -> effect.Effect(Msg) {
-  let url = "http://localhost:8000/transaction/add"
+  let url = root_url() <> "transaction/add"
 
   let t =
     Transaction(
@@ -88,7 +96,7 @@ pub fn add_transaction_eff(
 }
 
 pub fn add_category(name: String, group_id: String) -> effect.Effect(Msg) {
-  let url = "http://localhost:8000/category/add"
+  let url = root_url() <> "category/add"
 
   lustre_http.post(
     url,
@@ -107,21 +115,21 @@ pub fn add_category(name: String, group_id: String) -> effect.Effect(Msg) {
 }
 
 pub fn get_allocations() -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/allocations"
+  let url = root_url() <> "allocations"
 
   let decoder = decode.list(m.allocation_decoder())
   lustre_http.get(url, lustre_http.expect_json(decoder, msg.Allocations))
 }
 
 pub fn get_categories() -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/categories"
+  let url = root_url() <> "categories"
 
   let decoder = decode.list(m.category_decoder())
   lustre_http.get(url, lustre_http.expect_json(decoder, msg.Categories))
 }
 
 pub fn get_transactions() -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/transactions"
+  let url = root_url() <> "transactions"
 
   let decoder = decode.list(m.transaction_decoder())
   lustre_http.get(url, lustre_http.expect_json(decoder, msg.Transactions))
@@ -140,14 +148,14 @@ pub fn save_allocation_eff(
 }
 
 pub fn get_category_groups() -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/category/groups"
+  let url = root_url() <> "category/groups"
 
   let decoder = decode.list(m.category_group_decoder())
   lustre_http.get(url, lustre_http.expect_json(decoder, msg.CategoryGroups))
 }
 
 pub fn add_new_group_eff(name: String) -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/category/group/add"
+  let url = root_url() <> "category/group/add"
 
   lustre_http.post(
     url,
@@ -167,7 +175,7 @@ fn create_allocation_eff(
   category_id: String,
   cycle: Cycle,
 ) -> effect.Effect(Msg) {
-  let url = "http://localhost:8000/allocation/add"
+  let url = root_url() <> "allocation/add"
 
   // io.debug(t)
   lustre_http.post(
@@ -183,7 +191,7 @@ fn create_allocation_eff(
 }
 
 fn update_allocation_eff(a: Allocation, amount: m.Money) -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/allocation/" <> a.id
+  let url = root_url() <> "allocation/" <> a.id
 
   let req =
     request.to(url)
@@ -210,7 +218,7 @@ fn update_allocation_eff(a: Allocation, amount: m.Money) -> effect.Effect(Msg) {
 }
 
 pub fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/category/" <> c_id
+  let url = root_url() <> "category/" <> c_id
 
   let req =
     request.to(url)
@@ -226,7 +234,7 @@ pub fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
 }
 
 pub fn update_transaction_eff(t: m.Transaction) -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/transaction/" <> t.id
+  let url = root_url() <> "transaction/" <> t.id
 
   let req =
     request.to(url)
@@ -244,7 +252,7 @@ pub fn update_transaction_eff(t: m.Transaction) -> effect.Effect(Msg) {
 }
 
 pub fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/transaction/" <> t_id
+  let url = root_url() <> "transaction/" <> t_id
 
   let req =
     request.to(url)
@@ -263,7 +271,7 @@ pub fn save_target_eff(
   category: Category,
   target_edit: Option(Target),
 ) -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/category/" <> category.id
+  let url = root_url() <> "category/" <> category.id
   let req =
     request.to(url)
     |> result.map(fn(req) { request.Request(..req, method: http.Put) })
@@ -284,7 +292,7 @@ pub fn save_target_eff(
 }
 
 pub fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/category/target/" <> category.id
+  let url = root_url() <> "category/target/" <> category.id
 
   let req =
     request.to(url)
@@ -322,7 +330,7 @@ fn do_write_localstorage(_key: String, _value: String) -> Nil {
 }
 
 pub fn get_category_suggestions() -> effect.Effect(Msg) {
-  let url = "http://localho.st:8000/category/suggestions"
+  let url = root_url() <> "category/suggestions"
 
   let decoder = m.category_suggestions_decoder()
   lustre_http.get(url, lustre_http.expect_json(decoder, msg.Suggestions))

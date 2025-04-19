@@ -8786,28 +8786,6 @@ function on_route_change(uri) {
   let route = uri_to_route(uri);
   return new OnRouteChange(route);
 }
-function initial_eff() {
-  let path = (() => {
-    let $ = do_initial_uri();
-    if ($.isOk()) {
-      let uri = $[0];
-      return uri_to_route(uri);
-    } else {
-      return new Home();
-    }
-  })();
-  let url = "http://localho.st:8000/";
-  let decoder = list2(user_decoder());
-  return get3(
-    url,
-    expect_json(
-      decoder,
-      (users) => {
-        return new Initial(users, calculate_current_cycle(), path);
-      }
-    )
-  );
-}
 function select_category_eff() {
   return from(
     (dispatch) => {
@@ -8824,8 +8802,52 @@ function select_category_eff() {
     }
   );
 }
+function read_localstorage2(key) {
+  return from(
+    (dispatch) => {
+      let _pipe = read_localstorage(key);
+      let _pipe$1 = new CurrentSavedUser(_pipe);
+      return dispatch(_pipe$1);
+    }
+  );
+}
+function write_localstorage2(key, value3) {
+  return from((_) => {
+    return write_localstorage(key, value3);
+  });
+}
+var is_prod = true;
+function root_url() {
+  let $ = is_prod;
+  if ($) {
+    return "https://budget-be.fly.dev/";
+  } else {
+    return "http://localho.st:8080/";
+  }
+}
+function initial_eff() {
+  let path = (() => {
+    let $ = do_initial_uri();
+    if ($.isOk()) {
+      let uri = $[0];
+      return uri_to_route(uri);
+    } else {
+      return new Home();
+    }
+  })();
+  let decoder = list2(user_decoder());
+  return get3(
+    root_url(),
+    expect_json(
+      decoder,
+      (users) => {
+        return new Initial(users, calculate_current_cycle(), path);
+      }
+    )
+  );
+}
 function add_transaction_eff(transaction_form, amount, cat, current_user) {
-  let url = "http://localhost:8000/transaction/add";
+  let url = root_url() + "transaction/add";
   let t = new Transaction(
     guidv4(),
     (() => {
@@ -8850,7 +8872,7 @@ function add_transaction_eff(transaction_form, amount, cat, current_user) {
   );
 }
 function add_category(name, group_id) {
-  let url = "http://localhost:8000/category/add";
+  let url = root_url() + "category/add";
   return post(
     url,
     object2(
@@ -8874,7 +8896,7 @@ function add_category(name, group_id) {
   );
 }
 function get_allocations() {
-  let url = "http://localho.st:8000/allocations";
+  let url = root_url() + "allocations";
   let decoder = list2(allocation_decoder());
   return get3(
     url,
@@ -8887,7 +8909,7 @@ function get_allocations() {
   );
 }
 function get_categories() {
-  let url = "http://localho.st:8000/categories";
+  let url = root_url() + "categories";
   let decoder = list2(category_decoder());
   return get3(
     url,
@@ -8900,7 +8922,7 @@ function get_categories() {
   );
 }
 function get_transactions() {
-  let url = "http://localho.st:8000/transactions";
+  let url = root_url() + "transactions";
   let decoder = list2(transaction_decoder());
   return get3(
     url,
@@ -8913,7 +8935,7 @@ function get_transactions() {
   );
 }
 function get_category_groups() {
-  let url = "http://localho.st:8000/category/groups";
+  let url = root_url() + "category/groups";
   let decoder = list2(category_group_decoder());
   return get3(
     url,
@@ -8926,7 +8948,7 @@ function get_category_groups() {
   );
 }
 function add_new_group_eff(name) {
-  let url = "http://localho.st:8000/category/group/add";
+  let url = root_url() + "category/group/add";
   return post(
     url,
     object2(toList([["name", string4(name)]])),
@@ -8945,7 +8967,7 @@ function add_new_group_eff(name) {
   );
 }
 function create_allocation_eff(money, category_id, cycle) {
-  let url = "http://localhost:8000/allocation/add";
+  let url = root_url() + "allocation/add";
   return post(
     url,
     allocation_form_encode(
@@ -8960,7 +8982,7 @@ function create_allocation_eff(money, category_id, cycle) {
   );
 }
 function update_allocation_eff(a2, amount) {
-  let url = "http://localho.st:8000/allocation/" + a2.id;
+  let url = root_url() + "allocation/" + a2.id;
   let req = (() => {
     let _pipe = to(url);
     return map3(
@@ -9015,7 +9037,7 @@ function save_allocation_eff(alloc, money, category_id, cycle) {
   }
 }
 function delete_category_eff(c_id) {
-  let url = "http://localho.st:8000/category/" + c_id;
+  let url = root_url() + "category/" + c_id;
   let req = (() => {
     let _pipe = to(url);
     return map3(
@@ -9051,7 +9073,7 @@ function delete_category_eff(c_id) {
   }
 }
 function update_transaction_eff(t) {
-  let url = "http://localho.st:8000/transaction/" + t.id;
+  let url = root_url() + "transaction/" + t.id;
   let req = (() => {
     let _pipe = to(url);
     return map3(
@@ -9094,7 +9116,7 @@ function update_transaction_eff(t) {
   }
 }
 function delete_transaction_eff(t_id) {
-  let url = "http://localho.st:8000/transaction/" + t_id;
+  let url = root_url() + "transaction/" + t_id;
   let req = (() => {
     let _pipe = to(url);
     return map3(
@@ -9130,7 +9152,7 @@ function delete_transaction_eff(t_id) {
   }
 }
 function save_target_eff(category, target_edit) {
-  let url = "http://localho.st:8000/category/" + category.id;
+  let url = root_url() + "category/" + category.id;
   let req = (() => {
     let _pipe = to(url);
     return map3(
@@ -9186,7 +9208,7 @@ function save_target_eff(category, target_edit) {
   }
 }
 function delete_target_eff(category) {
-  let url = "http://localho.st:8000/category/target/" + category.id;
+  let url = root_url() + "category/target/" + category.id;
   let req = (() => {
     let _pipe = to(url);
     return map3(
@@ -9221,22 +9243,8 @@ function delete_target_eff(category) {
     return none();
   }
 }
-function read_localstorage2(key) {
-  return from(
-    (dispatch) => {
-      let _pipe = read_localstorage(key);
-      let _pipe$1 = new CurrentSavedUser(_pipe);
-      return dispatch(_pipe$1);
-    }
-  );
-}
-function write_localstorage2(key, value3) {
-  return from((_) => {
-    return write_localstorage(key, value3);
-  });
-}
 function get_category_suggestions() {
-  let url = "http://localho.st:8000/category/suggestions";
+  let url = root_url() + "category/suggestions";
   let decoder = category_suggestions_decoder();
   return get3(
     url,
