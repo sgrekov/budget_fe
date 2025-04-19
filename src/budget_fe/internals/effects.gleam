@@ -12,11 +12,11 @@ import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/result
 import gleam/uri.{type Uri}
-import gluid
 import lustre/effect
 import lustre_http
 import modem.{initial_uri}
 import rada/date as d
+import youid/uuid
 
 pub fn on_route_change(uri: Uri) -> Msg {
   let route = uri_to_route(uri)
@@ -75,10 +75,10 @@ pub fn add_transaction_eff(
   current_user: User,
 ) -> effect.Effect(Msg) {
   let url = root_url() <> "transaction/add"
-
-  let t =
+  
+  let a = 
     Transaction(
-      id: gluid.guidv4(),
+      id: uuid.v4_string(),
       date: transaction_form.date
         |> date_utils.from_date_string
         |> result.unwrap(d.today()),
@@ -90,7 +90,7 @@ pub fn add_transaction_eff(
   // io.debug(t)
   lustre_http.post(
     url,
-    m.transaction_encode(t),
+    m.transaction_encode(a),
     lustre_http.expect_json(m.transaction_decoder(), msg.AddTransactionResult),
   )
 }
