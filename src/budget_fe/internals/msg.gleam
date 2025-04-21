@@ -1,7 +1,6 @@
 import budget_shared.{
   type Allocation, type Category, type CategoryGroup, type Cycle, type Money,
-  type Target, type Transaction, type User, Allocation, Category, Cycle, Money,
-  Transaction, User,
+  type Target, type Transaction, type User,
 }
 import gleam/dict
 import gleam/option.{type Option}

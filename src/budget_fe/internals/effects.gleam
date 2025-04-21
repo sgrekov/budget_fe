@@ -1,25 +1,31 @@
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_shared.{
-  type Allocation, type Category, type Cycle, type Target, type Transaction,
-  type User, Allocation, Category, Cycle, Transaction, User,
+  type Allocation, type Category, type Cycle, type Target,
+  type User, Allocation, Category, Transaction,
 } as m
 import date_utils
 import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
-import gleam/int
 import gleam/json
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/result
-import gleam/string
+import budget_fe/internals/uuid
 import gleam/uri.{type Uri}
 import lustre/effect
 import lustre_http
 import modem.{initial_uri}
 import rada/date as d
 
-// import youid/uuid
+const is_prod: Bool = True
+
+fn root_url() -> String {
+  case is_prod {
+    True -> "https://budget-be.fly.dev/"
+    False -> "http://localho.st:8080/"
+  }
+}
 
 pub fn on_route_change(uri: Uri) -> Msg {
   let route = uri_to_route(uri)
@@ -31,15 +37,6 @@ fn uri_to_route(uri: Uri) -> msg.Route {
     ["transactions"] -> msg.TransactionsRoute
     ["user"] -> msg.UserRoute
     _ -> msg.Home
-  }
-}
-
-const is_prod: Bool = True
-
-fn root_url() -> String {
-  case is_prod {
-    True -> "https://budget-be.fly.dev/"
-    False -> "http://localho.st:8080/"
   }
 }
 
@@ -58,6 +55,7 @@ pub fn initial_eff() -> effect.Effect(Msg) {
   )
 }
 
+//dev func for easier working with right panel
 pub fn select_category_eff() -> effect.Effect(Msg) {
   effect.from(fn(dispatch) {
     msg.SelectCategory(m.Category(
@@ -71,66 +69,6 @@ pub fn select_category_eff() -> effect.Effect(Msg) {
   })
 }
 
-fn format_uuid(src: String) -> String {
-  string.slice(src, 0, 8)
-  <> "-"
-  <> string.slice(src, 8, 4)
-  <> "-"
-  <> string.slice(src, 12, 4)
-  <> "-"
-  <> string.slice(src, 16, 4)
-  <> "-"
-  <> string.slice(src, 20, 12)
-}
-
-pub fn guidv4() -> String {
-  // Original doc: https://www.cryptosys.net/pki/uuid-rfc4122.html
-
-  // 16 random bytes -> let's chunk it into 4 * 4 bytes
-  // named: A, B, C, D
-
-  //                  A                 |                 B                  |
-  //                  C                 |                 D                  |
-  // 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-  // 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-
-  // Adjust certain bits according to RFC 4122 section 4.4 as follows:
-  // set the four most significant bits of the 7th byte to 0100'B, so the high nibble is "4"
-  // set the two most significant bits of the 9th byte to 10'B, so the high nibble will be one of "8", "9", "A", or "B" (see Note 1).
-
-  // From the RFC:
-  // - the 7th byte is the 3rd byte of B
-  // - the 9th byte is the 1st byte of C
-
-  let a =
-    int.random(0xFFFFFFFF)
-    |> int.to_base16
-    |> string.pad_start(8, "0")
-
-  let b =
-    int.random(0xFFFFFFFF)
-    |> int.bitwise_and(0x3FFFFFFF)
-    |> int.bitwise_or(0x00000000)
-    |> int.to_base16
-    |> string.pad_start(8, "0")
-
-  let c =
-    int.random(0xFFFFFFFF)
-    |> int.bitwise_and(0x3FFFFFFF)
-    |> int.bitwise_or(0x80000000)
-    |> int.to_base16
-    |> string.pad_start(8, "0")
-
-  let d =
-    int.random(0xFFFFFFFF)
-    |> int.to_base16
-    |> string.pad_start(8, "0")
-
-  let concatened = a <> b <> c <> d
-
-  format_uuid(concatened)
-}
-
 pub fn add_transaction_eff(
   transaction_form: TransactionForm,
   amount: m.Money,
@@ -141,7 +79,7 @@ pub fn add_transaction_eff(
 
   let a =
     Transaction(
-      id: guidv4(),
+      id: uuid.guidv4(),
       date: transaction_form.date
         |> date_utils.from_date_string
         |> result.unwrap(d.today()),

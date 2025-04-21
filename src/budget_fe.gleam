@@ -3,7 +3,7 @@ import budget_fe/internals/msg.{type Model, type Msg, Model}
 import budget_fe/internals/view as v
 import budget_shared.{
   type Allocation, type Category, type Cycle, type MonthInYear, type Transaction,
-  type User, Allocation, Category, Cycle, MonthInYear, Transaction, User,
+  type User, Category, MonthInYear, Transaction, User,
 } as m
 import date_utils
 import gleam/dict

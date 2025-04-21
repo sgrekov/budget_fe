@@ -582,14 +582,14 @@ function filter_loop(loop$list, loop$fun, loop$acc) {
     } else {
       let first$1 = list3.head;
       let rest$1 = list3.tail;
-      let new_acc = (() => {
-        let $ = fun(first$1);
-        if ($) {
-          return prepend(first$1, acc);
-        } else {
-          return acc;
-        }
-      })();
+      let _block;
+      let $ = fun(first$1);
+      if ($) {
+        _block = prepend(first$1, acc);
+      } else {
+        _block = acc;
+      }
+      let new_acc = _block;
       loop$list = rest$1;
       loop$fun = fun;
       loop$acc = new_acc;
@@ -609,15 +609,15 @@ function filter_map_loop(loop$list, loop$fun, loop$acc) {
     } else {
       let first$1 = list3.head;
       let rest$1 = list3.tail;
-      let new_acc = (() => {
-        let $ = fun(first$1);
-        if ($.isOk()) {
-          let first$2 = $[0];
-          return prepend(first$2, acc);
-        } else {
-          return acc;
-        }
-      })();
+      let _block;
+      let $ = fun(first$1);
+      if ($.isOk()) {
+        let first$2 = $[0];
+        _block = prepend(first$2, acc);
+      } else {
+        _block = acc;
+      }
+      let new_acc = _block;
       loop$list = rest$1;
       loop$fun = fun;
       loop$acc = new_acc;
@@ -833,28 +833,28 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
         loop$prev = new$1;
         loop$acc = acc;
       } else if ($ instanceof Gt && direction instanceof Ascending) {
-        let acc$1 = (() => {
-          if (direction instanceof Ascending) {
-            return prepend(reverse(growing$1), acc);
-          } else {
-            return prepend(growing$1, acc);
-          }
-        })();
+        let _block;
+        if (direction instanceof Ascending) {
+          _block = prepend(reverse(growing$1), acc);
+        } else {
+          _block = prepend(growing$1, acc);
+        }
+        let acc$1 = _block;
         if (rest$1.hasLength(0)) {
           return prepend(toList([new$1]), acc$1);
         } else {
           let next2 = rest$1.head;
           let rest$2 = rest$1.tail;
-          let direction$1 = (() => {
-            let $1 = compare4(new$1, next2);
-            if ($1 instanceof Lt) {
-              return new Ascending();
-            } else if ($1 instanceof Eq) {
-              return new Ascending();
-            } else {
-              return new Descending();
-            }
-          })();
+          let _block$1;
+          let $1 = compare4(new$1, next2);
+          if ($1 instanceof Lt) {
+            _block$1 = new Ascending();
+          } else if ($1 instanceof Eq) {
+            _block$1 = new Ascending();
+          } else {
+            _block$1 = new Descending();
+          }
+          let direction$1 = _block$1;
           loop$list = rest$2;
           loop$compare = compare4;
           loop$growing = toList([new$1]);
@@ -863,28 +863,28 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           loop$acc = acc$1;
         }
       } else if ($ instanceof Lt && direction instanceof Descending) {
-        let acc$1 = (() => {
-          if (direction instanceof Ascending) {
-            return prepend(reverse(growing$1), acc);
-          } else {
-            return prepend(growing$1, acc);
-          }
-        })();
+        let _block;
+        if (direction instanceof Ascending) {
+          _block = prepend(reverse(growing$1), acc);
+        } else {
+          _block = prepend(growing$1, acc);
+        }
+        let acc$1 = _block;
         if (rest$1.hasLength(0)) {
           return prepend(toList([new$1]), acc$1);
         } else {
           let next2 = rest$1.head;
           let rest$2 = rest$1.tail;
-          let direction$1 = (() => {
-            let $1 = compare4(new$1, next2);
-            if ($1 instanceof Lt) {
-              return new Ascending();
-            } else if ($1 instanceof Eq) {
-              return new Ascending();
-            } else {
-              return new Descending();
-            }
-          })();
+          let _block$1;
+          let $1 = compare4(new$1, next2);
+          if ($1 instanceof Lt) {
+            _block$1 = new Ascending();
+          } else if ($1 instanceof Eq) {
+            _block$1 = new Ascending();
+          } else {
+            _block$1 = new Descending();
+          }
+          let direction$1 = _block$1;
           loop$list = rest$2;
           loop$compare = compare4;
           loop$growing = toList([new$1]);
@@ -893,28 +893,28 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           loop$acc = acc$1;
         }
       } else {
-        let acc$1 = (() => {
-          if (direction instanceof Ascending) {
-            return prepend(reverse(growing$1), acc);
-          } else {
-            return prepend(growing$1, acc);
-          }
-        })();
+        let _block;
+        if (direction instanceof Ascending) {
+          _block = prepend(reverse(growing$1), acc);
+        } else {
+          _block = prepend(growing$1, acc);
+        }
+        let acc$1 = _block;
         if (rest$1.hasLength(0)) {
           return prepend(toList([new$1]), acc$1);
         } else {
           let next2 = rest$1.head;
           let rest$2 = rest$1.tail;
-          let direction$1 = (() => {
-            let $1 = compare4(new$1, next2);
-            if ($1 instanceof Lt) {
-              return new Ascending();
-            } else if ($1 instanceof Eq) {
-              return new Ascending();
-            } else {
-              return new Descending();
-            }
-          })();
+          let _block$1;
+          let $1 = compare4(new$1, next2);
+          if ($1 instanceof Lt) {
+            _block$1 = new Ascending();
+          } else if ($1 instanceof Eq) {
+            _block$1 = new Ascending();
+          } else {
+            _block$1 = new Descending();
+          }
+          let direction$1 = _block$1;
           loop$list = rest$2;
           loop$compare = compare4;
           loop$growing = toList([new$1]);
@@ -1088,16 +1088,16 @@ function sort(list3, compare4) {
     let x = list3.head;
     let y = list3.tail.head;
     let rest$1 = list3.tail.tail;
-    let direction = (() => {
-      let $ = compare4(x, y);
-      if ($ instanceof Lt) {
-        return new Ascending();
-      } else if ($ instanceof Eq) {
-        return new Ascending();
-      } else {
-        return new Descending();
-      }
-    })();
+    let _block;
+    let $ = compare4(x, y);
+    if ($ instanceof Lt) {
+      _block = new Ascending();
+    } else if ($ instanceof Eq) {
+      _block = new Ascending();
+    } else {
+      _block = new Descending();
+    }
+    let direction = _block;
     let sequences$1 = sequences(
       rest$1,
       compare4,
@@ -1242,17 +1242,17 @@ function push_path(error, name) {
       }
     ])
   );
-  let name$2 = (() => {
-    let $ = decoder(name$1);
-    if ($.isOk()) {
-      let name$22 = $[0];
-      return name$22;
-    } else {
-      let _pipe = toList(["<", classify_dynamic(name$1), ">"]);
-      let _pipe$1 = concat(_pipe);
-      return identity(_pipe$1);
-    }
-  })();
+  let _block;
+  let $ = decoder(name$1);
+  if ($.isOk()) {
+    let name$22 = $[0];
+    _block = name$22;
+  } else {
+    let _pipe = toList(["<", classify_dynamic(name$1), ">"]);
+    let _pipe$1 = concat(_pipe);
+    _block = identity(_pipe$1);
+  }
+  let name$2 = _block;
   let _record = error;
   return new DecodeError(
     _record.expected,
@@ -3932,26 +3932,26 @@ function literal() {
       return do$(
         take_while(is_text),
         (rest) => {
-          let joined = (() => {
-            let _pipe = map2(
-              prepend(text3, rest),
-              (entry) => {
-                if (!(entry instanceof Text)) {
-                  throw makeError(
-                    "let_assert",
-                    "rada/date/pattern",
-                    216,
-                    "",
-                    "Pattern match failed, no pattern matched the value.",
-                    { value: entry }
-                  );
-                }
-                let text$1 = entry[0];
-                return text$1;
+          let _block;
+          let _pipe = map2(
+            prepend(text3, rest),
+            (entry) => {
+              if (!(entry instanceof Text)) {
+                throw makeError(
+                  "let_assert",
+                  "rada/date/pattern",
+                  216,
+                  "",
+                  "Pattern match failed, no pattern matched the value.",
+                  { value: entry }
+                );
               }
-            );
-            return concat2(_pipe);
-          })();
+              let text$1 = entry[0];
+              return text$1;
+            }
+          );
+          _block = concat2(_pipe);
+          let joined = _block;
           return return$(new Literal(joined));
         }
       );
@@ -4049,11 +4049,11 @@ function parser(tokens) {
   );
 }
 function from_string2(str) {
-  let alpha = (() => {
-    let _pipe = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let _pipe$1 = graphemes(_pipe);
-    return from_list2(_pipe$1);
-  })();
+  let _block;
+  let _pipe = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let _pipe$1 = graphemes(_pipe);
+  _block = from_list2(_pipe$1);
+  let alpha = _block;
   let is_alpha$1 = (char) => {
     return contains2(alpha, char);
   };
@@ -4098,8 +4098,8 @@ function from_string2(str) {
   let tokens_result = run2(str, l);
   if (tokens_result.isOk()) {
     let tokens = tokens_result[0];
-    let _pipe = run3(tokens, parser(toList([])));
-    return unwrap2(_pipe, toList([new Literal(str)]));
+    let _pipe$2 = run3(tokens, parser(toList([])));
+    return unwrap2(_pipe$2, toList([new Literal(str)]));
   } else {
     return toList([]);
   }
@@ -4288,39 +4288,39 @@ function int_4() {
   return do$(
     optional2(token2(new Dash())),
     (negative) => {
-      let negative$1 = (() => {
-        let _pipe = negative;
-        let _pipe$1 = map(_pipe, (_) => {
-          return "-";
-        });
-        return unwrap(_pipe$1, "");
-      })();
+      let _block;
+      let _pipe = negative;
+      let _pipe$1 = map(_pipe, (_) => {
+        return "-";
+      });
+      _block = unwrap(_pipe$1, "");
+      let negative$1 = _block;
       return do$(
         (() => {
-          let _pipe = parse_digit();
-          return take_exactly(_pipe, 4);
+          let _pipe$2 = parse_digit();
+          return take_exactly(_pipe$2, 4);
         })(),
         (tokens) => {
-          let str = (() => {
-            let _pipe = map2(
-              tokens,
-              (token3) => {
-                if (!(token3 instanceof Digit)) {
-                  throw makeError(
-                    "let_assert",
-                    "rada/date",
-                    1090,
-                    "",
-                    "Pattern match failed, no pattern matched the value.",
-                    { value: token3 }
-                  );
-                }
-                let str2 = token3[0];
-                return str2;
+          let _block$1;
+          let _pipe$2 = map2(
+            tokens,
+            (token3) => {
+              if (!(token3 instanceof Digit)) {
+                throw makeError(
+                  "let_assert",
+                  "rada/date",
+                  1090,
+                  "",
+                  "Pattern match failed, no pattern matched the value.",
+                  { value: token3 }
+                );
               }
-            );
-            return concat2(_pipe);
-          })();
+              let str2 = token3[0];
+              return str2;
+            }
+          );
+          _block$1 = concat2(_pipe$2);
+          let str = _block$1;
           let $ = parse_int(negative$1 + str);
           if (!$.isOk()) {
             throw makeError(
@@ -4346,26 +4346,26 @@ function int_3() {
       return take_exactly(_pipe, 3);
     })(),
     (tokens) => {
-      let str = (() => {
-        let _pipe = map2(
-          tokens,
-          (token3) => {
-            if (!(token3 instanceof Digit)) {
-              throw makeError(
-                "let_assert",
-                "rada/date",
-                1108,
-                "",
-                "Pattern match failed, no pattern matched the value.",
-                { value: token3 }
-              );
-            }
-            let str2 = token3[0];
-            return str2;
+      let _block;
+      let _pipe = map2(
+        tokens,
+        (token3) => {
+          if (!(token3 instanceof Digit)) {
+            throw makeError(
+              "let_assert",
+              "rada/date",
+              1108,
+              "",
+              "Pattern match failed, no pattern matched the value.",
+              { value: token3 }
+            );
           }
-        );
-        return concat2(_pipe);
-      })();
+          let str2 = token3[0];
+          return str2;
+        }
+      );
+      _block = concat2(_pipe);
+      let str = _block;
       let $ = parse_int(str);
       if (!$.isOk()) {
         throw makeError(
@@ -4397,26 +4397,26 @@ function int_2() {
       return take_exactly(_pipe, 2);
     })(),
     (tokens) => {
-      let str = (() => {
-        let _pipe = map2(
-          tokens,
-          (token3) => {
-            if (!(token3 instanceof Digit)) {
-              throw makeError(
-                "let_assert",
-                "rada/date",
-                1126,
-                "",
-                "Pattern match failed, no pattern matched the value.",
-                { value: token3 }
-              );
-            }
-            let str2 = token3[0];
-            return str2;
+      let _block;
+      let _pipe = map2(
+        tokens,
+        (token3) => {
+          if (!(token3 instanceof Digit)) {
+            throw makeError(
+              "let_assert",
+              "rada/date",
+              1126,
+              "",
+              "Pattern match failed, no pattern matched the value.",
+              { value: token3 }
+            );
           }
-        );
-        return concat2(_pipe);
-      })();
+          let str2 = token3[0];
+          return str2;
+        }
+      );
+      _block = concat2(_pipe);
+      let str = _block;
       let $ = parse_int(str);
       if (!$.isOk()) {
         throw makeError(
@@ -4549,20 +4549,20 @@ function number_to_weekday(weekday_number2) {
   }
 }
 function pad_signed_int(value3, length4) {
-  let prefix = (() => {
-    let $ = value3 < 0;
-    if ($) {
-      return "-";
-    } else {
-      return "";
-    }
-  })();
-  let suffix = (() => {
-    let _pipe = value3;
-    let _pipe$1 = absolute_value(_pipe);
-    let _pipe$2 = to_string(_pipe$1);
-    return pad_start(_pipe$2, length4, "0");
-  })();
+  let _block;
+  let $ = value3 < 0;
+  if ($) {
+    _block = "-";
+  } else {
+    _block = "";
+  }
+  let prefix = _block;
+  let _block$1;
+  let _pipe = value3;
+  let _pipe$1 = absolute_value(_pipe);
+  let _pipe$2 = to_string(_pipe$1);
+  _block$1 = pad_start(_pipe$2, length4, "0");
+  let suffix = _block$1;
   return prefix + suffix;
 }
 function floor_div(dividend, divisor) {
@@ -4627,20 +4627,20 @@ function weekday(date) {
 }
 function ordinal_suffix(value3) {
   let value_mod_100 = modulo_unwrap(value3, 100);
-  let value$1 = (() => {
-    let $2 = value_mod_100 < 20;
-    if ($2) {
-      return value_mod_100;
-    } else {
-      return modulo_unwrap(value_mod_100, 10);
-    }
-  })();
-  let $ = min(value$1, 4);
-  if ($ === 1) {
+  let _block;
+  let $ = value_mod_100 < 20;
+  if ($) {
+    _block = value_mod_100;
+  } else {
+    _block = modulo_unwrap(value_mod_100, 10);
+  }
+  let value$1 = _block;
+  let $1 = min(value$1, 4);
+  if ($1 === 1) {
     return "st";
-  } else if ($ === 2) {
+  } else if ($1 === 2) {
     return "nd";
-  } else if ($ === 3) {
+  } else if ($1 === 3) {
     return "rd";
   } else {
     return "th";
@@ -4732,14 +4732,14 @@ function year(date) {
   let $3 = div_with_remainder(r4, 365);
   let n1 = $3[0];
   let r1 = $3[1];
-  let n = (() => {
-    let $4 = r1 === 0;
-    if ($4) {
-      return 0;
-    } else {
-      return 1;
-    }
-  })();
+  let _block;
+  let $4 = r1 === 0;
+  if ($4) {
+    _block = 0;
+  } else {
+    _block = 1;
+  }
+  let n = _block;
   return n400 * 400 + n100 * 100 + n4 * 4 + n1 + n;
 }
 function to_ordinal_date(date) {
@@ -4990,11 +4990,11 @@ function format_with_tokens(language, tokens, date) {
   );
 }
 function format_with_language(date, language, pattern_text) {
-  let tokens = (() => {
-    let _pipe = pattern_text;
-    let _pipe$1 = from_string2(_pipe);
-    return reverse(_pipe$1);
-  })();
+  let _block;
+  let _pipe = pattern_text;
+  let _pipe$1 = from_string2(_pipe);
+  _block = reverse(_pipe$1);
+  let tokens = _block;
   return format_with_tokens(language, tokens, date);
 }
 function format(date, pattern) {
@@ -5030,16 +5030,16 @@ function is_between_int(value3, lower, upper) {
   return lower <= value3 && value3 <= upper;
 }
 function from_ordinal_parts(year2, ordinal) {
-  let days_in_year = (() => {
-    let $2 = is_leap_year(year2);
-    if ($2) {
-      return 366;
-    } else {
-      return 365;
-    }
-  })();
-  let $ = !is_between_int(ordinal, 1, days_in_year);
+  let _block;
+  let $ = is_leap_year(year2);
   if ($) {
+    _block = 366;
+  } else {
+    _block = 365;
+  }
+  let days_in_year = _block;
+  let $1 = !is_between_int(ordinal, 1, days_in_year);
+  if ($1) {
     return new Error(
       "Invalid ordinal date: " + ("ordinal-day " + to_string(ordinal) + " is out of range") + (" (1 to " + to_string(
         days_in_year
@@ -5052,17 +5052,17 @@ function from_ordinal_parts(year2, ordinal) {
   }
 }
 function from_week_parts(week_year2, week_number2, weekday_number2) {
-  let weeks_in_year = (() => {
-    let $2 = is_53_week_year(week_year2);
-    if ($2) {
-      return 53;
-    } else {
-      return 52;
-    }
-  })();
-  let $ = is_between_int(week_number2, 1, weeks_in_year);
-  let $1 = is_between_int(weekday_number2, 1, 7);
-  if (!$) {
+  let _block;
+  let $ = is_53_week_year(week_year2);
+  if ($) {
+    _block = 53;
+  } else {
+    _block = 52;
+  }
+  let weeks_in_year = _block;
+  let $1 = is_between_int(week_number2, 1, weeks_in_year);
+  let $2 = is_between_int(weekday_number2, 1, 7);
+  if (!$1) {
     return new Error(
       "Invalid week date: " + ("week " + to_string(week_number2) + " is out of range") + (" (1 to " + to_string(
         weeks_in_year
@@ -5072,7 +5072,7 @@ function from_week_parts(week_year2, week_number2, weekday_number2) {
         weekday_number2
       ) + ")")
     );
-  } else if ($ && !$1) {
+  } else if ($1 && !$2) {
     return new Error(
       "Invalid week date: " + ("weekday " + to_string(weekday_number2) + " is out of range") + " (1 to 7)" + ("; received (year " + to_string(
         week_year2
@@ -5830,42 +5830,42 @@ function euro_int_to_money(i) {
   return new Money(i * 100);
 }
 function string_to_money(raw) {
-  let $ = (() => {
-    let $12 = slice(raw, 0, 1);
-    if ($12 === "-") {
-      return [-1, slice(raw, 1, string_length(raw))];
-    } else {
-      return [1, raw];
-    }
-  })();
+  let _block;
+  let $1 = slice(raw, 0, 1);
+  if ($1 === "-") {
+    _block = [-1, slice(raw, 1, string_length(raw))];
+  } else {
+    _block = [1, raw];
+  }
+  let $ = _block;
   let is_neg = $[0];
   let s = $[1];
-  let $1 = (() => {
+  let $2 = (() => {
     let _pipe = replace(s, ",", ".");
     return split2(_pipe, ".");
   })();
-  if ($1.atLeastLength(2)) {
-    let s$1 = $1.head;
-    let b = $1.tail.head;
-    let $2 = parse_int(s$1);
-    let $3 = (() => {
+  if ($2.atLeastLength(2)) {
+    let s$1 = $2.head;
+    let b = $2.tail.head;
+    let $3 = parse_int(s$1);
+    let $4 = (() => {
       let _pipe = b;
       let _pipe$1 = pad_end(_pipe, 2, "0");
       let _pipe$2 = slice(_pipe$1, 0, 2);
       return parse_int(_pipe$2);
     })();
-    if ($2.isOk() && $3.isOk()) {
-      let s$2 = $2[0];
-      let b$1 = $3[0];
+    if ($3.isOk() && $4.isOk()) {
+      let s$2 = $3[0];
+      let b$1 = $4[0];
       return new Money(is_neg * (s$2 * 100 + b$1));
     } else {
       return new Money(0);
     }
-  } else if ($1.atLeastLength(1)) {
-    let s$1 = $1.head;
-    let $2 = parse_int(s$1);
-    if ($2.isOk()) {
-      let s$2 = $2[0];
+  } else if ($2.atLeastLength(1)) {
+    let s$1 = $2.head;
+    let $3 = parse_int(s$1);
+    if ($3.isOk()) {
+      let s$2 = $3[0];
       return new Money(is_neg * s$2 * 100);
     } else {
       return new Money(0);
@@ -5875,29 +5875,29 @@ function string_to_money(raw) {
   }
 }
 function money_to_string_no_sign(m) {
-  let value3 = (() => {
-    let _pipe = m.value;
-    return absolute_value(_pipe);
-  })();
+  let _block;
+  let _pipe = m.value;
+  _block = absolute_value(_pipe);
+  let value3 = _block;
   return (() => {
-    let _pipe = divideInt(value3, 100);
-    return to_string(_pipe);
+    let _pipe$1 = divideInt(value3, 100);
+    return to_string(_pipe$1);
   })() + "." + (() => {
-    let _pipe = remainderInt(value3, 100);
-    return to_string(_pipe);
+    let _pipe$1 = remainderInt(value3, 100);
+    return to_string(_pipe$1);
   })();
 }
 function money_with_currency_no_sign(m) {
-  let value3 = (() => {
-    let _pipe = m.value;
-    return absolute_value(_pipe);
-  })();
+  let _block;
+  let _pipe = m.value;
+  _block = absolute_value(_pipe);
+  let value3 = _block;
   return "\u20AC" + (() => {
-    let _pipe = divideInt(value3, 100);
-    return to_string(_pipe);
+    let _pipe$1 = divideInt(value3, 100);
+    return to_string(_pipe$1);
   })() + "." + (() => {
-    let _pipe = remainderInt(value3, 100);
-    return to_string(_pipe);
+    let _pipe$1 = remainderInt(value3, 100);
+    return to_string(_pipe$1);
   })();
 }
 function sign_symbols(m) {
@@ -6850,18 +6850,18 @@ function parse_query_with_question_mark_loop(loop$original, loop$uri_string, loo
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
       let query = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          _record.host,
-          _record.port,
-          _record.path,
-          new Some(query),
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        _record.host,
+        _record.port,
+        _record.path,
+        new Some(query),
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_fragment(rest, pieces$1);
     } else if (uri_string === "") {
       return new Ok(
@@ -6900,34 +6900,34 @@ function parse_path_loop(loop$original, loop$uri_string, loop$pieces, loop$size)
     if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
       let path = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          _record.host,
-          _record.port,
-          path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        _record.host,
+        _record.port,
+        path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
       let path = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          _record.host,
-          _record.port,
-          path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        _record.host,
+        _record.port,
+        path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_fragment(rest, pieces$1);
     } else if (uri_string === "") {
       return new Ok(
@@ -7014,47 +7014,47 @@ function parse_port_loop(loop$uri_string, loop$pieces, loop$port) {
       loop$port = port * 10 + 9;
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          _record.host,
-          new Some(port),
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        _record.host,
+        new Some(port),
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          _record.host,
-          new Some(port),
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        _record.host,
+        new Some(port),
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_fragment(rest, pieces$1);
     } else if (uri_string.startsWith("/")) {
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          _record.host,
-          new Some(port),
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        _record.host,
+        new Some(port),
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_path(uri_string, pieces$1);
     } else if (uri_string === "") {
       return new Ok(
@@ -7146,65 +7146,65 @@ function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loo
       );
     } else if (uri_string.startsWith(":")) {
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          new Some(host),
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        new Some(host),
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_port(uri_string, pieces$1);
     } else if (uri_string.startsWith("/")) {
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          new Some(host),
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        new Some(host),
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_path(uri_string, pieces$1);
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          new Some(host),
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        new Some(host),
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          new Some(host),
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        new Some(host),
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_fragment(rest, pieces$1);
     } else {
       let $ = pop_codeunit(uri_string);
@@ -7243,35 +7243,35 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
     } else if (uri_string.startsWith("]")) {
       let rest = uri_string.slice(1);
       let host = string_codeunit_slice(original, 0, size + 1);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          new Some(host),
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        new Some(host),
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_port(rest, pieces$1);
     } else if (uri_string.startsWith("/") && size === 0) {
       return parse_path(uri_string, pieces);
     } else if (uri_string.startsWith("/")) {
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          new Some(host),
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        new Some(host),
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_path(uri_string, pieces$1);
     } else if (uri_string.startsWith("?") && size === 0) {
       let rest = uri_string.slice(1);
@@ -7279,18 +7279,18 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          new Some(host),
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        new Some(host),
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#") && size === 0) {
       let rest = uri_string.slice(1);
@@ -7298,18 +7298,18 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
       let host = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          new Some(host),
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        _record.userinfo,
+        new Some(host),
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_fragment(rest, pieces$1);
     } else {
       let $ = pop_codeunit(uri_string);
@@ -7342,18 +7342,18 @@ function parse_host(uri_string, pieces) {
   if (uri_string.startsWith("[")) {
     return parse_host_within_brackets(uri_string, pieces);
   } else if (uri_string.startsWith(":")) {
-    let pieces$1 = (() => {
-      let _record = pieces;
-      return new Uri(
-        _record.scheme,
-        _record.userinfo,
-        new Some(""),
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-    })();
+    let _block;
+    let _record = pieces;
+    _block = new Uri(
+      _record.scheme,
+      _record.userinfo,
+      new Some(""),
+      _record.port,
+      _record.path,
+      _record.query,
+      _record.fragment
+    );
+    let pieces$1 = _block;
     return parse_port(uri_string, pieces$1);
   } else if (uri_string === "") {
     return new Ok(
@@ -7386,18 +7386,18 @@ function parse_userinfo_loop(loop$original, loop$uri_string, loop$pieces, loop$s
     } else if (uri_string.startsWith("@")) {
       let rest = uri_string.slice(1);
       let userinfo = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          new Some(userinfo),
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        _record.scheme,
+        new Some(userinfo),
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_host(rest, pieces$1);
     } else if (uri_string === "") {
       return parse_host(original, pieces);
@@ -7453,18 +7453,18 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
       return parse_authority_with_slashes(uri_string, pieces);
     } else if (uri_string.startsWith("/")) {
       let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          new Some(lowercase(scheme)),
-          _record.userinfo,
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        new Some(lowercase(scheme)),
+        _record.userinfo,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_authority_with_slashes(uri_string, pieces$1);
     } else if (uri_string.startsWith("?") && size === 0) {
       let rest = uri_string.slice(1);
@@ -7472,18 +7472,18 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
       let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          new Some(lowercase(scheme)),
-          _record.userinfo,
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        new Some(lowercase(scheme)),
+        _record.userinfo,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#") && size === 0) {
       let rest = uri_string.slice(1);
@@ -7491,36 +7491,36 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
       let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          new Some(lowercase(scheme)),
-          _record.userinfo,
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        new Some(lowercase(scheme)),
+        _record.userinfo,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_fragment(rest, pieces$1);
     } else if (uri_string.startsWith(":") && size === 0) {
       return new Error(void 0);
     } else if (uri_string.startsWith(":")) {
       let rest = uri_string.slice(1);
       let scheme = string_codeunit_slice(original, 0, size);
-      let pieces$1 = (() => {
-        let _record = pieces;
-        return new Uri(
-          new Some(lowercase(scheme)),
-          _record.userinfo,
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })();
+      let _block;
+      let _record = pieces;
+      _block = new Uri(
+        new Some(lowercase(scheme)),
+        _record.userinfo,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query,
+        _record.fragment
+      );
+      let pieces$1 = _block;
       return parse_authority_with_slashes(rest, pieces$1);
     } else if (uri_string === "") {
       return new Ok(
@@ -7556,24 +7556,24 @@ function remove_dot_segments_loop(loop$input, loop$accumulator) {
     } else {
       let segment = input2.head;
       let rest = input2.tail;
-      let accumulator$1 = (() => {
-        if (segment === "") {
-          let accumulator$12 = accumulator;
-          return accumulator$12;
-        } else if (segment === ".") {
-          let accumulator$12 = accumulator;
-          return accumulator$12;
-        } else if (segment === ".." && accumulator.hasLength(0)) {
-          return toList([]);
-        } else if (segment === ".." && accumulator.atLeastLength(1)) {
-          let accumulator$12 = accumulator.tail;
-          return accumulator$12;
-        } else {
-          let segment$1 = segment;
-          let accumulator$12 = accumulator;
-          return prepend(segment$1, accumulator$12);
-        }
-      })();
+      let _block;
+      if (segment === "") {
+        let accumulator$12 = accumulator;
+        _block = accumulator$12;
+      } else if (segment === ".") {
+        let accumulator$12 = accumulator;
+        _block = accumulator$12;
+      } else if (segment === ".." && accumulator.hasLength(0)) {
+        _block = toList([]);
+      } else if (segment === ".." && accumulator.atLeastLength(1)) {
+        let accumulator$12 = accumulator.tail;
+        _block = accumulator$12;
+      } else {
+        let segment$1 = segment;
+        let accumulator$12 = accumulator;
+        _block = prepend(segment$1, accumulator$12);
+      }
+      let accumulator$1 = _block;
       loop$input = rest;
       loop$accumulator = accumulator$1;
     }
@@ -7586,77 +7586,77 @@ function path_segments(path) {
   return remove_dot_segments(split2(path, "/"));
 }
 function to_string3(uri) {
-  let parts = (() => {
-    let $ = uri.fragment;
-    if ($ instanceof Some) {
-      let fragment = $[0];
-      return toList(["#", fragment]);
-    } else {
-      return toList([]);
-    }
-  })();
-  let parts$1 = (() => {
-    let $ = uri.query;
-    if ($ instanceof Some) {
-      let query = $[0];
-      return prepend("?", prepend(query, parts));
-    } else {
-      return parts;
-    }
-  })();
+  let _block;
+  let $ = uri.fragment;
+  if ($ instanceof Some) {
+    let fragment = $[0];
+    _block = toList(["#", fragment]);
+  } else {
+    _block = toList([]);
+  }
+  let parts = _block;
+  let _block$1;
+  let $1 = uri.query;
+  if ($1 instanceof Some) {
+    let query = $1[0];
+    _block$1 = prepend("?", prepend(query, parts));
+  } else {
+    _block$1 = parts;
+  }
+  let parts$1 = _block$1;
   let parts$2 = prepend(uri.path, parts$1);
-  let parts$3 = (() => {
-    let $ = uri.host;
-    let $1 = starts_with(uri.path, "/");
-    if ($ instanceof Some && !$1 && $[0] !== "") {
-      let host = $[0];
-      return prepend("/", parts$2);
-    } else {
-      return parts$2;
-    }
-  })();
-  let parts$4 = (() => {
-    let $ = uri.host;
-    let $1 = uri.port;
-    if ($ instanceof Some && $1 instanceof Some) {
-      let port = $1[0];
-      return prepend(":", prepend(to_string(port), parts$3));
-    } else {
-      return parts$3;
-    }
-  })();
-  let parts$5 = (() => {
-    let $ = uri.scheme;
-    let $1 = uri.userinfo;
-    let $2 = uri.host;
-    if ($ instanceof Some && $1 instanceof Some && $2 instanceof Some) {
-      let s = $[0];
-      let u = $1[0];
-      let h = $2[0];
-      return prepend(
-        s,
-        prepend(
-          "://",
-          prepend(u, prepend("@", prepend(h, parts$4)))
-        )
-      );
-    } else if ($ instanceof Some && $1 instanceof None && $2 instanceof Some) {
-      let s = $[0];
-      let h = $2[0];
-      return prepend(s, prepend("://", prepend(h, parts$4)));
-    } else if ($ instanceof Some && $1 instanceof Some && $2 instanceof None) {
-      let s = $[0];
-      return prepend(s, prepend(":", parts$4));
-    } else if ($ instanceof Some && $1 instanceof None && $2 instanceof None) {
-      let s = $[0];
-      return prepend(s, prepend(":", parts$4));
-    } else if ($ instanceof None && $1 instanceof None && $2 instanceof Some) {
-      let h = $2[0];
-      return prepend("//", prepend(h, parts$4));
-    } else {
-      return parts$4;
-    }
-  })();
+  let _block$2;
+  let $2 = uri.host;
+  let $3 = starts_with(uri.path, "/");
+  if ($2 instanceof Some && !$3 && $2[0] !== "") {
+    let host = $2[0];
+    _block$2 = prepend("/", parts$2);
+  } else {
+    _block$2 = parts$2;
+  }
+  let parts$3 = _block$2;
+  let _block$3;
+  let $4 = uri.host;
+  let $5 = uri.port;
+  if ($4 instanceof Some && $5 instanceof Some) {
+    let port = $5[0];
+    _block$3 = prepend(":", prepend(to_string(port), parts$3));
+  } else {
+    _block$3 = parts$3;
+  }
+  let parts$4 = _block$3;
+  let _block$4;
+  let $6 = uri.scheme;
+  let $7 = uri.userinfo;
+  let $8 = uri.host;
+  if ($6 instanceof Some && $7 instanceof Some && $8 instanceof Some) {
+    let s = $6[0];
+    let u = $7[0];
+    let h = $8[0];
+    _block$4 = prepend(
+      s,
+      prepend(
+        "://",
+        prepend(u, prepend("@", prepend(h, parts$4)))
+      )
+    );
+  } else if ($6 instanceof Some && $7 instanceof None && $8 instanceof Some) {
+    let s = $6[0];
+    let h = $8[0];
+    _block$4 = prepend(s, prepend("://", prepend(h, parts$4)));
+  } else if ($6 instanceof Some && $7 instanceof Some && $8 instanceof None) {
+    let s = $6[0];
+    _block$4 = prepend(s, prepend(":", parts$4));
+  } else if ($6 instanceof Some && $7 instanceof None && $8 instanceof None) {
+    let s = $6[0];
+    _block$4 = prepend(s, prepend(":", parts$4));
+  } else if ($6 instanceof None && $7 instanceof None && $8 instanceof Some) {
+    let h = $8[0];
+    _block$4 = prepend("//", prepend(h, parts$4));
+  } else {
+    _block$4 = parts$4;
+  }
+  let parts$5 = _block$4;
   return concat2(parts$5);
 }
 var empty = /* @__PURE__ */ new Uri(
@@ -8595,6 +8595,43 @@ var TargetEdit = class extends CustomType {
   }
 };
 
+// build/dev/javascript/budget_fe/budget_fe/internals/uuid.mjs
+function format_uuid(src) {
+  return slice(src, 0, 8) + "-" + slice(src, 8, 4) + "-" + slice(
+    src,
+    12,
+    4
+  ) + "-" + slice(src, 16, 4) + "-" + slice(src, 20, 12);
+}
+function guidv4() {
+  let _block;
+  let _pipe = random(4294967295);
+  let _pipe$1 = to_base16(_pipe);
+  _block = pad_start(_pipe$1, 8, "0");
+  let a2 = _block;
+  let _block$1;
+  let _pipe$2 = random(4294967295);
+  let _pipe$3 = bitwise_and(_pipe$2, 1073741823);
+  let _pipe$4 = bitwise_or(_pipe$3, 0);
+  let _pipe$5 = to_base16(_pipe$4);
+  _block$1 = pad_start(_pipe$5, 8, "0");
+  let b = _block$1;
+  let _block$2;
+  let _pipe$6 = random(4294967295);
+  let _pipe$7 = bitwise_and(_pipe$6, 1073741823);
+  let _pipe$8 = bitwise_or(_pipe$7, 2147483648);
+  let _pipe$9 = to_base16(_pipe$8);
+  _block$2 = pad_start(_pipe$9, 8, "0");
+  let c = _block$2;
+  let _block$3;
+  let _pipe$10 = random(4294967295);
+  let _pipe$11 = to_base16(_pipe$10);
+  _block$3 = pad_start(_pipe$11, 8, "0");
+  let d = _block$3;
+  let concatened = a2 + b + c + d;
+  return format_uuid(concatened);
+}
+
 // build/dev/javascript/budget_fe/date_utils.mjs
 function to_date_string(value3) {
   return format(value3, "dd.MM.yyyy");
@@ -8765,41 +8802,6 @@ function select_category_eff() {
     }
   );
 }
-function format_uuid(src) {
-  return slice(src, 0, 8) + "-" + slice(src, 8, 4) + "-" + slice(
-    src,
-    12,
-    4
-  ) + "-" + slice(src, 16, 4) + "-" + slice(src, 20, 12);
-}
-function guidv4() {
-  let a2 = (() => {
-    let _pipe = random(4294967295);
-    let _pipe$1 = to_base16(_pipe);
-    return pad_start(_pipe$1, 8, "0");
-  })();
-  let b = (() => {
-    let _pipe = random(4294967295);
-    let _pipe$1 = bitwise_and(_pipe, 1073741823);
-    let _pipe$2 = bitwise_or(_pipe$1, 0);
-    let _pipe$3 = to_base16(_pipe$2);
-    return pad_start(_pipe$3, 8, "0");
-  })();
-  let c = (() => {
-    let _pipe = random(4294967295);
-    let _pipe$1 = bitwise_and(_pipe, 1073741823);
-    let _pipe$2 = bitwise_or(_pipe$1, 2147483648);
-    let _pipe$3 = to_base16(_pipe$2);
-    return pad_start(_pipe$3, 8, "0");
-  })();
-  let d = (() => {
-    let _pipe = random(4294967295);
-    let _pipe$1 = to_base16(_pipe);
-    return pad_start(_pipe$1, 8, "0");
-  })();
-  let concatened = a2 + b + c + d;
-  return format_uuid(concatened);
-}
 function read_localstorage2(key) {
   return from(
     (dispatch) => {
@@ -8824,15 +8826,15 @@ function root_url() {
   }
 }
 function initial_eff() {
-  let path = (() => {
-    let $ = do_initial_uri();
-    if ($.isOk()) {
-      let uri = $[0];
-      return uri_to_route(uri);
-    } else {
-      return new Home();
-    }
-  })();
+  let _block;
+  let $ = do_initial_uri();
+  if ($.isOk()) {
+    let uri = $[0];
+    _block = uri_to_route(uri);
+  } else {
+    _block = new Home();
+  }
+  let path = _block;
   let decoder = list2(user_decoder());
   return get3(
     root_url(),
@@ -8981,39 +8983,39 @@ function create_allocation_eff(money, category_id, cycle) {
 }
 function update_allocation_eff(a2, amount) {
   let url = root_url() + "allocation/" + a2.id;
-  let req = (() => {
-    let _pipe = to(url);
-    return map3(
-      _pipe,
-      (req2) => {
-        let _record = req2;
-        return new Request(
-          new Put(),
-          _record.headers,
-          _record.body,
-          _record.scheme,
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query
-        );
-      }
-    );
-  })();
+  let _block;
+  let _pipe = to(url);
+  _block = map3(
+    _pipe,
+    (req2) => {
+      let _record = req2;
+      return new Request(
+        new Put(),
+        _record.headers,
+        _record.body,
+        _record.scheme,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query
+      );
+    }
+  );
+  let req = _block;
   if (req.isOk()) {
     let req$1 = req[0];
     return send2(
       (() => {
-        let _pipe = req$1;
-        let _pipe$1 = set_body(
-          _pipe,
+        let _pipe$1 = req$1;
+        let _pipe$2 = set_body(
+          _pipe$1,
           to_string2(
             allocation_encode(
               new Allocation(a2.id, amount, a2.category_id, a2.date)
             )
           )
         );
-        return set_header(_pipe$1, "Content-Type", "application/json");
+        return set_header(_pipe$2, "Content-Type", "application/json");
       })(),
       expect_json(
         id_decoder(),
@@ -9036,25 +9038,25 @@ function save_allocation_eff(alloc, money, category_id, cycle) {
 }
 function delete_category_eff(c_id) {
   let url = root_url() + "category/" + c_id;
-  let req = (() => {
-    let _pipe = to(url);
-    return map3(
-      _pipe,
-      (req2) => {
-        let _record = req2;
-        return new Request(
-          new Delete(),
-          _record.headers,
-          _record.body,
-          _record.scheme,
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query
-        );
-      }
-    );
-  })();
+  let _block;
+  let _pipe = to(url);
+  _block = map3(
+    _pipe,
+    (req2) => {
+      let _record = req2;
+      return new Request(
+        new Delete(),
+        _record.headers,
+        _record.body,
+        _record.scheme,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query
+      );
+    }
+  );
+  let req = _block;
   if (req.isOk()) {
     let req$1 = req[0];
     return send2(
@@ -9072,35 +9074,35 @@ function delete_category_eff(c_id) {
 }
 function update_transaction_eff(t) {
   let url = root_url() + "transaction/" + t.id;
-  let req = (() => {
-    let _pipe = to(url);
-    return map3(
-      _pipe,
-      (req2) => {
-        let _record = req2;
-        return new Request(
-          new Put(),
-          _record.headers,
-          _record.body,
-          _record.scheme,
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query
-        );
-      }
-    );
-  })();
+  let _block;
+  let _pipe = to(url);
+  _block = map3(
+    _pipe,
+    (req2) => {
+      let _record = req2;
+      return new Request(
+        new Put(),
+        _record.headers,
+        _record.body,
+        _record.scheme,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query
+      );
+    }
+  );
+  let req = _block;
   if (req.isOk()) {
     let req$1 = req[0];
     return send2(
       (() => {
-        let _pipe = req$1;
-        let _pipe$1 = set_body(
-          _pipe,
+        let _pipe$1 = req$1;
+        let _pipe$2 = set_body(
+          _pipe$1,
           to_string2(transaction_encode(t))
         );
-        return set_header(_pipe$1, "Content-Type", "application/json");
+        return set_header(_pipe$2, "Content-Type", "application/json");
       })(),
       expect_json(
         id_decoder(),
@@ -9115,25 +9117,25 @@ function update_transaction_eff(t) {
 }
 function delete_transaction_eff(t_id) {
   let url = root_url() + "transaction/" + t_id;
-  let req = (() => {
-    let _pipe = to(url);
-    return map3(
-      _pipe,
-      (req2) => {
-        let _record = req2;
-        return new Request(
-          new Delete(),
-          _record.headers,
-          _record.body,
-          _record.scheme,
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query
-        );
-      }
-    );
-  })();
+  let _block;
+  let _pipe = to(url);
+  _block = map3(
+    _pipe,
+    (req2) => {
+      let _record = req2;
+      return new Request(
+        new Delete(),
+        _record.headers,
+        _record.body,
+        _record.scheme,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query
+      );
+    }
+  );
+  let req = _block;
   if (req.isOk()) {
     let req$1 = req[0];
     return send2(
@@ -9151,32 +9153,32 @@ function delete_transaction_eff(t_id) {
 }
 function save_target_eff(category, target_edit) {
   let url = root_url() + "category/" + category.id;
-  let req = (() => {
-    let _pipe = to(url);
-    return map3(
-      _pipe,
-      (req2) => {
-        let _record = req2;
-        return new Request(
-          new Put(),
-          _record.headers,
-          _record.body,
-          _record.scheme,
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query
-        );
-      }
-    );
-  })();
+  let _block;
+  let _pipe = to(url);
+  _block = map3(
+    _pipe,
+    (req2) => {
+      let _record = req2;
+      return new Request(
+        new Put(),
+        _record.headers,
+        _record.body,
+        _record.scheme,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query
+      );
+    }
+  );
+  let req = _block;
   if (req.isOk()) {
     let req$1 = req[0];
     return send2(
       (() => {
-        let _pipe = req$1;
-        let _pipe$1 = set_body(
-          _pipe,
+        let _pipe$1 = req$1;
+        let _pipe$2 = set_body(
+          _pipe$1,
           to_string2(
             category_encode(
               (() => {
@@ -9192,7 +9194,7 @@ function save_target_eff(category, target_edit) {
             )
           )
         );
-        return set_header(_pipe$1, "Content-Type", "application/json");
+        return set_header(_pipe$2, "Content-Type", "application/json");
       })(),
       expect_json(
         id_decoder(),
@@ -9207,25 +9209,25 @@ function save_target_eff(category, target_edit) {
 }
 function delete_target_eff(category) {
   let url = root_url() + "category/target/" + category.id;
-  let req = (() => {
-    let _pipe = to(url);
-    return map3(
-      _pipe,
-      (req2) => {
-        let _record = req2;
-        return new Request(
-          new Put(),
-          _record.headers,
-          _record.body,
-          _record.scheme,
-          _record.host,
-          _record.port,
-          _record.path,
-          _record.query
-        );
-      }
-    );
-  })();
+  let _block;
+  let _pipe = to(url);
+  _block = map3(
+    _pipe,
+    (req2) => {
+      let _record = req2;
+      return new Request(
+        new Put(),
+        _record.headers,
+        _record.body,
+        _record.scheme,
+        _record.host,
+        _record.port,
+        _record.path,
+        _record.query
+      );
+    }
+  );
+  let req = _block;
   if (req.isOk()) {
     let req$1 = req[0];
     return send2(
@@ -9344,15 +9346,15 @@ function on_check(msg) {
 
 // build/dev/javascript/budget_fe/budget_fe/internals/view.mjs
 function section_buttons(route) {
-  let $ = (() => {
-    if (route instanceof Home) {
-      return ["active", ""];
-    } else if (route instanceof TransactionsRoute) {
-      return ["", "active"];
-    } else {
-      return ["", ""];
-    }
-  })();
+  let _block;
+  if (route instanceof Home) {
+    _block = ["active", ""];
+  } else if (route instanceof TransactionsRoute) {
+    _block = ["", "active"];
+  } else {
+    _block = ["", ""];
+  }
+  let $ = _block;
   let cat_active = $[0];
   let transactions_active = $[1];
   return div(
@@ -9458,14 +9460,14 @@ function user_selection(m) {
           return map2(
             _pipe,
             (user) => {
-              let active_class = (() => {
-                let $ = m.current_user.id === user.id;
-                if ($) {
-                  return "active";
-                } else {
-                  return "";
-                }
-              })();
+              let _block;
+              let $ = m.current_user.id === user.id;
+              if ($) {
+                _block = "active";
+              } else {
+                _block = "";
+              }
+              let active_class = _block;
               return a(
                 toList([
                   class$("btn btn-primary" + active_class),
@@ -9606,14 +9608,14 @@ function category_activity(cat, transactions) {
   );
 }
 function target_switcher_ui(et) {
-  let $ = (() => {
-    let $1 = et.target;
-    if ($1 instanceof Custom) {
-      return ["", "active"];
-    } else {
-      return ["active", ""];
-    }
-  })();
+  let _block;
+  let $1 = et.target;
+  if ($1 instanceof Custom) {
+    _block = ["", "active"];
+  } else {
+    _block = ["active", ""];
+  }
+  let $ = _block;
   let monthly = $[0];
   let custom3 = $[1];
   return div(
@@ -9665,60 +9667,60 @@ function target_money(category) {
   }
 }
 function ready_to_assign_money(transactions, allocations, cycle, categories) {
-  let income_cat_ids = (() => {
-    let _pipe2 = categories;
-    return filter_map(
-      _pipe2,
-      (c) => {
-        let $ = c.inflow;
-        if ($) {
-          return new Ok(c.id);
-        } else {
-          return new Error("");
-        }
+  let _block;
+  let _pipe = categories;
+  _block = filter_map(
+    _pipe,
+    (c) => {
+      let $ = c.inflow;
+      if ($) {
+        return new Ok(c.id);
+      } else {
+        return new Error("");
       }
-    );
-  })();
-  let income = (() => {
-    let _pipe2 = transactions;
-    let _pipe$1 = filter(
-      _pipe2,
-      (t) => {
-        let _pipe$12 = income_cat_ids;
-        return contains(_pipe$12, t.category_id);
+    }
+  );
+  let income_cat_ids = _block;
+  let _block$1;
+  let _pipe$1 = transactions;
+  let _pipe$2 = filter(
+    _pipe$1,
+    (t) => {
+      let _pipe$22 = income_cat_ids;
+      return contains(_pipe$22, t.category_id);
+    }
+  );
+  _block$1 = fold2(
+    _pipe$2,
+    new Money(0),
+    (m, t) => {
+      return money_sum(m, t.value);
+    }
+  );
+  let income = _block$1;
+  let _block$2;
+  let _pipe$3 = allocations;
+  let _pipe$4 = filter_map(
+    _pipe$3,
+    (a2) => {
+      let $ = isEqual(a2.date, cycle);
+      if ($) {
+        return new Ok(a2.amount);
+      } else {
+        return new Error("");
       }
-    );
-    return fold2(
-      _pipe$1,
-      new Money(0),
-      (m, t) => {
-        return money_sum(m, t.value);
-      }
-    );
-  })();
-  let outcome = (() => {
-    let _pipe2 = allocations;
-    let _pipe$1 = filter_map(
-      _pipe2,
-      (a2) => {
-        let $ = isEqual(a2.date, cycle);
-        if ($) {
-          return new Ok(a2.amount);
-        } else {
-          return new Error("");
-        }
-      }
-    );
-    return fold2(
-      _pipe$1,
-      new Money(0),
-      (m, t) => {
-        return money_sum(m, t);
-      }
-    );
-  })();
-  let _pipe = new Money(income.value - outcome.value);
-  return money_to_string(_pipe);
+    }
+  );
+  _block$2 = fold2(
+    _pipe$4,
+    new Money(0),
+    (m, t) => {
+      return money_sum(m, t);
+    }
+  );
+  let outcome = _block$2;
+  let _pipe$5 = new Money(income.value - outcome.value);
+  return money_to_string(_pipe$5);
 }
 function ready_to_assign(model) {
   return div(
@@ -9928,10 +9930,10 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
             }
           ),
           (() => {
-            let selected_id = (() => {
-              let _pipe = model.selected_transaction;
-              return unwrap(_pipe, "");
-            })();
+            let _block;
+            let _pipe = model.selected_transaction;
+            _block = unwrap(_pipe, "");
+            let selected_id = _block;
             return manage_transaction_buttons(
               transaction,
               selected_id,
@@ -9945,30 +9947,30 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
   );
 }
 function transaction_list_item_html(t, model) {
-  let selected_id = (() => {
-    let _pipe = model.selected_transaction;
-    return unwrap(_pipe, "");
-  })();
-  let active_class = (() => {
-    let $2 = selected_id === t.id;
-    if ($2) {
-      return "table-active";
-    } else {
-      return "";
-    }
-  })();
-  let transaction_edit_id = (() => {
-    let _pipe = model.transaction_edit_form;
-    let _pipe$1 = map(_pipe, (tef) => {
-      return tef.id;
-    });
-    return unwrap(_pipe$1, "-1");
-  })();
+  let _block;
+  let _pipe = model.selected_transaction;
+  _block = unwrap(_pipe, "");
+  let selected_id = _block;
+  let _block$1;
+  let $ = selected_id === t.id;
+  if ($) {
+    _block$1 = "table-active";
+  } else {
+    _block$1 = "";
+  }
+  let active_class = _block$1;
+  let _block$2;
+  let _pipe$1 = model.transaction_edit_form;
+  let _pipe$2 = map(_pipe$1, (tef) => {
+    return tef.id;
+  });
+  _block$2 = unwrap(_pipe$2, "-1");
+  let transaction_edit_id = _block$2;
   let is_edit_mode = transaction_edit_id === t.id;
   let category_name = transaction_category_name(t, model.categories);
-  let $ = model.transaction_edit_form;
-  if (is_edit_mode && $ instanceof Some) {
-    let tef = $[0];
+  let $1 = model.transaction_edit_form;
+  if (is_edit_mode && $1 instanceof Some) {
+    let tef = $1[0];
     return transaction_edit_ui(t, category_name, active_class, tef, model);
   } else {
     return tr(
@@ -9988,8 +9990,8 @@ function transaction_list_item_html(t, model) {
           toList([
             text2(
               (() => {
-                let _pipe = t.value;
-                return money_to_string(_pipe);
+                let _pipe$3 = t.value;
+                return money_to_string(_pipe$3);
               })()
             ),
             manage_transaction_buttons(t, selected_id, category_name, false)
@@ -10305,37 +10307,37 @@ function category_balance(cat, model) {
   let activity = category_activity(cat, current_cycle_transactions(model));
   let allocated = category_assigned(cat, model.allocations, model.cycle);
   let balance = money_sum(allocated, activity);
-  let color = (() => {
-    let $ = (() => {
-      let _pipe = balance;
-      return is_zero_euro(_pipe);
-    })();
-    if ($) {
-      return "rgb(137, 143, 138)";
-    } else {
-      let $1 = balance.value < 0;
-      if ($1) {
-        return "rgb(231, 41, 12)";
-      } else {
-        return "rgba(64,185,78,1)";
-      }
-    }
+  let _block;
+  let $ = (() => {
+    let _pipe = balance;
+    return is_zero_euro(_pipe);
   })();
+  if ($) {
+    _block = "rgb(137, 143, 138)";
+  } else {
+    let $12 = balance.value < 0;
+    if ($12) {
+      _block = "rgb(231, 41, 12)";
+    } else {
+      _block = "rgba(64,185,78,1)";
+    }
+  }
+  let color = _block;
   let add_alloc_diff = new Money(allocated.value - target_money$1.value);
-  let warn_text = (() => {
-    let $ = add_alloc_diff.value < 0;
-    if (!$) {
-      return text2("");
-    } else {
-      return div_context(
-        " Add more " + (() => {
-          let _pipe = add_alloc_diff;
-          return money_with_currency_no_sign(_pipe);
-        })(),
-        "rgb(235, 199, 16)"
-      );
-    }
-  })();
+  let _block$1;
+  let $1 = add_alloc_diff.value < 0;
+  if (!$1) {
+    _block$1 = text2("");
+  } else {
+    _block$1 = div_context(
+      " Add more " + (() => {
+        let _pipe = add_alloc_diff;
+        return money_with_currency_no_sign(_pipe);
+      })(),
+      "rgb(235, 199, 16)"
+    );
+  }
+  let warn_text = _block$1;
   return div(
     toList([class$("d-flex flex-row")]),
     toList([
@@ -10361,20 +10363,20 @@ function category_list_item_ui(categories, model, group) {
   return map2(
     _pipe$1,
     (c) => {
-      let active_class = (() => {
-        let $ = model.selected_category;
-        if ($ instanceof None) {
-          return "";
+      let _block;
+      let $ = model.selected_category;
+      if ($ instanceof None) {
+        _block = "";
+      } else {
+        let selected_cat = $[0];
+        let $1 = selected_cat.id === c.id;
+        if ($1) {
+          _block = "table-active";
         } else {
-          let selected_cat = $[0];
-          let $1 = selected_cat.id === c.id;
-          if ($1) {
-            return "table-active";
-          } else {
-            return "";
-          }
+          _block = "";
         }
-      })();
+      }
+      let active_class = _block;
       return tr(
         toList([
           on_click(new SelectCategory(c)),
@@ -10389,69 +10391,71 @@ function category_list_item_ui(categories, model, group) {
   );
 }
 function group_ui(group, model) {
-  let is_current_group_active_add_ui = (() => {
-    let $ = model.show_add_category_ui;
-    if ($ instanceof Some) {
-      let group_id = $[0];
-      return group.id === group_id;
+  let _block;
+  let $ = model.show_add_category_ui;
+  if ($ instanceof Some) {
+    let group_id = $[0];
+    _block = group.id === group_id;
+  } else {
+    _block = false;
+  }
+  let is_current_group_active_add_ui = _block;
+  let _block$1;
+  if (!is_current_group_active_add_ui) {
+    _block$1 = text2("");
+  } else {
+    _block$1 = tr(
+      toList([]),
+      toList([
+        td(
+          toList([]),
+          toList([
+            input(
+              toList([
+                on_input(
+                  (var0) => {
+                    return new UserUpdatedCategoryName(var0);
+                  }
+                ),
+                placeholder("category name"),
+                id("exampleFormControlInput1"),
+                class$("form-control"),
+                type_("text")
+              ])
+            )
+          ])
+        ),
+        td(
+          toList([]),
+          toList([
+            button(
+              toList([on_click(new AddCategory(group.id))]),
+              toList([text("Add")])
+            )
+          ])
+        )
+      ])
+    );
+  }
+  let add_cat_ui = _block$1;
+  let _block$2;
+  {
+    let _block$3;
+    if (is_current_group_active_add_ui) {
+      _block$3 = "-";
     } else {
-      return false;
+      _block$3 = "+";
     }
-  })();
-  let add_cat_ui = (() => {
-    if (!is_current_group_active_add_ui) {
-      return text2("");
-    } else {
-      return tr(
-        toList([]),
-        toList([
-          td(
-            toList([]),
-            toList([
-              input(
-                toList([
-                  on_input(
-                    (var0) => {
-                      return new UserUpdatedCategoryName(var0);
-                    }
-                  ),
-                  placeholder("category name"),
-                  id("exampleFormControlInput1"),
-                  class$("form-control"),
-                  type_("text")
-                ])
-              )
-            ])
-          ),
-          td(
-            toList([]),
-            toList([
-              button(
-                toList([on_click(new AddCategory(group.id))]),
-                toList([text("Add")])
-              )
-            ])
-          )
-        ])
-      );
-    }
-  })();
-  let add_btn = (() => {
-    let btn_label = (() => {
-      if (is_current_group_active_add_ui) {
-        return "-";
-      } else {
-        return "+";
-      }
-    })();
-    return button(
+    let btn_label = _block$3;
+    _block$2 = button(
       toList([
         class$("ms-1"),
         on_click(new ShowAddCategoryUI(group.id))
       ]),
       toList([text(btn_label)])
     );
-  })();
+  }
+  let add_btn = _block$2;
   let group_ui$1 = tr(
     toList([
       style(toList([["background-color", "rgb(199, 208, 201)"]]))
@@ -10472,14 +10476,14 @@ function category_group_list_item_ui(groups, model) {
   });
 }
 function budget_categories(model) {
-  let size = (() => {
-    let $ = model.selected_category;
-    if ($ instanceof None) {
-      return "";
-    } else {
-      return "w-75";
-    }
-  })();
+  let _block;
+  let $ = model.selected_category;
+  if ($ instanceof None) {
+    _block = "";
+  } else {
+    _block = "w-75";
+  }
+  let size = _block;
   return table(
     toList([class$(size + " table table-sm table-hover")]),
     toList([
@@ -10494,14 +10498,14 @@ function budget_categories(model) {
                 toList([
                   text2("Categories groups"),
                   (() => {
-                    let btn_label = (() => {
-                      let $ = model.show_add_category_group_ui;
-                      if ($) {
-                        return "-";
-                      } else {
-                        return "+";
-                      }
-                    })();
+                    let _block$1;
+                    let $1 = model.show_add_category_group_ui;
+                    if ($1) {
+                      _block$1 = "-";
+                    } else {
+                      _block$1 = "+";
+                    }
+                    let btn_label = _block$1;
                     return button(
                       toList([
                         class$("ms-2"),
@@ -10524,50 +10528,46 @@ function budget_categories(model) {
             model.categories_groups,
             model
           );
-          let add_cat_group_ui = (() => {
-            let $ = model.show_add_category_group_ui;
-            if (!$) {
-              return toList([]);
-            } else {
-              return toList([
-                tr(
-                  toList([]),
-                  toList([
-                    td(
-                      toList([]),
-                      toList([
-                        input(
-                          toList([
-                            on_input(
-                              (var0) => {
-                                return new UserUpdatedCategoryGroupName(
-                                  var0
-                                );
-                              }
-                            ),
-                            placeholder("Category group name"),
-                            class$("form-control"),
-                            type_("text")
-                          ])
-                        )
-                      ])
-                    ),
-                    td(
-                      toList([]),
-                      toList([
-                        button(
-                          toList([
-                            on_click(new CreateCategoryGroup())
-                          ]),
-                          toList([text("Create group")])
-                        )
-                      ])
-                    )
-                  ])
-                )
-              ]);
-            }
-          })();
+          let _block$1;
+          let $1 = model.show_add_category_group_ui;
+          if (!$1) {
+            _block$1 = toList([]);
+          } else {
+            _block$1 = toList([
+              tr(
+                toList([]),
+                toList([
+                  td(
+                    toList([]),
+                    toList([
+                      input(
+                        toList([
+                          on_input(
+                            (var0) => {
+                              return new UserUpdatedCategoryGroupName(var0);
+                            }
+                          ),
+                          placeholder("Category group name"),
+                          class$("form-control"),
+                          type_("text")
+                        ])
+                      )
+                    ])
+                  ),
+                  td(
+                    toList([]),
+                    toList([
+                      button(
+                        toList([on_click(new CreateCategoryGroup())]),
+                        toList([text("Create group")])
+                      )
+                    ])
+                  )
+                ])
+              )
+            ]);
+          }
+          let add_cat_group_ui = _block$1;
           return flatten2(toList([add_cat_group_ui, categories_groups_ui]));
         })()
       )
@@ -11000,22 +11000,22 @@ function init3(_) {
   ];
 }
 function to_money(tf) {
-  let money = (() => {
-    let _pipe = tf.amount;
-    return string_to_money(_pipe);
-  })();
-  let sign = (() => {
-    let $ = tf.is_inflow;
-    if ($) {
-      return 1;
-    } else {
-      return -1;
-    }
-  })();
+  let _block;
+  let _pipe = tf.amount;
+  _block = string_to_money(_pipe);
+  let money = _block;
+  let _block$1;
+  let $ = tf.is_inflow;
+  if ($) {
+    _block$1 = 1;
+  } else {
+    _block$1 = -1;
+  }
+  let sign = _block$1;
   return new Money(
     (() => {
-      let _pipe = money.value;
-      return absolute_value(_pipe);
+      let _pipe$1 = money.value;
+      return absolute_value(_pipe$1);
     })() * sign
   );
 }
@@ -11023,36 +11023,36 @@ function money_value(m) {
   return m.value;
 }
 function transaction_form_to_transaction(tef, categories, current_user) {
-  let date_option = (() => {
-    let _pipe = tef.date;
-    let _pipe$1 = from_date_string(_pipe);
-    return from_result(_pipe$1);
-  })();
-  let sign = (() => {
-    let $ = tef.is_inflow;
-    if ($) {
-      return 1;
-    } else {
-      return -1;
-    }
-  })();
+  let _block;
+  let _pipe = tef.date;
+  let _pipe$1 = from_date_string(_pipe);
+  _block = from_result(_pipe$1);
+  let date_option = _block;
+  let _block$1;
+  let $ = tef.is_inflow;
+  if ($) {
+    _block$1 = 1;
+  } else {
+    _block$1 = -1;
+  }
+  let sign = _block$1;
   let amount = new Money(
     (() => {
-      let _pipe = tef.amount;
-      let _pipe$1 = string_to_money(_pipe);
-      return money_value(_pipe$1);
+      let _pipe$22 = tef.amount;
+      let _pipe$32 = string_to_money(_pipe$22);
+      return money_value(_pipe$32);
     })() * sign
   );
-  let category = (() => {
-    let _pipe = categories;
-    let _pipe$1 = find(
-      _pipe,
-      (c) => {
-        return c.name === tef.category_name;
-      }
-    );
-    return from_result(_pipe$1);
-  })();
+  let _block$2;
+  let _pipe$2 = categories;
+  let _pipe$3 = find(
+    _pipe$2,
+    (c) => {
+      return c.name === tef.category_name;
+    }
+  );
+  _block$2 = from_result(_pipe$3);
+  let category = _block$2;
   if (date_option instanceof Some && category instanceof Some) {
     let date = date_option[0];
     let category$1 = category[0];
@@ -11173,12 +11173,12 @@ function update(model, msg) {
     }
   } else if (msg instanceof CurrentSavedUser && msg.id.isOk()) {
     let user_id = msg.id[0];
-    let user = (() => {
-      let _pipe = model.all_users;
-      return find(_pipe, (u) => {
-        return u.id === user_id;
-      });
-    })();
+    let _block;
+    let _pipe = model.all_users;
+    _block = find(_pipe, (u) => {
+      return u.id === user_id;
+    });
+    let user = _block;
     if (user.isOk()) {
       let user$1 = user[0];
       return [
@@ -11623,16 +11623,13 @@ function update(model, msg) {
     return [model, none()];
   } else if (msg instanceof UserUpdatedTransactionCategory) {
     let category_name = msg.cat;
-    let category = (() => {
-      let _pipe = model.categories;
-      let _pipe$1 = find(
-        _pipe,
-        (c) => {
-          return c.name === category_name;
-        }
-      );
-      return from_result(_pipe$1);
-    })();
+    let _block;
+    let _pipe = model.categories;
+    let _pipe$1 = find(_pipe, (c) => {
+      return c.name === category_name;
+    });
+    _block = from_result(_pipe$1);
+    let category = _block;
     return [
       (() => {
         let _record = model;
@@ -11713,10 +11710,10 @@ function update(model, msg) {
     ];
   } else if (msg instanceof UserUpdatedTransactionPayee) {
     let payee = msg.payee;
-    let category = (() => {
-      let _pipe = model.suggestions;
-      return map_get(_pipe, payee);
-    })();
+    let _block;
+    let _pipe = model.suggestions;
+    _block = map_get(_pipe, payee);
+    let category = _block;
     return [
       (() => {
         let _record = model;
@@ -11740,8 +11737,8 @@ function update(model, msg) {
               _record$1.date,
               payee,
               (() => {
-                let _pipe = category;
-                return from_result(_pipe);
+                let _pipe$1 = category;
+                return from_result(_pipe$1);
               })(),
               _record$1.amount,
               _record$1.is_inflow
@@ -11955,20 +11952,20 @@ function update(model, msg) {
     ];
   } else if (msg instanceof UserTargetUpdateAmount) {
     let amount = msg.amount;
-    let amount$1 = (() => {
-      let _pipe = amount;
-      let _pipe$1 = parse_int(_pipe);
-      return unwrap2(_pipe$1, 0);
-    })();
-    let target = (() => {
-      let $ = model.target_edit.target;
-      if ($ instanceof Custom) {
-        let date = $.date;
-        return new Custom(euro_int_to_money(amount$1), date);
-      } else {
-        return new Monthly(euro_int_to_money(amount$1));
-      }
-    })();
+    let _block;
+    let _pipe = amount;
+    let _pipe$1 = parse_int(_pipe);
+    _block = unwrap2(_pipe$1, 0);
+    let amount$1 = _block;
+    let _block$1;
+    let $ = model.target_edit.target;
+    if ($ instanceof Custom) {
+      let date = $.date;
+      _block$1 = new Custom(euro_int_to_money(amount$1), date);
+    } else {
+      _block$1 = new Monthly(euro_int_to_money(amount$1));
+    }
+    let target = _block$1;
     return [
       (() => {
         let _record = model;
@@ -12007,19 +12004,19 @@ function update(model, msg) {
     ];
   } else if (msg instanceof EditTargetCadence) {
     let is_monthly = msg.is_monthly;
-    let target = (() => {
-      let $ = model.target_edit.target;
-      if ($ instanceof Custom && is_monthly) {
-        let money = $.target;
-        return new Monthly(money);
-      } else if ($ instanceof Monthly && !is_monthly) {
-        let money = $.target;
-        return new Custom(money, date_to_month(today()));
-      } else {
-        let target2 = $;
-        return target2;
-      }
-    })();
+    let _block;
+    let $ = model.target_edit.target;
+    if ($ instanceof Custom && is_monthly) {
+      let money = $.target;
+      _block = new Monthly(money);
+    } else if ($ instanceof Monthly && !is_monthly) {
+      let money = $.target;
+      _block = new Custom(money, date_to_month(today()));
+    } else {
+      let target2 = $;
+      _block = target2;
+    }
+    let target = _block;
     return [
       (() => {
         let _record = model;
@@ -12058,22 +12055,22 @@ function update(model, msg) {
     ];
   } else if (msg instanceof UserTargetUpdateCustomDate) {
     let date = msg.date;
-    let parsed_date = (() => {
-      let _pipe = from_date_string(date);
-      return lazy_unwrap(_pipe, () => {
-        return today();
-      });
-    })();
-    let target = (() => {
-      let $ = model.target_edit.target;
-      if ($ instanceof Custom) {
-        let money = $.target;
-        return new Custom(money, date_to_month(parsed_date));
-      } else {
-        let money = $.target;
-        return new Monthly(money);
-      }
-    })();
+    let _block;
+    let _pipe = from_date_string(date);
+    _block = lazy_unwrap(_pipe, () => {
+      return today();
+    });
+    let parsed_date = _block;
+    let _block$1;
+    let $ = model.target_edit.target;
+    if ($ instanceof Custom) {
+      let money = $.target;
+      _block$1 = new Custom(money, date_to_month(parsed_date));
+    } else {
+      let money = $.target;
+      _block$1 = new Monthly(money);
+    }
+    let target = _block$1;
     return [
       (() => {
         let _record = model;
@@ -12726,13 +12723,13 @@ function update(model, msg) {
     ];
   } else if (msg instanceof CycleShift) {
     let shift = msg.shift;
-    let new_cycle = (() => {
-      if (shift instanceof ShiftLeft) {
-        return cycle_decrease(model.cycle);
-      } else {
-        return cycle_increase(model.cycle);
-      }
-    })();
+    let _block;
+    if (shift instanceof ShiftLeft) {
+      _block = cycle_decrease(model.cycle);
+    } else {
+      _block = cycle_increase(model.cycle);
+    }
+    let new_cycle = _block;
     return [
       (() => {
         let _record = model;
@@ -12964,15 +12961,15 @@ function update(model, msg) {
     return [model, none()];
   } else if (msg instanceof ChangeGroupForCategory) {
     let cat = msg.cat;
-    let new_group = (() => {
-      let _pipe = model.categories_groups;
-      return find(
-        _pipe,
-        (g) => {
-          return g.name === model.category_group_change_input;
-        }
-      );
-    })();
+    let _block;
+    let _pipe = model.categories_groups;
+    _block = find(
+      _pipe,
+      (g) => {
+        return g.name === model.category_group_change_input;
+      }
+    );
+    let new_group = _block;
     if (!new_group.isOk()) {
       return [model, none()];
     } else {
