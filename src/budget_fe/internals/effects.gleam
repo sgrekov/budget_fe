@@ -103,26 +103,26 @@ pub fn guidv4() -> String {
   // - the 9th byte is the 1st byte of C
 
   let a =
-    int.random(0xFF_FF_FF_FF)
+    int.random(0xFFFFFFFF)
     |> int.to_base16
     |> string.pad_start(8, "0")
 
   let b =
-    int.random(0xFF_FF_FF_FF)
-    |> int.bitwise_and(0x3F_FF_FF_FF)
-    |> int.bitwise_or(0x80_00_00_00)
+    int.random(0xFFFFFFFF)
+    |> int.bitwise_and(0x3FFFFFFF)
+    |> int.bitwise_or(0x00000000)
     |> int.to_base16
     |> string.pad_start(8, "0")
 
   let c =
-    int.random(0xFF_FF_FF_FF)
-    |> int.bitwise_and(0x3F_FF_FF_FF)
-    |> int.bitwise_or(0x80_00_00_00)
+    int.random(0xFFFFFFFF)
+    |> int.bitwise_and(0x3FFFFFFF)
+    |> int.bitwise_or(0x80000000)
     |> int.to_base16
     |> string.pad_start(8, "0")
 
   let d =
-    int.random(0xFF_FF_FF_FF)
+    int.random(0xFFFFFFFF)
     |> int.to_base16
     |> string.pad_start(8, "0")
 

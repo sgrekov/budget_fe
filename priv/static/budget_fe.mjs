@@ -8781,7 +8781,7 @@ function guidv4() {
   let b = (() => {
     let _pipe = random(4294967295);
     let _pipe$1 = bitwise_and(_pipe, 1073741823);
-    let _pipe$2 = bitwise_or(_pipe$1, 2147483648);
+    let _pipe$2 = bitwise_or(_pipe$1, 0);
     let _pipe$3 = to_base16(_pipe$2);
     return pad_start(_pipe$3, 8, "0");
   })();
