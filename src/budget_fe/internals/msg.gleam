@@ -9,23 +9,18 @@ import lustre_http
 pub type Route {
   Home
   TransactionsRoute
-  UserRoute
 }
 
 pub type Msg {
   OnRouteChange(route: Route)
-  Initial(
-    users: Result(List(User), lustre_http.HttpError),
-    cycle: Cycle,
-    initial_route: Route,
-  )
-  CurrentSavedUser(id: Result(String, Nil))
+  LoginPassword(login : Option(String), pass : Option(String))
+  LoginSubmit
+  SetUser(user: Result(User, lustre_http.HttpError), cycle: Cycle)
   Categories(cats: Result(List(Category), lustre_http.HttpError))
   Transactions(trans: Result(List(Transaction), lustre_http.HttpError))
   Suggestions(trans: Result(dict.Dict(String, Category), lustre_http.HttpError))
   Allocations(a: Result(List(Allocation), lustre_http.HttpError))
   SelectCategory(c: Category)
-  SelectUser(u: User)
   ShowAddCategoryUI(group_id: String)
   UserUpdatedCategoryName(cat_name: String)
   AddCategory(group_id: String)
@@ -65,7 +60,6 @@ pub type Msg {
   CycleShift(shift: CycleShift)
   UserInputShowAllTransactions(show: Bool)
   AllocateNeeded(cat: Category, needed_amount: Money, alloc: Option(Allocation))
-  // CoverOverspent(cat: Category, balance: Money)
   ShowAddCategoryGroupUI
   UserUpdatedCategoryGroupName(name: String)
   CreateCategoryGroup
@@ -77,8 +71,8 @@ pub type Msg {
 
 pub type Model {
   Model(
-    current_user: User,
-    all_users: List(User),
+    login_form: LoginForm,
+    current_user: Option(User),
     cycle: Cycle,
     route: Route,
     cycle_end_day: Option(Int),
@@ -114,6 +108,15 @@ pub type TransactionForm {
     is_inflow: Bool,
   )
 }
+
+pub type LoginForm {
+  LoginForm(
+    login: Option(String),
+    pass: Option(String),
+    is_loading : Bool,
+  )
+}
+
 
 pub type CycleShift {
   ShiftLeft

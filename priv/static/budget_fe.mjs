@@ -7678,13 +7678,6 @@ var defaults = {
   handle_internal_links: true
 };
 var initial_location = globalThis?.window?.location?.href;
-var do_initial_uri = () => {
-  if (!initial_location) {
-    return new Error(void 0);
-  } else {
-    return new Ok(uri_from_url(new URL(initial_location)));
-  }
-};
 var do_init = (dispatch, options = defaults) => {
   document.addEventListener("click", (event2) => {
     const a2 = find_anchor(event2.target);
@@ -8210,26 +8203,26 @@ var Home = class extends CustomType {
 };
 var TransactionsRoute = class extends CustomType {
 };
-var UserRoute = class extends CustomType {
-};
 var OnRouteChange = class extends CustomType {
   constructor(route) {
     super();
     this.route = route;
   }
 };
-var Initial = class extends CustomType {
-  constructor(users, cycle, initial_route) {
+var LoginPassword = class extends CustomType {
+  constructor(login, pass) {
     super();
-    this.users = users;
-    this.cycle = cycle;
-    this.initial_route = initial_route;
+    this.login = login;
+    this.pass = pass;
   }
 };
-var CurrentSavedUser = class extends CustomType {
-  constructor(id2) {
+var LoginSubmit = class extends CustomType {
+};
+var SetUser = class extends CustomType {
+  constructor(user, cycle) {
     super();
-    this.id = id2;
+    this.user = user;
+    this.cycle = cycle;
   }
 };
 var Categories = class extends CustomType {
@@ -8260,12 +8253,6 @@ var SelectCategory = class extends CustomType {
   constructor(c) {
     super();
     this.c = c;
-  }
-};
-var SelectUser = class extends CustomType {
-  constructor(u) {
-    super();
-    this.u = u;
   }
 };
 var ShowAddCategoryUI = class extends CustomType {
@@ -8528,10 +8515,10 @@ var UserInputCategoryGroupChange = class extends CustomType {
   }
 };
 var Model2 = class extends CustomType {
-  constructor(current_user, all_users, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input) {
+  constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input) {
     super();
+    this.login_form = login_form;
     this.current_user = current_user;
-    this.all_users = all_users;
     this.cycle = cycle;
     this.route = route;
     this.cycle_end_day = cycle_end_day;
@@ -8569,6 +8556,14 @@ var TransactionForm = class extends CustomType {
     this.category = category;
     this.amount = amount;
     this.is_inflow = is_inflow;
+  }
+};
+var LoginForm = class extends CustomType {
+  constructor(login, pass, is_loading) {
+    super();
+    this.login = login;
+    this.pass = pass;
+    this.is_loading = is_loading;
   }
 };
 var ShiftLeft = class extends CustomType {
@@ -8767,17 +8762,12 @@ function read_localstorage(key) {
   const value3 = window.localStorage.getItem(key);
   return value3 ? new Ok2(value3) : new Error2(void 0);
 }
-function write_localstorage(key, value3) {
-  window.localStorage.setItem(key, value3);
-}
 
 // build/dev/javascript/budget_fe/budget_fe/internals/effects.mjs
 function uri_to_route(uri) {
   let $ = path_segments(uri.path);
   if ($.hasLength(1) && $.head === "transactions") {
     return new TransactionsRoute();
-  } else if ($.hasLength(1) && $.head === "user") {
-    return new UserRoute();
   } else {
     return new Home();
   }
@@ -8802,21 +8792,7 @@ function select_category_eff() {
     }
   );
 }
-function read_localstorage2(key) {
-  return from(
-    (dispatch) => {
-      let _pipe = read_localstorage(key);
-      let _pipe$1 = new CurrentSavedUser(_pipe);
-      return dispatch(_pipe$1);
-    }
-  );
-}
-function write_localstorage2(key, value3) {
-  return from((_) => {
-    return write_localstorage(key, value3);
-  });
-}
-var is_prod = true;
+var is_prod = false;
 function root_url() {
   let $ = is_prod;
   if ($) {
@@ -8825,28 +8801,37 @@ function root_url() {
     return "http://localho.st:8080/";
   }
 }
-function initial_eff() {
+function load_user_eff() {
   let _block;
-  let $ = do_initial_uri();
-  if ($.isOk()) {
-    let uri = $[0];
-    _block = uri_to_route(uri);
-  } else {
-    _block = new Home();
-  }
-  let path = _block;
-  let decoder = list2(user_decoder());
-  return get3(
-    root_url(),
-    expect_json(
-      decoder,
-      (users) => {
-        return new Initial(users, calculate_current_cycle(), path);
-      }
-    )
+  let _pipe = read_localstorage("gwt");
+  _block = unwrap2(_pipe, "");
+  let gwt = _block;
+  let _block$1;
+  let _pipe$1 = to(root_url());
+  _block$1 = map3(
+    _pipe$1,
+    (req) => {
+      return set_header(req, "Bearer", gwt);
+    }
   );
+  let req_with_gwt = _block$1;
+  if (req_with_gwt.isOk()) {
+    let req = req_with_gwt[0];
+    return send2(
+      req,
+      expect_json(
+        user_decoder(),
+        (user) => {
+          return new SetUser(user, calculate_current_cycle());
+        }
+      )
+    );
+  } else {
+    debug("something went wrong with request creation");
+    return none();
+  }
 }
-function add_transaction_eff(transaction_form, amount, cat, current_user) {
+function add_transaction_eff(transaction_form, amount, cat) {
   let url = root_url() + "transaction/add";
   let a2 = new Transaction(
     guidv4(),
@@ -8858,7 +8843,7 @@ function add_transaction_eff(transaction_form, amount, cat, current_user) {
     transaction_form.payee,
     cat.id,
     amount,
-    current_user.id
+    ""
   );
   return post(
     url,
@@ -9243,6 +9228,21 @@ function delete_target_eff(category) {
     return none();
   }
 }
+function login_eff(login, pass) {
+  let url = root_url() + "login";
+  return post(
+    url,
+    object2(
+      toList([["login", string4(login)], ["pass", string4(pass)]])
+    ),
+    expect_json(
+      user_decoder(),
+      (user) => {
+        return new SetUser(user, calculate_current_cycle());
+      }
+    )
+  );
+}
 function get_category_suggestions() {
   let url = root_url() + "category/suggestions";
   let decoder = category_suggestions_decoder();
@@ -9345,14 +9345,71 @@ function on_check(msg) {
 }
 
 // build/dev/javascript/budget_fe/budget_fe/internals/view.mjs
+function auth_screen(form) {
+  return div(
+    toList([class$("mt-3 rounded-3 p-2")]),
+    toList([
+      text2("Log in:"),
+      input(
+        toList([
+          on_input(
+            (login) => {
+              return new LoginPassword(
+                new Some(login),
+                new None()
+              );
+            }
+          ),
+          placeholder("Login"),
+          class$("form-control"),
+          type_("text"),
+          style(toList([["width", "120px"]])),
+          value(
+            (() => {
+              let _pipe = form.login;
+              return unwrap(_pipe, "");
+            })()
+          )
+        ])
+      ),
+      input(
+        toList([
+          on_input(
+            (pass) => {
+              return new LoginPassword(
+                new None(),
+                new Some(pass)
+              );
+            }
+          ),
+          placeholder("Password"),
+          class$("form-control"),
+          type_("password"),
+          style(toList([["width", "120px"]])),
+          value(
+            (() => {
+              let _pipe = form.pass;
+              return unwrap(_pipe, "");
+            })()
+          )
+        ])
+      ),
+      button(
+        toList([
+          class$("mt-1"),
+          on_click(new LoginSubmit())
+        ]),
+        toList([text("Login")])
+      )
+    ])
+  );
+}
 function section_buttons(route) {
   let _block;
   if (route instanceof Home) {
     _block = ["active", ""];
-  } else if (route instanceof TransactionsRoute) {
-    _block = ["", "active"];
   } else {
-    _block = ["", ""];
+    _block = ["", "active"];
   }
   let $ = _block;
   let cat_active = $[0];
@@ -9448,40 +9505,6 @@ function cycle_to_text(c) {
     let _pipe = c.year;
     return to_string(_pipe);
   })();
-}
-function user_selection(m) {
-  return div(
-    toList([class$("d-flex flex-row")]),
-    toList([
-      div(
-        toList([class$("btn-group")]),
-        (() => {
-          let _pipe = m.all_users;
-          return map2(
-            _pipe,
-            (user) => {
-              let _block;
-              let $ = m.current_user.id === user.id;
-              if ($) {
-                _block = "active";
-              } else {
-                _block = "";
-              }
-              let active_class = _block;
-              return a(
-                toList([
-                  class$("btn btn-primary" + active_class),
-                  href("#"),
-                  on_click(new SelectUser(user))
-                ]),
-                toList([text2(user.name)])
-              );
-            }
-          );
-        })()
-      )
-    ])
-  );
 }
 function prev_month(year2, month2) {
   let mon_num = month_to_number(month2);
@@ -10927,13 +10950,15 @@ function view(model) {
                   style(toList([]))
                 ]),
                 toList([
-                  a(
-                    toList([
-                      class$("text-dark text-decoration-none"),
-                      href("/user")
-                    ]),
-                    toList([text2(model.current_user.name)])
-                  )
+                  (() => {
+                    let $ = model.current_user;
+                    if ($ instanceof None) {
+                      return text2("");
+                    } else {
+                      let user = $[0];
+                      return text2(user.name);
+                    }
+                  })()
                 ])
               )
             ])
@@ -10946,13 +10971,16 @@ function view(model) {
             toList([class$("d-flex flex-row")]),
             toList([
               (() => {
-                let $ = model.route;
-                if ($ instanceof Home) {
-                  return budget_categories(model);
-                } else if ($ instanceof TransactionsRoute) {
-                  return budget_transactions(model);
+                let $ = model.current_user;
+                if ($ instanceof None) {
+                  return auth_screen(model.login_form);
                 } else {
-                  return user_selection(model);
+                  let $1 = model.route;
+                  if ($1 instanceof Home) {
+                    return budget_categories(model);
+                  } else {
+                    return budget_transactions(model);
+                  }
                 }
               })(),
               div(toList([]), toList([category_details_ui(model)]))
@@ -10968,8 +10996,8 @@ function view(model) {
 function init3(_) {
   return [
     new Model2(
-      new User("initial", "Initial"),
-      toList([]),
+      new LoginForm(new None(), new None(), false),
+      new None(),
       calculate_current_cycle(),
       new Home(),
       new Some(26),
@@ -10993,7 +11021,7 @@ function init3(_) {
     batch(
       toList([
         init2(on_route_change),
-        initial_eff(),
+        load_user_eff(),
         select_category_eff()
       ])
     )
@@ -11022,7 +11050,7 @@ function to_money(tf) {
 function money_value(m) {
   return m.value;
 }
-function transaction_form_to_transaction(tef, categories, current_user) {
+function transaction_form_to_transaction(tef, categories) {
   let _block;
   let _pipe = tef.date;
   let _pipe$1 = from_date_string(_pipe);
@@ -11057,14 +11085,7 @@ function transaction_form_to_transaction(tef, categories, current_user) {
     let date = date_option[0];
     let category$1 = category[0];
     return new Some(
-      new Transaction(
-        tef.id,
-        date,
-        tef.payee,
-        category$1.id,
-        amount,
-        current_user.id
-      )
+      new Transaction(tef.id, date, tef.payee, category$1.id, amount, "")
     );
   } else {
     return new None();
@@ -11099,8 +11120,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           route,
           _record.cycle_end_day,
@@ -11124,96 +11145,139 @@ function update(model, msg) {
       })(),
       none()
     ];
-  } else if (msg instanceof Initial) {
-    let users = msg.users;
-    let cycle = msg.cycle;
-    let initial_path = msg.initial_route;
-    if (users.isOk()) {
-      let users$1 = users[0];
-      return [
+  } else if (msg instanceof LoginSubmit) {
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          new LoginForm(new None(), new None(), true),
+          _record.current_user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          _record.category_group_change_input
+        );
+      })(),
+      login_eff(
         (() => {
-          let _record = model;
-          return new Model2(
-            _record.current_user,
-            users$1,
-            cycle,
-            initial_path,
-            _record.cycle_end_day,
-            _record.show_all_transactions,
-            _record.categories_groups,
-            _record.categories,
-            _record.transactions,
-            _record.allocations,
-            _record.selected_category,
-            _record.show_add_category_ui,
-            _record.user_category_name_input,
-            _record.transaction_add_input,
-            _record.target_edit,
-            _record.selected_transaction,
-            _record.transaction_edit_form,
-            _record.suggestions,
-            _record.show_add_category_group_ui,
-            _record.new_category_group_name,
-            _record.category_group_change_input
-          );
+          let _pipe = model.login_form.login;
+          return unwrap(_pipe, "");
         })(),
-        batch(
-          toList([
-            get_category_groups(),
-            get_categories(),
-            get_transactions(),
-            get_allocations(),
-            read_localstorage2("current_user_id"),
-            get_category_suggestions()
-          ])
-        )
-      ];
-    } else {
-      return [model, none()];
-    }
-  } else if (msg instanceof CurrentSavedUser && msg.id.isOk()) {
-    let user_id = msg.id[0];
+        (() => {
+          let _pipe = model.login_form.pass;
+          return unwrap(_pipe, "");
+        })()
+      )
+    ];
+  } else if (msg instanceof LoginPassword) {
+    let l = msg.login;
+    let p = msg.pass;
     let _block;
-    let _pipe = model.all_users;
-    _block = find(_pipe, (u) => {
-      return u.id === user_id;
-    });
-    let user = _block;
-    if (user.isOk()) {
-      let user$1 = user[0];
-      return [
-        (() => {
-          let _record = model;
-          return new Model2(
-            user$1,
-            _record.all_users,
-            _record.cycle,
-            _record.route,
-            _record.cycle_end_day,
-            _record.show_all_transactions,
-            _record.categories_groups,
-            _record.categories,
-            _record.transactions,
-            _record.allocations,
-            _record.selected_category,
-            _record.show_add_category_ui,
-            _record.user_category_name_input,
-            _record.transaction_add_input,
-            _record.target_edit,
-            _record.selected_transaction,
-            _record.transaction_edit_form,
-            _record.suggestions,
-            _record.show_add_category_group_ui,
-            _record.new_category_group_name,
-            _record.category_group_change_input
-          );
-        })(),
-        none()
-      ];
+    if (l instanceof Some) {
+      let l$1 = l[0];
+      _block = new Some(l$1);
     } else {
-      return [model, none()];
+      _block = model.login_form.login;
     }
-  } else if (msg instanceof CurrentSavedUser && !msg.id.isOk()) {
+    let login = _block;
+    let _block$1;
+    if (p instanceof Some) {
+      let p$1 = p[0];
+      _block$1 = new Some(p$1);
+    } else {
+      _block$1 = model.login_form.pass;
+    }
+    let pass = _block$1;
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          (() => {
+            let _record$1 = model.login_form;
+            return new LoginForm(login, pass, _record$1.is_loading);
+          })(),
+          _record.current_user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          _record.category_group_change_input
+        );
+      })(),
+      none()
+    ];
+  } else if (msg instanceof SetUser && msg.user.isOk()) {
+    let user = msg.user[0];
+    let cycle = msg.cycle;
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.login_form,
+          new Some(user),
+          cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          _record.category_group_change_input
+        );
+      })(),
+      batch(
+        toList([
+          get_category_groups(),
+          get_categories(),
+          get_transactions(),
+          get_allocations(),
+          get_category_suggestions()
+        ])
+      )
+    ];
+  } else if (msg instanceof SetUser && !msg.user.isOk()) {
+    let err = msg.user[0];
+    debug(err);
     return [model, none()];
   } else if (msg instanceof Categories && msg.cats.isOk()) {
     let cats = msg.cats[0];
@@ -11221,8 +11285,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11254,8 +11318,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11295,8 +11359,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11328,8 +11392,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11385,45 +11449,14 @@ function update(model, msg) {
       })(),
       none()
     ];
-  } else if (msg instanceof SelectUser) {
-    let user = msg.u;
-    return [
-      (() => {
-        let _record = model;
-        return new Model2(
-          user,
-          _record.all_users,
-          _record.cycle,
-          _record.route,
-          _record.cycle_end_day,
-          _record.show_all_transactions,
-          _record.categories_groups,
-          _record.categories,
-          _record.transactions,
-          _record.allocations,
-          _record.selected_category,
-          _record.show_add_category_ui,
-          _record.user_category_name_input,
-          _record.transaction_add_input,
-          _record.target_edit,
-          _record.selected_transaction,
-          _record.transaction_edit_form,
-          _record.suggestions,
-          _record.show_add_category_group_ui,
-          _record.new_category_group_name,
-          _record.category_group_change_input
-        );
-      })(),
-      write_localstorage2("current_user_id", user.id)
-    ];
   } else if (msg instanceof ShowAddCategoryUI) {
     let group_id = msg.group_id;
     return [
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11466,8 +11499,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11497,8 +11530,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11538,8 +11571,8 @@ function update(model, msg) {
         (() => {
           let _record = model;
           return new Model2(
+            _record.login_form,
             _record.current_user,
-            _record.all_users,
             _record.cycle,
             _record.route,
             _record.cycle_end_day,
@@ -11573,8 +11606,7 @@ function update(model, msg) {
             let _pipe = model.transaction_add_input;
             return to_money(_pipe);
           })(),
-          cat,
-          model.current_user
+          cat
         )
       ];
     } else {
@@ -11586,8 +11618,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11634,8 +11666,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11674,8 +11706,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11718,8 +11750,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11761,8 +11793,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11801,8 +11833,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11840,8 +11872,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11874,8 +11906,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11918,8 +11950,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -11970,8 +12002,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12021,8 +12053,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12075,8 +12107,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12117,8 +12149,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12148,8 +12180,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12180,8 +12212,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12234,8 +12266,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12281,8 +12313,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12328,8 +12360,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12375,8 +12407,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12422,8 +12454,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12468,8 +12500,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12497,11 +12529,7 @@ function update(model, msg) {
           let _pipe$1 = map(
             _pipe,
             (tef) => {
-              return transaction_form_to_transaction(
-                tef,
-                model.categories,
-                model.current_user
-              );
+              return transaction_form_to_transaction(tef, model.categories);
             }
           );
           return flatten(_pipe$1);
@@ -12519,8 +12547,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12558,8 +12586,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12609,8 +12637,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12683,8 +12711,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12734,8 +12762,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           new_cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12765,8 +12793,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12796,8 +12824,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12836,8 +12864,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12867,8 +12895,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12899,8 +12927,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12932,8 +12960,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,
@@ -12978,8 +13006,8 @@ function update(model, msg) {
         (() => {
           let _record = model;
           return new Model2(
+            _record.login_form,
             _record.current_user,
-            _record.all_users,
             _record.cycle,
             _record.route,
             _record.cycle_end_day,
@@ -13022,8 +13050,8 @@ function update(model, msg) {
       (() => {
         let _record = model;
         return new Model2(
+          _record.login_form,
           _record.current_user,
-          _record.all_users,
           _record.cycle,
           _record.route,
           _record.cycle_end_day,

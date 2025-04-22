@@ -1,11 +1,12 @@
 import budget_fe/internals/msg
 import budget_fe/internals/msg.{
-  type Model, type Msg, type SelectedCategory, type TargetEdit,
+  type LoginForm, type Model, type Msg, type SelectedCategory, type TargetEdit,
 } as _
 import budget_shared.{
   type Allocation, type Category, type Cycle, type Money, type MonthInYear,
   type Transaction,
 } as m
+
 // import budget_shared.{
 //   Allocation, Category, Cycle, Money, MonthInYear, Transaction,
 // }
@@ -40,13 +41,17 @@ pub fn view(model: Model) -> element.Element(Msg) {
             attribute.style([]),
           ],
           [
-            html.a(
-              [
-                attribute.class("text-dark text-decoration-none"),
-                attribute.href("/user"),
-              ],
-              [html.text(model.current_user.name)],
-            ),
+            case model.current_user {
+              option.None -> html.text("")
+              option.Some(user) -> html.text(user.name)
+            },
+            // html.a(
+          //   [
+          //     attribute.class("text-dark text-decoration-none"),
+          //     attribute.href("/user"),
+          //   ],
+          //   [html.text(model.current_user.name)],
+          // ),
           ],
         ),
       ]),
@@ -54,15 +59,53 @@ pub fn view(model: Model) -> element.Element(Msg) {
         section_buttons(model.route),
       ]),
       html.div([attribute.class("d-flex flex-row")], [
-        case model.route {
-          msg.Home -> budget_categories(model)
-          msg.TransactionsRoute -> budget_transactions(model)
-          msg.UserRoute -> user_selection(model)
+        case model.current_user {
+          option.None -> auth_screen(model.login_form)
+          option.Some(_) ->
+            case model.route {
+              msg.Home -> budget_categories(model)
+              msg.TransactionsRoute -> budget_transactions(model)
+            }
         },
         html.div([], [category_details_ui(model)]),
       ]),
     ]),
   ])
+}
+
+fn auth_screen(form: LoginForm) -> element.Element(Msg) {
+  html.div(
+    [
+      attribute.class("mt-3 rounded-3 p-2"),
+      // attribute.style([#("background-color", side_panel_color)]),
+    ],
+    [
+      html.text("Log in:"),
+      html.input([
+        event.on_input(fn(login) {
+          msg.LoginPassword(login: option.Some(login), pass: option.None)
+        }),
+        attribute.placeholder("Login"),
+        attribute.class("form-control"),
+        attribute.type_("text"),
+        attribute.style([#("width", "120px")]),
+        attribute.value(form.login |> option.unwrap("")),
+      ]),
+      html.input([
+        event.on_input(fn(pass) {
+          msg.LoginPassword(login: option.None, pass: option.Some(pass))
+        }),
+        attribute.placeholder("Password"),
+        attribute.class("form-control"),
+        attribute.type_("password"),
+        attribute.style([#("width", "120px")]),
+        attribute.value(form.pass |> option.unwrap("")),
+      ]),
+      html.button([attribute.class("mt-1"), event.on_click(msg.LoginSubmit)], [
+        element.text("Login"),
+      ]),
+    ],
+  )
 }
 
 fn ready_to_assign(model: Model) -> element.Element(Msg) {
@@ -95,7 +138,7 @@ fn section_buttons(route: msg.Route) -> element.Element(Msg) {
   let #(cat_active, transactions_active) = case route {
     msg.Home -> #("active", "")
     msg.TransactionsRoute -> #("", "active")
-    msg.UserRoute -> #("", "")
+    // msg.UserRoute -> #("", "")
   }
 
   html.div(
@@ -252,29 +295,6 @@ fn transaction_category_name(t: Transaction, cats: List(Category)) -> String {
 
 fn cycle_to_text(c: Cycle) -> String {
   c.month |> date_utils.month_to_name() <> " " <> c.year |> int.to_string
-}
-
-fn user_selection(m: Model) -> element.Element(Msg) {
-  html.div([attribute.class("d-flex flex-row")], [
-    html.div(
-      [attribute.class("btn-group")],
-      m.all_users
-        |> list.map(fn(user) {
-          let active_class = case m.current_user.id == user.id {
-            True -> "active"
-            False -> ""
-          }
-          html.a(
-            [
-              attribute.class("btn btn-primary" <> active_class),
-              attribute.href("#"),
-              event.on_click(msg.SelectUser(user)),
-            ],
-            [html.text(user.name)],
-          )
-        }),
-    ),
-  ])
 }
 
 fn current_cycle_transactions(model: Model) -> List(Transaction) {

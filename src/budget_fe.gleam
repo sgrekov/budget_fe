@@ -3,7 +3,7 @@ import budget_fe/internals/msg.{type Model, type Msg, Model}
 import budget_fe/internals/view as v
 import budget_shared.{
   type Allocation, type Category, type Cycle, type MonthInYear, type Transaction,
-  type User, Category, MonthInYear, Transaction, User,
+  Category, MonthInYear, Transaction,
 } as m
 import date_utils
 import gleam/dict
@@ -27,8 +27,7 @@ pub fn main() {
 fn init(_flags) -> #(Model, effect.Effect(Msg)) {
   #(
     msg.Model(
-      current_user: User(id: "initial", name: "Initial"),
-      all_users: [],
+      current_user: option.None,
       cycle: m.calculate_current_cycle(),
       route: msg.Home,
       cycle_end_day: option.Some(26),
@@ -48,10 +47,11 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       suggestions: dict.new(),
       new_category_group_name: "",
       category_group_change_input: "",
+      login_form: msg.LoginForm(None, None, False),
     ),
     effect.batch([
       modem.init(eff.on_route_change),
-      eff.initial_eff(),
+      eff.load_user_eff(),
       eff.select_category_eff(),
     ]),
   )
@@ -63,30 +63,55 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     msg.OnRouteChange(route) -> {
       #(Model(..model, route: route), effect.none())
     }
-    msg.Initial(users, cycle, initial_path) -> {
-      case users {
-        Ok(users) -> #(
-          Model(..model, all_users: users, cycle: cycle, route: initial_path),
-          effect.batch([
-            eff.get_category_groups(),
-            eff.get_categories(),
-            eff.get_transactions(),
-            eff.get_allocations(),
-            eff.read_localstorage("current_user_id"),
-            eff.get_category_suggestions(),
-          ]),
-        )
-        Error(_) -> #(model, effect.none())
+    msg.LoginSubmit -> #(
+      Model(
+        ..model,
+        login_form: msg.LoginForm(
+          login: option.None,
+          pass: option.None,
+          is_loading: True,
+        ),
+      ),
+      eff.login_eff(
+        model.login_form.login |> option.unwrap(""),
+        model.login_form.pass |> option.unwrap(""),
+      ),
+    )
+    msg.LoginPassword(l, p) -> {
+      let login = case l {
+        Some(l) -> Some(l)
+        None -> model.login_form.login
       }
-    }
-    msg.CurrentSavedUser(Ok(user_id)) -> {
-      let user = model.all_users |> list.find(fn(u) { u.id == user_id })
-      case user {
-        Ok(user) -> #(Model(..model, current_user: user), effect.none())
-        Error(_) -> #(model, effect.none())
+      let pass = case p {
+        Some(p) -> Some(p)
+        None -> model.login_form.pass
       }
+      #(
+        Model(
+          ..model,
+          login_form: msg.LoginForm(
+            ..model.login_form,
+            login: login,
+            pass: pass,
+          ),
+        ),
+        effect.none(),
+      )
     }
-    msg.CurrentSavedUser(Error(_)) -> #(model, effect.none())
+    msg.SetUser(Ok(user), cycle) -> #(
+      Model(..model, current_user: option.Some(user), cycle: cycle),
+      effect.batch([
+        eff.get_category_groups(),
+        eff.get_categories(),
+        eff.get_transactions(),
+        eff.get_allocations(),
+        eff.get_category_suggestions(),
+      ]),
+    )
+    msg.SetUser(Error(err), _) -> {
+      io.debug(err)
+      #(model, effect.none())
+    }
     msg.Categories(Ok(cats)) -> {
       #(Model(..model, categories: cats), eff.get_transactions())
     }
@@ -118,10 +143,6 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         )),
       ),
       effect.none(),
-    )
-    msg.SelectUser(user) -> #(
-      Model(..model, current_user: user),
-      eff.write_localstorage("current_user_id", user.id),
     )
     msg.ShowAddCategoryUI(group_id) -> #(
       Model(..model, show_add_category_ui: case model.show_add_category_ui {
@@ -164,7 +185,6 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
             model.transaction_add_input,
             model.transaction_add_input |> to_money,
             cat,
-            model.current_user,
           ),
         )
         _, _ -> #(model, effect.none())
@@ -386,11 +406,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       case
         model.transaction_edit_form
         |> option.map(fn(tef) {
-          transaction_form_to_transaction(
-            tef,
-            model.categories,
-            model.current_user,
-          )
+          transaction_form_to_transaction(tef, model.categories)
         })
         |> option.flatten
       {
@@ -533,7 +549,6 @@ fn to_money(tf: msg.TransactionForm) -> m.Money {
 fn transaction_form_to_transaction(
   tef: msg.TransactionEditForm,
   categories: List(Category),
-  current_user: User,
 ) -> Option(Transaction) {
   let date_option =
     tef.date |> date_utils.from_date_string |> option.from_result
@@ -556,7 +571,7 @@ fn transaction_form_to_transaction(
         payee: tef.payee,
         category_id: category.id,
         value: amount,
-        user_id: current_user.id,
+        user_id: "",
       ))
     _, _ -> None
   }

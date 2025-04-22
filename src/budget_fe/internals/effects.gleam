@@ -1,24 +1,26 @@
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
+import budget_fe/internals/uuid
 import budget_shared.{
-  type Allocation, type Category, type Cycle, type Target,
-  type User, Allocation, Category, Transaction,
+  type Allocation, type Category, type Cycle, type Target, Allocation, Category,
+  Transaction,
 } as m
 import date_utils
 import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
+import gleam/io
 import gleam/json
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/result
-import budget_fe/internals/uuid
 import gleam/uri.{type Uri}
 import lustre/effect
 import lustre_http
-import modem.{initial_uri}
+
+// import modem.{initial_uri}
 import rada/date as d
 
-const is_prod: Bool = True
+const is_prod: Bool = False
 
 fn root_url() -> String {
   case is_prod {
@@ -35,24 +37,37 @@ pub fn on_route_change(uri: Uri) -> Msg {
 fn uri_to_route(uri: Uri) -> msg.Route {
   case uri.path_segments(uri.path) {
     ["transactions"] -> msg.TransactionsRoute
-    ["user"] -> msg.UserRoute
+    // ["user"] -> msg.UserRoute
     _ -> msg.Home
   }
 }
 
-pub fn initial_eff() -> effect.Effect(Msg) {
-  let path = case initial_uri() {
-    Ok(uri) -> uri_to_route(uri)
-    _ -> msg.Home
-  }
+pub fn load_user_eff() -> effect.Effect(Msg) {
+  // let path = case initial_uri() {
+  //   Ok(uri) -> uri_to_route(uri)
+  //   _ -> msg.Home
+  // }
 
-  let decoder = decode.list(m.user_decoder())
-  lustre_http.get(
-    root_url(),
-    lustre_http.expect_json(decoder, fn(users) {
-      msg.Initial(users, m.calculate_current_cycle(), path)
-    }),
-  )
+  let gwt = do_read_localstorage("gwt") |> result.unwrap("")
+
+  let req_with_gwt =
+    request.to(root_url())
+    |> result.map(fn(req) { request.set_header(req, "Bearer", gwt) })
+
+  case req_with_gwt {
+    Ok(req) ->
+      lustre_http.send(
+        req,
+        lustre_http.expect_json(m.user_decoder(), fn(user) {
+          msg.SetUser(user, m.calculate_current_cycle())
+        }),
+      )
+    _ -> {
+      // Handle error case
+      io.debug("something went wrong with request creation")
+      effect.none()
+    }
+  }
 }
 
 //dev func for easier working with right panel
@@ -73,7 +88,7 @@ pub fn add_transaction_eff(
   transaction_form: TransactionForm,
   amount: m.Money,
   cat: Category,
-  current_user: User,
+  // current_user: User,
 ) -> effect.Effect(Msg) {
   let url = root_url() <> "transaction/add"
 
@@ -86,7 +101,7 @@ pub fn add_transaction_eff(
       payee: transaction_form.payee,
       category_id: cat.id,
       value: amount,
-      user_id: current_user.id,
+      user_id: "",
     )
   // io.debug(t)
   lustre_http.post(
@@ -308,13 +323,25 @@ pub fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
   }
 }
 
-pub fn read_localstorage(key: String) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    do_read_localstorage(key)
-    |> msg.CurrentSavedUser
-    |> dispatch
-  })
+pub fn login_eff(login: String, pass: String) -> effect.Effect(Msg) {
+  let url = root_url() <> "login"
+
+  lustre_http.post(
+    url,
+    json.object([#("login", json.string(login)), #("pass", json.string(pass))]),
+    lustre_http.expect_json(m.user_decoder(), fn(user) {
+      msg.SetUser(user, m.calculate_current_cycle())
+    }),
+  )
 }
+
+// pub fn read_localstorage(key: String) -> effect.Effect(Msg) {
+//   effect.from(fn(dispatch) {
+//     do_read_localstorage(key)
+//     |> msg.CurrentSavedUser
+//     |> dispatch
+//   })
+// }
 
 @external(javascript, "./app.ffi.mjs", "read_localstorage")
 fn do_read_localstorage(_key: String) -> Result(String, Nil) {
