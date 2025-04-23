@@ -22,8 +22,8 @@ lustre_http = "~> 0.7.0"
 modem = "~> 2.0.1"
 rada = ">= 0.5.0 and < 1.0.0"
 gleam_json = "~> 2.3.0"
-budget_shared = { git = "https://github.com/sgrekov/BudgetDomain.git", ref = "6c10e976b87857ddd9f79c169a933de25d47e1cd" }
-# budget_shared = { path = "../budget_shared" }
+# budget_shared = { git = "https://github.com/sgrekov/BudgetDomain.git", ref = "6c10e976b87857ddd9f79c169a933de25d47e1cd" }
+budget_shared = { path = "../budget_shared" }
 decode = ">= 1.1.0 and < 2.0.0"
 gleam_http = ">= 3.7.2 and < 4.0.0"
 gwt = ">= 2.0.0 and < 3.0.0"

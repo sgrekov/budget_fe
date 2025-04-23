@@ -315,9 +315,9 @@ function isEqual(x, y) {
       } catch {
       }
     }
-    let [keys2, get4] = getters(a2);
+    let [keys2, get3] = getters(a2);
     for (let k of keys2(a2)) {
-      values2.push(get4(a2, k), get4(b, k));
+      values2.push(get3(a2, k), get3(b, k));
     }
   }
   return true;
@@ -2070,9 +2070,6 @@ function pop_grapheme(string5) {
     return new Error(Nil);
   }
 }
-function pop_codeunit(str) {
-  return [str.charCodeAt(0) | 0, str.slice(1)];
-}
 function lowercase(string5) {
   return string5.toLowerCase();
 }
@@ -2107,9 +2104,6 @@ function string_slice(string5, idx, len) {
   } else {
     return string5.match(/./gsu).slice(idx, idx + len).join("");
   }
-}
-function string_codeunit_slice(str, from2, length4) {
-  return str.slice(from2, from2 + length4);
 }
 function starts_with(haystack, needle) {
   return haystack.startsWith(needle);
@@ -5478,6 +5472,27 @@ function user_decoder() {
     }
   );
 }
+function user_with_token_decoder() {
+  return field2(
+    "id",
+    string3,
+    (id2) => {
+      return field2(
+        "name",
+        string3,
+        (name) => {
+          return field2(
+            "token",
+            string3,
+            (token3) => {
+              return success([new User(id2, name), token3]);
+            }
+          );
+        }
+      );
+    }
+  );
+}
 function category_group_decoder() {
   return field2(
     "id",
@@ -6819,734 +6834,6 @@ var Uri = class extends CustomType {
     this.fragment = fragment;
   }
 };
-function is_valid_host_within_brackets_char(char) {
-  return 48 >= char && char <= 57 || 65 >= char && char <= 90 || 97 >= char && char <= 122 || char === 58 || char === 46;
-}
-function parse_fragment(rest, pieces) {
-  return new Ok(
-    (() => {
-      let _record = pieces;
-      return new Uri(
-        _record.scheme,
-        _record.userinfo,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query,
-        new Some(rest)
-      );
-    })()
-  );
-}
-function parse_query_with_question_mark_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string.startsWith("#") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_fragment(rest, pieces);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let query = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        _record.host,
-        _record.port,
-        _record.path,
-        new Some(query),
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_fragment(rest, pieces$1);
-    } else if (uri_string === "") {
-      return new Ok(
-        (() => {
-          let _record = pieces;
-          return new Uri(
-            _record.scheme,
-            _record.userinfo,
-            _record.host,
-            _record.port,
-            _record.path,
-            new Some(original),
-            _record.fragment
-          );
-        })()
-      );
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let rest = $[1];
-      loop$original = original;
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$size = size + 1;
-    }
-  }
-}
-function parse_query_with_question_mark(uri_string, pieces) {
-  return parse_query_with_question_mark_loop(uri_string, uri_string, pieces, 0);
-}
-function parse_path_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string.startsWith("?")) {
-      let rest = uri_string.slice(1);
-      let path = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        _record.host,
-        _record.port,
-        path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let path = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        _record.host,
-        _record.port,
-        path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_fragment(rest, pieces$1);
-    } else if (uri_string === "") {
-      return new Ok(
-        (() => {
-          let _record = pieces;
-          return new Uri(
-            _record.scheme,
-            _record.userinfo,
-            _record.host,
-            _record.port,
-            original,
-            _record.query,
-            _record.fragment
-          );
-        })()
-      );
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let rest = $[1];
-      loop$original = original;
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$size = size + 1;
-    }
-  }
-}
-function parse_path(uri_string, pieces) {
-  return parse_path_loop(uri_string, uri_string, pieces, 0);
-}
-function parse_port_loop(loop$uri_string, loop$pieces, loop$port) {
-  while (true) {
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let port = loop$port;
-    if (uri_string.startsWith("0")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10;
-    } else if (uri_string.startsWith("1")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 1;
-    } else if (uri_string.startsWith("2")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 2;
-    } else if (uri_string.startsWith("3")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 3;
-    } else if (uri_string.startsWith("4")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 4;
-    } else if (uri_string.startsWith("5")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 5;
-    } else if (uri_string.startsWith("6")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 6;
-    } else if (uri_string.startsWith("7")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 7;
-    } else if (uri_string.startsWith("8")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 8;
-    } else if (uri_string.startsWith("9")) {
-      let rest = uri_string.slice(1);
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$port = port * 10 + 9;
-    } else if (uri_string.startsWith("?")) {
-      let rest = uri_string.slice(1);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        _record.host,
-        new Some(port),
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        _record.host,
-        new Some(port),
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_fragment(rest, pieces$1);
-    } else if (uri_string.startsWith("/")) {
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        _record.host,
-        new Some(port),
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_path(uri_string, pieces$1);
-    } else if (uri_string === "") {
-      return new Ok(
-        (() => {
-          let _record = pieces;
-          return new Uri(
-            _record.scheme,
-            _record.userinfo,
-            _record.host,
-            new Some(port),
-            _record.path,
-            _record.query,
-            _record.fragment
-          );
-        })()
-      );
-    } else {
-      return new Error(void 0);
-    }
-  }
-}
-function parse_port(uri_string, pieces) {
-  if (uri_string.startsWith(":0")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 0);
-  } else if (uri_string.startsWith(":1")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 1);
-  } else if (uri_string.startsWith(":2")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 2);
-  } else if (uri_string.startsWith(":3")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 3);
-  } else if (uri_string.startsWith(":4")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 4);
-  } else if (uri_string.startsWith(":5")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 5);
-  } else if (uri_string.startsWith(":6")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 6);
-  } else if (uri_string.startsWith(":7")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 7);
-  } else if (uri_string.startsWith(":8")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 8);
-  } else if (uri_string.startsWith(":9")) {
-    let rest = uri_string.slice(2);
-    return parse_port_loop(rest, pieces, 9);
-  } else if (uri_string.startsWith(":")) {
-    return new Error(void 0);
-  } else if (uri_string.startsWith("?")) {
-    let rest = uri_string.slice(1);
-    return parse_query_with_question_mark(rest, pieces);
-  } else if (uri_string.startsWith("#")) {
-    let rest = uri_string.slice(1);
-    return parse_fragment(rest, pieces);
-  } else if (uri_string.startsWith("/")) {
-    return parse_path(uri_string, pieces);
-  } else if (uri_string === "") {
-    return new Ok(pieces);
-  } else {
-    return new Error(void 0);
-  }
-}
-function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string === "") {
-      return new Ok(
-        (() => {
-          let _record = pieces;
-          return new Uri(
-            _record.scheme,
-            _record.userinfo,
-            new Some(original),
-            _record.port,
-            _record.path,
-            _record.query,
-            _record.fragment
-          );
-        })()
-      );
-    } else if (uri_string.startsWith(":")) {
-      let host = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        new Some(host),
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_port(uri_string, pieces$1);
-    } else if (uri_string.startsWith("/")) {
-      let host = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        new Some(host),
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_path(uri_string, pieces$1);
-    } else if (uri_string.startsWith("?")) {
-      let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        new Some(host),
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        new Some(host),
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_fragment(rest, pieces$1);
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let rest = $[1];
-      loop$original = original;
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$size = size + 1;
-    }
-  }
-}
-function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string === "") {
-      return new Ok(
-        (() => {
-          let _record = pieces;
-          return new Uri(
-            _record.scheme,
-            _record.userinfo,
-            new Some(uri_string),
-            _record.port,
-            _record.path,
-            _record.query,
-            _record.fragment
-          );
-        })()
-      );
-    } else if (uri_string.startsWith("]") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_port(rest, pieces);
-    } else if (uri_string.startsWith("]")) {
-      let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size + 1);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        new Some(host),
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_port(rest, pieces$1);
-    } else if (uri_string.startsWith("/") && size === 0) {
-      return parse_path(uri_string, pieces);
-    } else if (uri_string.startsWith("/")) {
-      let host = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        new Some(host),
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_path(uri_string, pieces$1);
-    } else if (uri_string.startsWith("?") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_query_with_question_mark(rest, pieces);
-    } else if (uri_string.startsWith("?")) {
-      let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        new Some(host),
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_fragment(rest, pieces);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        _record.userinfo,
-        new Some(host),
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_fragment(rest, pieces$1);
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let char = $[0];
-      let rest = $[1];
-      let $1 = is_valid_host_within_brackets_char(char);
-      if ($1) {
-        loop$original = original;
-        loop$uri_string = rest;
-        loop$pieces = pieces;
-        loop$size = size + 1;
-      } else {
-        return parse_host_outside_of_brackets_loop(
-          original,
-          original,
-          pieces,
-          0
-        );
-      }
-    }
-  }
-}
-function parse_host_within_brackets(uri_string, pieces) {
-  return parse_host_within_brackets_loop(uri_string, uri_string, pieces, 0);
-}
-function parse_host_outside_of_brackets(uri_string, pieces) {
-  return parse_host_outside_of_brackets_loop(uri_string, uri_string, pieces, 0);
-}
-function parse_host(uri_string, pieces) {
-  if (uri_string.startsWith("[")) {
-    return parse_host_within_brackets(uri_string, pieces);
-  } else if (uri_string.startsWith(":")) {
-    let _block;
-    let _record = pieces;
-    _block = new Uri(
-      _record.scheme,
-      _record.userinfo,
-      new Some(""),
-      _record.port,
-      _record.path,
-      _record.query,
-      _record.fragment
-    );
-    let pieces$1 = _block;
-    return parse_port(uri_string, pieces$1);
-  } else if (uri_string === "") {
-    return new Ok(
-      (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          new Some(""),
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })()
-    );
-  } else {
-    return parse_host_outside_of_brackets(uri_string, pieces);
-  }
-}
-function parse_userinfo_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string.startsWith("@") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_host(rest, pieces);
-    } else if (uri_string.startsWith("@")) {
-      let rest = uri_string.slice(1);
-      let userinfo = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        _record.scheme,
-        new Some(userinfo),
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_host(rest, pieces$1);
-    } else if (uri_string === "") {
-      return parse_host(original, pieces);
-    } else if (uri_string.startsWith("/")) {
-      return parse_host(original, pieces);
-    } else if (uri_string.startsWith("?")) {
-      return parse_host(original, pieces);
-    } else if (uri_string.startsWith("#")) {
-      return parse_host(original, pieces);
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let rest = $[1];
-      loop$original = original;
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$size = size + 1;
-    }
-  }
-}
-function parse_authority_pieces(string5, pieces) {
-  return parse_userinfo_loop(string5, string5, pieces, 0);
-}
-function parse_authority_with_slashes(uri_string, pieces) {
-  if (uri_string === "//") {
-    return new Ok(
-      (() => {
-        let _record = pieces;
-        return new Uri(
-          _record.scheme,
-          _record.userinfo,
-          new Some(""),
-          _record.port,
-          _record.path,
-          _record.query,
-          _record.fragment
-        );
-      })()
-    );
-  } else if (uri_string.startsWith("//")) {
-    let rest = uri_string.slice(2);
-    return parse_authority_pieces(rest, pieces);
-  } else {
-    return parse_path(uri_string, pieces);
-  }
-}
-function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$size) {
-  while (true) {
-    let original = loop$original;
-    let uri_string = loop$uri_string;
-    let pieces = loop$pieces;
-    let size = loop$size;
-    if (uri_string.startsWith("/") && size === 0) {
-      return parse_authority_with_slashes(uri_string, pieces);
-    } else if (uri_string.startsWith("/")) {
-      let scheme = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        new Some(lowercase(scheme)),
-        _record.userinfo,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_authority_with_slashes(uri_string, pieces$1);
-    } else if (uri_string.startsWith("?") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_query_with_question_mark(rest, pieces);
-    } else if (uri_string.startsWith("?")) {
-      let rest = uri_string.slice(1);
-      let scheme = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        new Some(lowercase(scheme)),
-        _record.userinfo,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#") && size === 0) {
-      let rest = uri_string.slice(1);
-      return parse_fragment(rest, pieces);
-    } else if (uri_string.startsWith("#")) {
-      let rest = uri_string.slice(1);
-      let scheme = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        new Some(lowercase(scheme)),
-        _record.userinfo,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_fragment(rest, pieces$1);
-    } else if (uri_string.startsWith(":") && size === 0) {
-      return new Error(void 0);
-    } else if (uri_string.startsWith(":")) {
-      let rest = uri_string.slice(1);
-      let scheme = string_codeunit_slice(original, 0, size);
-      let _block;
-      let _record = pieces;
-      _block = new Uri(
-        new Some(lowercase(scheme)),
-        _record.userinfo,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query,
-        _record.fragment
-      );
-      let pieces$1 = _block;
-      return parse_authority_with_slashes(rest, pieces$1);
-    } else if (uri_string === "") {
-      return new Ok(
-        (() => {
-          let _record = pieces;
-          return new Uri(
-            _record.scheme,
-            _record.userinfo,
-            _record.host,
-            _record.port,
-            original,
-            _record.query,
-            _record.fragment
-          );
-        })()
-      );
-    } else {
-      let $ = pop_codeunit(uri_string);
-      let rest = $[1];
-      loop$original = original;
-      loop$uri_string = rest;
-      loop$pieces = pieces;
-      loop$size = size + 1;
-    }
-  }
-}
 function remove_dot_segments_loop(loop$input, loop$accumulator) {
   while (true) {
     let input2 = loop$input;
@@ -7658,18 +6945,6 @@ function to_string3(uri) {
   }
   let parts$5 = _block$4;
   return concat2(parts$5);
-}
-var empty = /* @__PURE__ */ new Uri(
-  /* @__PURE__ */ new None(),
-  /* @__PURE__ */ new None(),
-  /* @__PURE__ */ new None(),
-  /* @__PURE__ */ new None(),
-  "",
-  /* @__PURE__ */ new None(),
-  /* @__PURE__ */ new None()
-);
-function parse2(uri_string) {
-  return parse_scheme_loop(uri_string, uri_string, empty, 0);
 }
 
 // build/dev/javascript/modem/modem.ffi.mjs
@@ -7823,16 +7098,6 @@ function scheme_to_string(scheme) {
     return "https";
   }
 }
-function scheme_from_string(scheme) {
-  let $ = lowercase(scheme);
-  if ($ === "http") {
-    return new Ok(new Http());
-  } else if ($ === "https") {
-    return new Ok(new Https());
-  } else {
-    return new Error(void 0);
-  }
-}
 
 // build/dev/javascript/gleam_http/gleam/http/request.mjs
 var Request = class extends CustomType {
@@ -7857,36 +7122,6 @@ function to_uri(request) {
     request.path,
     request.query,
     new None()
-  );
-}
-function from_uri(uri) {
-  return then$(
-    (() => {
-      let _pipe = uri.scheme;
-      let _pipe$1 = unwrap(_pipe, "");
-      return scheme_from_string(_pipe$1);
-    })(),
-    (scheme) => {
-      return then$(
-        (() => {
-          let _pipe = uri.host;
-          return to_result(_pipe, void 0);
-        })(),
-        (host) => {
-          let req = new Request(
-            new Get(),
-            toList([]),
-            "",
-            scheme,
-            host,
-            uri.port,
-            uri.path,
-            uri.query
-          );
-          return new Ok(req);
-        }
-      );
-    }
   );
 }
 function set_header(request, key, value3) {
@@ -7926,10 +7161,69 @@ function set_method(req, method) {
     _record.query
   );
 }
-function to(url) {
-  let _pipe = url;
-  let _pipe$1 = parse2(_pipe);
-  return then$(_pipe$1, from_uri);
+function new$3() {
+  return new Request(
+    new Get(),
+    toList([]),
+    "",
+    new Https(),
+    "localhost",
+    new None(),
+    "",
+    new None()
+  );
+}
+function set_scheme(req, scheme) {
+  let _record = req;
+  return new Request(
+    _record.method,
+    _record.headers,
+    _record.body,
+    scheme,
+    _record.host,
+    _record.port,
+    _record.path,
+    _record.query
+  );
+}
+function set_host(req, host) {
+  let _record = req;
+  return new Request(
+    _record.method,
+    _record.headers,
+    _record.body,
+    _record.scheme,
+    host,
+    _record.port,
+    _record.path,
+    _record.query
+  );
+}
+function set_port(req, port) {
+  let _record = req;
+  return new Request(
+    _record.method,
+    _record.headers,
+    _record.body,
+    _record.scheme,
+    _record.host,
+    new Some(port),
+    _record.path,
+    _record.query
+  );
+}
+function set_path(req, path) {
+  let _record = req;
+  return new Request(
+    _record.method,
+    _record.headers,
+    _record.body,
+    _record.scheme,
+    _record.host,
+    _record.port,
+    path,
+    _record.query
+  );
 }
 
 // build/dev/javascript/gleam_http/gleam/http/response.mjs
@@ -8058,12 +7352,6 @@ function send(request) {
 }
 
 // build/dev/javascript/lustre_http/lustre_http.mjs
-var BadUrl = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
 var InternalServerError = class extends CustomType {
   constructor(x0) {
     super();
@@ -8117,40 +7405,6 @@ function do_send(req, expect, dispatch) {
   );
   tap(_pipe$3, dispatch);
   return void 0;
-}
-function get3(url, expect) {
-  return from(
-    (dispatch) => {
-      let $ = to(url);
-      if ($.isOk()) {
-        let req = $[0];
-        return do_send(req, expect, dispatch);
-      } else {
-        return dispatch(expect.run(new Error(new BadUrl(url))));
-      }
-    }
-  );
-}
-function post(url, body, expect) {
-  return from(
-    (dispatch) => {
-      let $ = to(url);
-      if ($.isOk()) {
-        let req = $[0];
-        let _pipe = req;
-        let _pipe$1 = set_method(_pipe, new Post());
-        let _pipe$2 = set_header(
-          _pipe$1,
-          "Content-Type",
-          "application/json"
-        );
-        let _pipe$3 = set_body(_pipe$2, to_string2(body));
-        return do_send(_pipe$3, expect, dispatch);
-      } else {
-        return dispatch(expect.run(new Error(new BadUrl(url))));
-      }
-    }
-  );
 }
 function send2(req, expect) {
   return from((_capture) => {
@@ -8762,6 +8016,9 @@ function read_localstorage(key) {
   const value3 = window.localStorage.getItem(key);
   return value3 ? new Ok2(value3) : new Error2(void 0);
 }
+function write_localstorage(key, value3) {
+  window.localStorage.setItem(key, value3);
+}
 
 // build/dev/javascript/budget_fe/budget_fe/internals/effects.mjs
 function uri_to_route(uri) {
@@ -8792,48 +8049,98 @@ function select_category_eff() {
     }
   );
 }
-var is_prod = false;
-function root_url() {
-  let $ = is_prod;
-  if ($) {
-    return "https://budget-be.fly.dev/";
-  } else {
-    return "http://localho.st:8080/";
-  }
+function write_localstorage2(key, value3) {
+  return from((_) => {
+    return write_localstorage(key, value3);
+  });
 }
-function load_user_eff() {
+var is_prod = false;
+function request_with_auth() {
   let _block;
   let _pipe = read_localstorage("gwt");
   _block = unwrap2(_pipe, "");
-  let gwt = _block;
+  let jwt = _block;
   let _block$1;
-  let _pipe$1 = to(root_url());
-  _block$1 = map3(
-    _pipe$1,
-    (req) => {
-      return set_header(req, "Bearer", gwt);
-    }
-  );
-  let req_with_gwt = _block$1;
-  if (req_with_gwt.isOk()) {
-    let req = req_with_gwt[0];
-    return send2(
-      req,
-      expect_json(
-        user_decoder(),
-        (user) => {
-          return new SetUser(user, calculate_current_cycle());
-        }
-      )
-    );
+  let $ = is_prod;
+  if ($) {
+    let _pipe$12 = new$3();
+    let _pipe$22 = set_host(_pipe$12, "budget-be.fly.dev");
+    let _pipe$32 = set_port(_pipe$22, 443);
+    _block$1 = set_scheme(_pipe$32, new Https());
   } else {
-    debug("something went wrong with request creation");
-    return none();
+    let _pipe$12 = new$3();
+    let _pipe$22 = set_host(_pipe$12, "localho.st");
+    let _pipe$32 = set_port(_pipe$22, 8080);
+    _block$1 = set_scheme(_pipe$32, new Http());
   }
+  let req = _block$1;
+  let _pipe$1 = req;
+  let _pipe$2 = set_method(_pipe$1, new Get());
+  let _pipe$3 = set_header(_pipe$2, "Content-Type", "application/json");
+  let _pipe$4 = set_header(_pipe$3, "Accept", "application/json");
+  return set_header(_pipe$4, "Authorization", "Bearer " + jwt);
+}
+function load_user_eff() {
+  return send2(
+    request_with_auth(),
+    expect_json(
+      user_with_token_decoder(),
+      (user_with_token) => {
+        if (!user_with_token.isOk()) {
+          debug("error");
+        } else {
+          let token3 = user_with_token[0][1];
+          write_localstorage2("jwt", token3);
+          debug("saved token");
+        }
+        return new SetUser(
+          (() => {
+            let _pipe = user_with_token;
+            return map3(
+              _pipe,
+              (user_with_token2) => {
+                let user = user_with_token2[0];
+                return user;
+              }
+            );
+          })(),
+          calculate_current_cycle()
+        );
+      }
+    )
+  );
+}
+function make_request(method, path, json, decoder, to_msg) {
+  let _block;
+  let _pipe = request_with_auth();
+  let _pipe$1 = set_method(_pipe, method);
+  _block = set_path(_pipe$1, path);
+  let req = _block;
+  let _block$1;
+  if (json instanceof Some) {
+    let json$1 = json[0];
+    let _pipe$2 = req;
+    _block$1 = set_body(_pipe$2, json$1);
+  } else {
+    _block$1 = req;
+  }
+  let req_with_body = _block$1;
+  return send2(
+    req_with_body,
+    expect_json(decoder, to_msg)
+  );
+}
+function make_post(path, json, decoder, to_msg) {
+  return make_request(
+    new Post(),
+    path,
+    new Some(json),
+    decoder,
+    to_msg
+  );
 }
 function add_transaction_eff(transaction_form, amount, cat) {
-  let url = root_url() + "transaction/add";
-  let a2 = new Transaction(
+  let t = new Transaction(
     guidv4(),
     (() => {
       let _pipe = transaction_form.date;
@@ -8845,46 +8152,40 @@ function add_transaction_eff(transaction_form, amount, cat) {
     amount,
     ""
   );
-  return post(
-    url,
-    transaction_encode(a2),
-    expect_json(
-      transaction_decoder(),
-      (var0) => {
-        return new AddTransactionResult(var0);
-      }
-    )
+  return make_post(
+    "transaction/add",
+    to_string2(transaction_encode(t)),
+    transaction_decoder(),
+    (var0) => {
+      return new AddTransactionResult(var0);
+    }
   );
 }
 function add_category(name, group_id) {
-  let url = root_url() + "category/add";
-  return post(
-    url,
-    object2(
-      toList([
-        ["name", string4(name)],
-        ["group_id", string4(group_id)]
-      ])
+  return make_post(
+    "category/add",
+    to_string2(
+      object2(
+        toList([
+          ["name", string4(name)],
+          ["group_id", string4(group_id)]
+        ])
+      )
     ),
-    expect_json(
-      field2(
-        "id",
-        string3,
-        (id2) => {
-          return success(id2);
-        }
-      ),
-      (var0) => {
-        return new AddCategoryResult(var0);
-      }
-    )
+    id_decoder(),
+    (var0) => {
+      return new AddCategoryResult(var0);
+    }
   );
 }
 function get_allocations() {
-  let url = root_url() + "allocations";
+  let path = "allocations";
   let decoder = list2(allocation_decoder());
-  return get3(
-    url,
+  return send2(
+    (() => {
+      let _pipe = request_with_auth();
+      return set_path(_pipe, path);
+    })(),
     expect_json(
       decoder,
       (var0) => {
@@ -8894,10 +8195,13 @@ function get_allocations() {
   );
 }
 function get_categories() {
-  let url = root_url() + "categories";
+  let path = "categories";
   let decoder = list2(category_decoder());
-  return get3(
-    url,
+  return send2(
+    (() => {
+      let _pipe = request_with_auth();
+      return set_path(_pipe, path);
+    })(),
     expect_json(
       decoder,
       (var0) => {
@@ -8907,10 +8211,13 @@ function get_categories() {
   );
 }
 function get_transactions() {
-  let url = root_url() + "transactions";
+  let path = "transactions";
   let decoder = list2(transaction_decoder());
-  return get3(
-    url,
+  return send2(
+    (() => {
+      let _pipe = request_with_auth();
+      return set_path(_pipe, path);
+    })(),
     expect_json(
       decoder,
       (var0) => {
@@ -8920,10 +8227,13 @@ function get_transactions() {
   );
 }
 function get_category_groups() {
-  let url = root_url() + "category/groups";
+  let path = "category/groups";
   let decoder = list2(category_group_decoder());
-  return get3(
-    url,
+  return send2(
+    (() => {
+      let _pipe = request_with_auth();
+      return set_path(_pipe, path);
+    })(),
     expect_json(
       decoder,
       (var0) => {
@@ -8933,85 +8243,46 @@ function get_category_groups() {
   );
 }
 function add_new_group_eff(name) {
-  let url = root_url() + "category/group/add";
-  return post(
-    url,
-    object2(toList([["name", string4(name)]])),
-    expect_json(
-      field2(
-        "id",
-        string3,
-        (id2) => {
-          return success(id2);
-        }
-      ),
-      (var0) => {
-        return new AddCategoryGroupResult(var0);
-      }
-    )
+  return make_post(
+    "category/group/add",
+    to_string2(object2(toList([["name", string4(name)]]))),
+    id_decoder(),
+    (var0) => {
+      return new AddCategoryGroupResult(var0);
+    }
   );
 }
 function create_allocation_eff(money, category_id, cycle) {
-  let url = root_url() + "allocation/add";
-  return post(
-    url,
-    allocation_form_encode(
-      new AllocationForm(new None(), money, category_id, cycle)
+  return make_post(
+    "allocation/add",
+    to_string2(
+      allocation_form_encode(
+        new AllocationForm(new None(), money, category_id, cycle)
+      )
     ),
-    expect_json(
-      id_decoder(),
-      (var0) => {
-        return new SaveAllocationResult(var0);
-      }
-    )
+    id_decoder(),
+    (var0) => {
+      return new SaveAllocationResult(var0);
+    }
   );
 }
 function update_allocation_eff(a2, amount) {
-  let url = root_url() + "allocation/" + a2.id;
-  let _block;
-  let _pipe = to(url);
-  _block = map3(
-    _pipe,
-    (req2) => {
-      let _record = req2;
-      return new Request(
-        new Put(),
-        _record.headers,
-        _record.body,
-        _record.scheme,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query
+  return make_request(
+    new Put(),
+    "allocation/" + a2.id,
+    (() => {
+      let _pipe = to_string2(
+        allocation_encode(
+          new Allocation(a2.id, amount, a2.category_id, a2.date)
+        )
       );
+      return new Some(_pipe);
+    })(),
+    id_decoder(),
+    (var0) => {
+      return new SaveAllocationResult(var0);
     }
   );
-  let req = _block;
-  if (req.isOk()) {
-    let req$1 = req[0];
-    return send2(
-      (() => {
-        let _pipe$1 = req$1;
-        let _pipe$2 = set_body(
-          _pipe$1,
-          to_string2(
-            allocation_encode(
-              new Allocation(a2.id, amount, a2.category_id, a2.date)
-            )
-          )
-        );
-        return set_header(_pipe$2, "Content-Type", "application/json");
-      })(),
-      expect_json(
-        id_decoder(),
-        (var0) => {
-          return new SaveAllocationResult(var0);
-        }
-      )
-    );
-  } else {
-    return none();
-  }
 }
 function save_allocation_eff(alloc, money, category_id, cycle) {
   if (alloc instanceof Some) {
@@ -9022,232 +8293,101 @@ function save_allocation_eff(alloc, money, category_id, cycle) {
   }
 }
 function delete_category_eff(c_id) {
-  let url = root_url() + "category/" + c_id;
-  let _block;
-  let _pipe = to(url);
-  _block = map3(
-    _pipe,
-    (req2) => {
-      let _record = req2;
-      return new Request(
-        new Delete(),
-        _record.headers,
-        _record.body,
-        _record.scheme,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query
-      );
+  return make_request(
+    new Delete(),
+    "category/" + c_id,
+    new None(),
+    id_decoder(),
+    (var0) => {
+      return new CategoryDeleteResult(var0);
     }
   );
-  let req = _block;
-  if (req.isOk()) {
-    let req$1 = req[0];
-    return send2(
-      req$1,
-      expect_json(
-        id_decoder(),
-        (var0) => {
-          return new CategoryDeleteResult(var0);
-        }
-      )
-    );
-  } else {
-    return none();
-  }
 }
 function update_transaction_eff(t) {
-  let url = root_url() + "transaction/" + t.id;
-  let _block;
-  let _pipe = to(url);
-  _block = map3(
-    _pipe,
-    (req2) => {
-      let _record = req2;
-      return new Request(
-        new Put(),
-        _record.headers,
-        _record.body,
-        _record.scheme,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query
-      );
+  return make_request(
+    new Put(),
+    "transaction/" + t.id,
+    (() => {
+      let _pipe = to_string2(transaction_encode(t));
+      return new Some(_pipe);
+    })(),
+    id_decoder(),
+    (var0) => {
+      return new TransactionEditResult(var0);
     }
   );
-  let req = _block;
-  if (req.isOk()) {
-    let req$1 = req[0];
-    return send2(
-      (() => {
-        let _pipe$1 = req$1;
-        let _pipe$2 = set_body(
-          _pipe$1,
-          to_string2(transaction_encode(t))
-        );
-        return set_header(_pipe$2, "Content-Type", "application/json");
-      })(),
-      expect_json(
-        id_decoder(),
-        (var0) => {
-          return new TransactionEditResult(var0);
-        }
-      )
-    );
-  } else {
-    return none();
-  }
 }
 function delete_transaction_eff(t_id) {
-  let url = root_url() + "transaction/" + t_id;
-  let _block;
-  let _pipe = to(url);
-  _block = map3(
-    _pipe,
-    (req2) => {
-      let _record = req2;
-      return new Request(
-        new Delete(),
-        _record.headers,
-        _record.body,
-        _record.scheme,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query
-      );
+  return make_request(
+    new Delete(),
+    "transaction/" + t_id,
+    new None(),
+    id_decoder(),
+    (var0) => {
+      return new TransactionDeleteResult(var0);
     }
   );
-  let req = _block;
-  if (req.isOk()) {
-    let req$1 = req[0];
-    return send2(
-      req$1,
-      expect_json(
-        id_decoder(),
-        (var0) => {
-          return new TransactionDeleteResult(var0);
-        }
-      )
-    );
-  } else {
-    return none();
-  }
 }
 function save_target_eff(category, target_edit) {
-  let url = root_url() + "category/" + category.id;
-  let _block;
-  let _pipe = to(url);
-  _block = map3(
-    _pipe,
-    (req2) => {
-      let _record = req2;
-      return new Request(
-        new Put(),
-        _record.headers,
-        _record.body,
-        _record.scheme,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query
+  return make_request(
+    new Put(),
+    "category/" + category.id,
+    (() => {
+      let _pipe = to_string2(
+        category_encode(
+          (() => {
+            let _record = category;
+            return new Category(
+              _record.id,
+              _record.name,
+              target_edit,
+              _record.inflow,
+              _record.group_id
+            );
+          })()
+        )
       );
+      return new Some(_pipe);
+    })(),
+    id_decoder(),
+    (var0) => {
+      return new CategorySaveTarget(var0);
     }
   );
-  let req = _block;
-  if (req.isOk()) {
-    let req$1 = req[0];
-    return send2(
-      (() => {
-        let _pipe$1 = req$1;
-        let _pipe$2 = set_body(
-          _pipe$1,
-          to_string2(
-            category_encode(
-              (() => {
-                let _record = category;
-                return new Category(
-                  _record.id,
-                  _record.name,
-                  target_edit,
-                  _record.inflow,
-                  _record.group_id
-                );
-              })()
-            )
-          )
-        );
-        return set_header(_pipe$2, "Content-Type", "application/json");
-      })(),
-      expect_json(
-        id_decoder(),
-        (var0) => {
-          return new CategorySaveTarget(var0);
-        }
-      )
-    );
-  } else {
-    return none();
-  }
 }
 function delete_target_eff(category) {
-  let url = root_url() + "category/target/" + category.id;
-  let _block;
-  let _pipe = to(url);
-  _block = map3(
-    _pipe,
-    (req2) => {
-      let _record = req2;
-      return new Request(
-        new Put(),
-        _record.headers,
-        _record.body,
-        _record.scheme,
-        _record.host,
-        _record.port,
-        _record.path,
-        _record.query
-      );
+  return make_request(
+    new Delete(),
+    "category/target/" + category.id,
+    new None(),
+    id_decoder(),
+    (var0) => {
+      return new CategorySaveTarget(var0);
     }
   );
-  let req = _block;
-  if (req.isOk()) {
-    let req$1 = req[0];
-    return send2(
-      req$1,
-      expect_json(
-        id_decoder(),
-        (var0) => {
-          return new CategorySaveTarget(var0);
-        }
-      )
-    );
-  } else {
-    return none();
-  }
 }
 function login_eff(login, pass) {
-  let url = root_url() + "login";
-  return post(
-    url,
-    object2(
-      toList([["login", string4(login)], ["pass", string4(pass)]])
+  return make_post(
+    "login",
+    to_string2(
+      object2(
+        toList([["login", string4(login)], ["pass", string4(pass)]])
+      )
     ),
-    expect_json(
-      user_decoder(),
-      (user) => {
-        return new SetUser(user, calculate_current_cycle());
-      }
-    )
+    user_decoder(),
+    (result) => {
+      return new SetUser(result, calculate_current_cycle());
+    }
   );
 }
 function get_category_suggestions() {
-  let url = root_url() + "category/suggestions";
+  let path = "category/suggestions";
   let decoder = category_suggestions_decoder();
-  return get3(
-    url,
+  return send2(
+    (() => {
+      let _pipe = request_with_auth();
+      return set_path(_pipe, path);
+    })(),
     expect_json(
       decoder,
       (var0) => {

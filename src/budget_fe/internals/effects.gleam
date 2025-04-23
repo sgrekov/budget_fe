@@ -1,8 +1,8 @@
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_fe/internals/uuid
 import budget_shared.{
-  type Allocation, type Category, type Cycle, type Target, Allocation, Category,
-  Transaction,
+  type Allocation, type Category, type Cycle, type Target, type User, Allocation,
+  Category, Transaction,
 } as m
 import date_utils
 import gleam/dynamic/decode
@@ -22,13 +22,6 @@ import rada/date as d
 
 const is_prod: Bool = False
 
-fn root_url() -> String {
-  case is_prod {
-    True -> "https://budget-be.fly.dev/"
-    False -> "http://localho.st:8080/"
-  }
-}
-
 pub fn on_route_change(uri: Uri) -> Msg {
   let route = uri_to_route(uri)
   msg.OnRouteChange(route)
@@ -42,32 +35,50 @@ fn uri_to_route(uri: Uri) -> msg.Route {
   }
 }
 
-pub fn load_user_eff() -> effect.Effect(Msg) {
-  // let path = case initial_uri() {
-  //   Ok(uri) -> uri_to_route(uri)
-  //   _ -> msg.Home
-  // }
+fn request_with_auth() -> request.Request(String) {
+  let jwt = do_read_localstorage("gwt") |> result.unwrap("")
 
-  let gwt = do_read_localstorage("gwt") |> result.unwrap("")
-
-  let req_with_gwt =
-    request.to(root_url())
-    |> result.map(fn(req) { request.set_header(req, "Bearer", gwt) })
-
-  case req_with_gwt {
-    Ok(req) ->
-      lustre_http.send(
-        req,
-        lustre_http.expect_json(m.user_decoder(), fn(user) {
-          msg.SetUser(user, m.calculate_current_cycle())
-        }),
-      )
-    _ -> {
-      // Handle error case
-      io.debug("something went wrong with request creation")
-      effect.none()
-    }
+  let req = case is_prod {
+    True ->
+      request.new()
+      |> request.set_host("budget-be.fly.dev")
+      |> request.set_port(443)
+      |> request.set_scheme(http.Https)
+    False ->
+      request.new()
+      |> request.set_host("localho.st")
+      |> request.set_port(8080)
+      |> request.set_scheme(http.Http)
   }
+
+  req
+  |> request.set_method(http.Get)
+  |> request.set_header("Content-Type", "application/json")
+  |> request.set_header("Accept", "application/json")
+  |> request.set_header("Authorization", "Bearer " <> jwt)
+}
+
+pub fn load_user_eff() -> effect.Effect(Msg) {
+  lustre_http.send(
+    request_with_auth(),
+    lustre_http.expect_json(m.user_with_token_decoder(), fn(user_with_token) {
+      case user_with_token {
+        Error(_) -> io.debug("error")
+        Ok(#(_, token)) -> {
+          write_localstorage("jwt", token)
+          io.debug("saved token")
+        }
+      }
+      msg.SetUser(
+        user_with_token
+          |> result.map(fn(user_with_token) {
+            let #(user, _) = user_with_token
+            user
+          }),
+        m.calculate_current_cycle(),
+      )
+    }),
+  )
 }
 
 //dev func for easier working with right panel
@@ -90,9 +101,7 @@ pub fn add_transaction_eff(
   cat: Category,
   // current_user: User,
 ) -> effect.Effect(Msg) {
-  let url = root_url() <> "transaction/add"
-
-  let a =
+  let t =
     Transaction(
       id: uuid.guidv4(),
       date: transaction_form.date
@@ -103,52 +112,86 @@ pub fn add_transaction_eff(
       value: amount,
       user_id: "",
     )
-  // io.debug(t)
-  lustre_http.post(
-    url,
-    m.transaction_encode(a),
-    lustre_http.expect_json(m.transaction_decoder(), msg.AddTransactionResult),
+
+  make_post(
+    "transaction/add",
+    json.to_string(m.transaction_encode(t)),
+    m.transaction_decoder(),
+    msg.AddTransactionResult,
   )
 }
 
 pub fn add_category(name: String, group_id: String) -> effect.Effect(Msg) {
-  let url = root_url() <> "category/add"
-
-  lustre_http.post(
-    url,
-    json.object([
-      #("name", json.string(name)),
-      #("group_id", json.string(group_id)),
-    ]),
-    lustre_http.expect_json(
-      {
-        use id <- decode.field("id", decode.string)
-        decode.success(id)
-      },
-      msg.AddCategoryResult,
+  make_post(
+    "category/add",
+    json.to_string(
+      json.object([
+        #("name", json.string(name)),
+        #("group_id", json.string(group_id)),
+      ]),
     ),
+    m.id_decoder(),
+    msg.AddCategoryResult,
   )
 }
 
+fn make_post(
+  path: String,
+  json: String,
+  decoder: decode.Decoder(a),
+  to_msg: fn(Result(a, lustre_http.HttpError)) -> Msg,
+) -> effect.Effect(Msg) {
+  make_request(http.Post, path, option.Some(json), decoder, to_msg)
+}
+
+fn make_request(
+  method: http.Method,
+  path: String,
+  json: Option(String),
+  decoder: decode.Decoder(a),
+  to_msg: fn(Result(a, lustre_http.HttpError)) -> Msg,
+) -> effect.Effect(Msg) {
+  let req =
+    request_with_auth()
+    |> request.set_method(method)
+    |> request.set_path(path)
+
+  let req_with_body = case json {
+    Some(json) -> req |> request.set_body(json)
+    None -> req
+  }
+
+  lustre_http.send(req_with_body, lustre_http.expect_json(decoder, to_msg))
+}
+
 pub fn get_allocations() -> effect.Effect(Msg) {
-  let url = root_url() <> "allocations"
+  let path = "allocations"
 
   let decoder = decode.list(m.allocation_decoder())
-  lustre_http.get(url, lustre_http.expect_json(decoder, msg.Allocations))
+  lustre_http.send(
+    request_with_auth() |> request.set_path(path),
+    lustre_http.expect_json(decoder, msg.Allocations),
+  )
 }
 
 pub fn get_categories() -> effect.Effect(Msg) {
-  let url = root_url() <> "categories"
+  let path = "categories"
 
   let decoder = decode.list(m.category_decoder())
-  lustre_http.get(url, lustre_http.expect_json(decoder, msg.Categories))
+  lustre_http.send(
+    request_with_auth() |> request.set_path(path),
+    lustre_http.expect_json(decoder, msg.Categories),
+  )
 }
 
 pub fn get_transactions() -> effect.Effect(Msg) {
-  let url = root_url() <> "transactions"
+  let path = "transactions"
 
   let decoder = decode.list(m.transaction_decoder())
-  lustre_http.get(url, lustre_http.expect_json(decoder, msg.Transactions))
+  lustre_http.send(
+    request_with_auth() |> request.set_path(path),
+    lustre_http.expect_json(decoder, msg.Transactions),
+  )
 }
 
 pub fn save_allocation_eff(
@@ -164,25 +207,21 @@ pub fn save_allocation_eff(
 }
 
 pub fn get_category_groups() -> effect.Effect(Msg) {
-  let url = root_url() <> "category/groups"
+  let path = "category/groups"
 
   let decoder = decode.list(m.category_group_decoder())
-  lustre_http.get(url, lustre_http.expect_json(decoder, msg.CategoryGroups))
+  lustre_http.send(
+    request_with_auth() |> request.set_path(path),
+    lustre_http.expect_json(decoder, msg.CategoryGroups),
+  )
 }
 
 pub fn add_new_group_eff(name: String) -> effect.Effect(Msg) {
-  let url = root_url() <> "category/group/add"
-
-  lustre_http.post(
-    url,
-    json.object([#("name", json.string(name))]),
-    lustre_http.expect_json(
-      {
-        use id <- decode.field("id", decode.string)
-        decode.success(id)
-      },
-      msg.AddCategoryGroupResult,
-    ),
+  make_post(
+    "category/group/add",
+    json.to_string(json.object([#("name", json.string(name))])),
+    m.id_decoder(),
+    msg.AddCategoryGroupResult,
   )
 }
 
@@ -191,157 +230,98 @@ fn create_allocation_eff(
   category_id: String,
   cycle: Cycle,
 ) -> effect.Effect(Msg) {
-  let url = root_url() <> "allocation/add"
-
-  // io.debug(t)
-  lustre_http.post(
-    url,
-    m.allocation_form_encode(m.AllocationForm(
-      option.None,
-      money,
-      category_id,
-      cycle,
-    )),
-    lustre_http.expect_json(m.id_decoder(), msg.SaveAllocationResult),
+  make_post(
+    "allocation/add",
+    json.to_string(
+      m.allocation_form_encode(m.AllocationForm(
+        option.None,
+        money,
+        category_id,
+        cycle,
+      )),
+    ),
+    m.id_decoder(),
+    msg.SaveAllocationResult,
   )
 }
 
 fn update_allocation_eff(a: Allocation, amount: m.Money) -> effect.Effect(Msg) {
-  let url = root_url() <> "allocation/" <> a.id
-
-  let req =
-    request.to(url)
-    |> result.map(fn(req) { request.Request(..req, method: http.Put) })
-  case req {
-    Ok(req) ->
-      lustre_http.send(
-        req
-          |> request.set_body(
-            json.to_string(
-              m.allocation_encode(Allocation(
-                a.id,
-                amount,
-                a.category_id,
-                a.date,
-              )),
-            ),
-          )
-          |> request.set_header("Content-Type", "application/json"),
-        lustre_http.expect_json(m.id_decoder(), msg.SaveAllocationResult),
-      )
-    _ -> effect.none()
-  }
+  make_request(
+    http.Put,
+    "allocation/" <> a.id,
+    json.to_string(
+      m.allocation_encode(Allocation(a.id, amount, a.category_id, a.date)),
+    )
+      |> option.Some,
+    m.id_decoder(),
+    msg.SaveAllocationResult,
+  )
 }
 
 pub fn delete_category_eff(c_id: String) -> effect.Effect(Msg) {
-  let url = root_url() <> "category/" <> c_id
-
-  let req =
-    request.to(url)
-    |> result.map(fn(req) { request.Request(..req, method: http.Delete) })
-  case req {
-    Ok(req) ->
-      lustre_http.send(
-        req,
-        lustre_http.expect_json(m.id_decoder(), msg.CategoryDeleteResult),
-      )
-    _ -> effect.none()
-  }
+  make_request(
+    http.Delete,
+    "category/" <> c_id,
+    option.None,
+    m.id_decoder(),
+    msg.CategoryDeleteResult,
+  )
 }
 
 pub fn update_transaction_eff(t: m.Transaction) -> effect.Effect(Msg) {
-  let url = root_url() <> "transaction/" <> t.id
-
-  let req =
-    request.to(url)
-    |> result.map(fn(req) { request.Request(..req, method: http.Put) })
-  case req {
-    Ok(req) ->
-      lustre_http.send(
-        req
-          |> request.set_body(json.to_string(m.transaction_encode(t)))
-          |> request.set_header("Content-Type", "application/json"),
-        lustre_http.expect_json(m.id_decoder(), msg.TransactionEditResult),
-      )
-    _ -> effect.none()
-  }
+  make_request(
+    http.Put,
+    "transaction/" <> t.id,
+    json.to_string(m.transaction_encode(t)) |> option.Some,
+    m.id_decoder(),
+    msg.TransactionEditResult,
+  )
 }
 
 pub fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {
-  let url = root_url() <> "transaction/" <> t_id
-
-  let req =
-    request.to(url)
-    |> result.map(fn(req) { request.Request(..req, method: http.Delete) })
-  case req {
-    Ok(req) ->
-      lustre_http.send(
-        req,
-        lustre_http.expect_json(m.id_decoder(), msg.TransactionDeleteResult),
-      )
-    _ -> effect.none()
-  }
+  make_request(
+    http.Delete,
+    "transaction/" <> t_id,
+    option.None,
+    m.id_decoder(),
+    msg.TransactionDeleteResult,
+  )
 }
 
 pub fn save_target_eff(
   category: Category,
   target_edit: Option(Target),
 ) -> effect.Effect(Msg) {
-  let url = root_url() <> "category/" <> category.id
-  let req =
-    request.to(url)
-    |> result.map(fn(req) { request.Request(..req, method: http.Put) })
-  case req {
-    Ok(req) ->
-      lustre_http.send(
-        req
-          |> request.set_body(
-            json.to_string(m.category_encode(
-              Category(..category, target: target_edit),
-            )),
-          )
-          |> request.set_header("Content-Type", "application/json"),
-        lustre_http.expect_json(m.id_decoder(), msg.CategorySaveTarget),
-      )
-    _ -> effect.none()
-  }
-}
-
-pub fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
-  let url = root_url() <> "category/target/" <> category.id
-
-  let req =
-    request.to(url)
-    |> result.map(fn(req) { request.Request(..req, method: http.Put) })
-  case req {
-    Ok(req) ->
-      lustre_http.send(
-        req,
-        lustre_http.expect_json(m.id_decoder(), msg.CategorySaveTarget),
-      )
-    _ -> effect.none()
-  }
-}
-
-pub fn login_eff(login: String, pass: String) -> effect.Effect(Msg) {
-  let url = root_url() <> "login"
-
-  lustre_http.post(
-    url,
-    json.object([#("login", json.string(login)), #("pass", json.string(pass))]),
-    lustre_http.expect_json(m.user_decoder(), fn(user) {
-      msg.SetUser(user, m.calculate_current_cycle())
-    }),
+  make_request(
+    http.Put,
+    "category/" <> category.id,
+    json.to_string(m.category_encode(Category(..category, target: target_edit)))
+      |> option.Some,
+    m.id_decoder(),
+    msg.CategorySaveTarget,
   )
 }
 
-// pub fn read_localstorage(key: String) -> effect.Effect(Msg) {
-//   effect.from(fn(dispatch) {
-//     do_read_localstorage(key)
-//     |> msg.CurrentSavedUser
-//     |> dispatch
-//   })
-// }
+pub fn delete_target_eff(category: Category) -> effect.Effect(Msg) {
+  make_request(
+    http.Delete,
+    "category/target/" <> category.id,
+    option.None,
+    m.id_decoder(),
+    msg.CategorySaveTarget,
+  )
+}
+
+pub fn login_eff(login: String, pass: String) -> effect.Effect(Msg) {
+  make_post(
+    "login",
+    json.to_string(
+      json.object([#("login", json.string(login)), #("pass", json.string(pass))]),
+    ),
+    m.user_decoder(),
+    fn(result) { msg.SetUser(result, m.calculate_current_cycle()) },
+  )
+}
 
 @external(javascript, "./app.ffi.mjs", "read_localstorage")
 fn do_read_localstorage(_key: String) -> Result(String, Nil) {
@@ -358,8 +338,12 @@ fn do_write_localstorage(_key: String, _value: String) -> Nil {
 }
 
 pub fn get_category_suggestions() -> effect.Effect(Msg) {
-  let url = root_url() <> "category/suggestions"
+  let path = "category/suggestions"
 
   let decoder = m.category_suggestions_decoder()
-  lustre_http.get(url, lustre_http.expect_json(decoder, msg.Suggestions))
+  lustre_http.send(
+    request_with_auth()
+      |> request.set_path(path),
+    lustre_http.expect_json(decoder, msg.Suggestions),
+  )
 }
