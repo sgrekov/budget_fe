@@ -52,7 +52,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
     effect.batch([
       modem.init(eff.on_route_change),
       eff.load_user_eff(),
-      eff.select_category_eff(),
+      // eff.select_category_eff(),
     ]),
   )
 }
@@ -98,17 +98,24 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         effect.none(),
       )
     }
-    msg.SetUser(Ok(user), cycle) -> #(
-      Model(..model, current_user: option.Some(user), cycle: cycle),
-      effect.batch([
-        eff.get_category_groups(),
-        eff.get_categories(),
-        eff.get_transactions(),
-        eff.get_allocations(),
-        eff.get_category_suggestions(),
-      ]),
-    )
-    msg.SetUser(Error(err), _) -> {
+    msg.LoginResult(Ok(#(user, token)), cycle) -> {
+      let save_token_eff = case token {
+        "" -> effect.none()
+        _ -> eff.write_localstorage("jwt", token)
+      }
+      #(
+        Model(..model, current_user: option.Some(user), cycle: cycle),
+        effect.batch([
+          save_token_eff,
+          eff.get_category_groups(),
+          eff.get_categories(),
+          eff.get_transactions(),
+          eff.get_allocations(),
+          eff.get_category_suggestions(),
+        ]),
+      )
+    }
+    msg.LoginResult(Error(err), _) -> {
       io.debug(err)
       #(model, effect.none())
     }

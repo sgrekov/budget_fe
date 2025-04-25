@@ -272,6 +272,277 @@ function bitArrayPrintDeprecationWarning(name, message) {
   );
   isBitArrayDeprecationMessagePrinted[name] = true;
 }
+function bitArraySlice(bitArray, start3, end) {
+  end ??= bitArray.bitSize;
+  bitArrayValidateRange(bitArray, start3, end);
+  if (start3 === end) {
+    return new BitArray(new Uint8Array());
+  }
+  if (start3 === 0 && end === bitArray.bitSize) {
+    return bitArray;
+  }
+  start3 += bitArray.bitOffset;
+  end += bitArray.bitOffset;
+  const startByteIndex = Math.trunc(start3 / 8);
+  const endByteIndex = Math.trunc((end + 7) / 8);
+  const byteLength = endByteIndex - startByteIndex;
+  let buffer;
+  if (startByteIndex === 0 && byteLength === bitArray.rawBuffer.byteLength) {
+    buffer = bitArray.rawBuffer;
+  } else {
+    buffer = new Uint8Array(
+      bitArray.rawBuffer.buffer,
+      bitArray.rawBuffer.byteOffset + startByteIndex,
+      byteLength
+    );
+  }
+  return new BitArray(buffer, end - start3, start3 % 8);
+}
+function bitArraySliceToInt(bitArray, start3, end, isBigEndian, isSigned) {
+  bitArrayValidateRange(bitArray, start3, end);
+  if (start3 === end) {
+    return 0;
+  }
+  start3 += bitArray.bitOffset;
+  end += bitArray.bitOffset;
+  const isStartByteAligned = start3 % 8 === 0;
+  const isEndByteAligned = end % 8 === 0;
+  if (isStartByteAligned && isEndByteAligned) {
+    return intFromAlignedSlice(
+      bitArray,
+      start3 / 8,
+      end / 8,
+      isBigEndian,
+      isSigned
+    );
+  }
+  const size = end - start3;
+  const startByteIndex = Math.trunc(start3 / 8);
+  const endByteIndex = Math.trunc((end - 1) / 8);
+  if (startByteIndex == endByteIndex) {
+    const mask2 = 255 >> start3 % 8;
+    const unusedLowBitCount = (8 - end % 8) % 8;
+    let value3 = (bitArray.rawBuffer[startByteIndex] & mask2) >> unusedLowBitCount;
+    if (isSigned) {
+      const highBit = 2 ** (size - 1);
+      if (value3 >= highBit) {
+        value3 -= highBit * 2;
+      }
+    }
+    return value3;
+  }
+  if (size <= 53) {
+    return intFromUnalignedSliceUsingNumber(
+      bitArray.rawBuffer,
+      start3,
+      end,
+      isBigEndian,
+      isSigned
+    );
+  } else {
+    return intFromUnalignedSliceUsingBigInt(
+      bitArray.rawBuffer,
+      start3,
+      end,
+      isBigEndian,
+      isSigned
+    );
+  }
+}
+function intFromAlignedSlice(bitArray, start3, end, isBigEndian, isSigned) {
+  const byteSize = end - start3;
+  if (byteSize <= 6) {
+    return intFromAlignedSliceUsingNumber(
+      bitArray.rawBuffer,
+      start3,
+      end,
+      isBigEndian,
+      isSigned
+    );
+  } else {
+    return intFromAlignedSliceUsingBigInt(
+      bitArray.rawBuffer,
+      start3,
+      end,
+      isBigEndian,
+      isSigned
+    );
+  }
+}
+function intFromAlignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
+  const byteSize = end - start3;
+  let value3 = 0;
+  if (isBigEndian) {
+    for (let i = start3; i < end; i++) {
+      value3 *= 256;
+      value3 += buffer[i];
+    }
+  } else {
+    for (let i = end - 1; i >= start3; i--) {
+      value3 *= 256;
+      value3 += buffer[i];
+    }
+  }
+  if (isSigned) {
+    const highBit = 2 ** (byteSize * 8 - 1);
+    if (value3 >= highBit) {
+      value3 -= highBit * 2;
+    }
+  }
+  return value3;
+}
+function intFromAlignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
+  const byteSize = end - start3;
+  let value3 = 0n;
+  if (isBigEndian) {
+    for (let i = start3; i < end; i++) {
+      value3 *= 256n;
+      value3 += BigInt(buffer[i]);
+    }
+  } else {
+    for (let i = end - 1; i >= start3; i--) {
+      value3 *= 256n;
+      value3 += BigInt(buffer[i]);
+    }
+  }
+  if (isSigned) {
+    const highBit = 1n << BigInt(byteSize * 8 - 1);
+    if (value3 >= highBit) {
+      value3 -= highBit * 2n;
+    }
+  }
+  return Number(value3);
+}
+function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
+  const isStartByteAligned = start3 % 8 === 0;
+  let size = end - start3;
+  let byteIndex = Math.trunc(start3 / 8);
+  let value3 = 0;
+  if (isBigEndian) {
+    if (!isStartByteAligned) {
+      const leadingBitsCount = 8 - start3 % 8;
+      value3 = buffer[byteIndex++] & (1 << leadingBitsCount) - 1;
+      size -= leadingBitsCount;
+    }
+    while (size >= 8) {
+      value3 *= 256;
+      value3 += buffer[byteIndex++];
+      size -= 8;
+    }
+    if (size > 0) {
+      value3 *= 2 ** size;
+      value3 += buffer[byteIndex] >> 8 - size;
+    }
+  } else {
+    if (isStartByteAligned) {
+      let size2 = end - start3;
+      let scale = 1;
+      while (size2 >= 8) {
+        value3 += buffer[byteIndex++] * scale;
+        scale *= 256;
+        size2 -= 8;
+      }
+      value3 += (buffer[byteIndex] >> 8 - size2) * scale;
+    } else {
+      const highBitsCount = start3 % 8;
+      const lowBitsCount = 8 - highBitsCount;
+      let size2 = end - start3;
+      let scale = 1;
+      while (size2 >= 8) {
+        const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
+        value3 += (byte & 255) * scale;
+        scale *= 256;
+        size2 -= 8;
+        byteIndex++;
+      }
+      if (size2 > 0) {
+        const lowBitsUsed = size2 - Math.max(0, size2 - lowBitsCount);
+        let trailingByte = (buffer[byteIndex] & (1 << lowBitsCount) - 1) >> lowBitsCount - lowBitsUsed;
+        size2 -= lowBitsUsed;
+        if (size2 > 0) {
+          trailingByte *= 2 ** size2;
+          trailingByte += buffer[byteIndex + 1] >> 8 - size2;
+        }
+        value3 += trailingByte * scale;
+      }
+    }
+  }
+  if (isSigned) {
+    const highBit = 2 ** (end - start3 - 1);
+    if (value3 >= highBit) {
+      value3 -= highBit * 2;
+    }
+  }
+  return value3;
+}
+function intFromUnalignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
+  const isStartByteAligned = start3 % 8 === 0;
+  let size = end - start3;
+  let byteIndex = Math.trunc(start3 / 8);
+  let value3 = 0n;
+  if (isBigEndian) {
+    if (!isStartByteAligned) {
+      const leadingBitsCount = 8 - start3 % 8;
+      value3 = BigInt(buffer[byteIndex++] & (1 << leadingBitsCount) - 1);
+      size -= leadingBitsCount;
+    }
+    while (size >= 8) {
+      value3 *= 256n;
+      value3 += BigInt(buffer[byteIndex++]);
+      size -= 8;
+    }
+    if (size > 0) {
+      value3 <<= BigInt(size);
+      value3 += BigInt(buffer[byteIndex] >> 8 - size);
+    }
+  } else {
+    if (isStartByteAligned) {
+      let size2 = end - start3;
+      let shift = 0n;
+      while (size2 >= 8) {
+        value3 += BigInt(buffer[byteIndex++]) << shift;
+        shift += 8n;
+        size2 -= 8;
+      }
+      value3 += BigInt(buffer[byteIndex] >> 8 - size2) << shift;
+    } else {
+      const highBitsCount = start3 % 8;
+      const lowBitsCount = 8 - highBitsCount;
+      let size2 = end - start3;
+      let shift = 0n;
+      while (size2 >= 8) {
+        const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
+        value3 += BigInt(byte & 255) << shift;
+        shift += 8n;
+        size2 -= 8;
+        byteIndex++;
+      }
+      if (size2 > 0) {
+        const lowBitsUsed = size2 - Math.max(0, size2 - lowBitsCount);
+        let trailingByte = (buffer[byteIndex] & (1 << lowBitsCount) - 1) >> lowBitsCount - lowBitsUsed;
+        size2 -= lowBitsUsed;
+        if (size2 > 0) {
+          trailingByte <<= size2;
+          trailingByte += buffer[byteIndex + 1] >> 8 - size2;
+        }
+        value3 += BigInt(trailingByte) << shift;
+      }
+    }
+  }
+  if (isSigned) {
+    const highBit = 2n ** BigInt(end - start3 - 1);
+    if (value3 >= highBit) {
+      value3 -= highBit * 2n;
+    }
+  }
+  return Number(value3);
+}
+function bitArrayValidateRange(bitArray, start3, end) {
+  if (start3 < 0 || start3 > bitArray.bitSize || end < start3 || end > bitArray.bitSize) {
+    const msg = `Invalid bit array slice: start = ${start3}, end = ${end}, bit size = ${bitArray.bitSize}`;
+    throw new globalThis.Error(msg);
+  }
+}
 var Result = class _Result extends CustomType {
   // @internal
   static isResult(data) {
@@ -5457,21 +5728,6 @@ function id_decoder() {
     }
   );
 }
-function user_decoder() {
-  return field2(
-    "id",
-    string3,
-    (id2) => {
-      return field2(
-        "name",
-        string3,
-        (name) => {
-          return success(new User(id2, name));
-        }
-      );
-    }
-  );
-}
 function user_with_token_decoder() {
   return field2(
     "id",
@@ -7472,7 +7728,7 @@ var LoginPassword = class extends CustomType {
 };
 var LoginSubmit = class extends CustomType {
 };
-var SetUser = class extends CustomType {
+var LoginResult = class extends CustomType {
   constructor(user, cycle) {
     super();
     this.user = user;
@@ -8033,22 +8289,6 @@ function on_route_change(uri) {
   let route = uri_to_route(uri);
   return new OnRouteChange(route);
 }
-function select_category_eff() {
-  return from(
-    (dispatch) => {
-      let _pipe = new SelectCategory(
-        new Category(
-          "f254cdd0-003d-48c3-8eed-77e86c99fcc0",
-          "Shopping2",
-          new Some(new Monthly(new Money(4e3))),
-          false,
-          "bcd5d6e1-dd6e-44fd-8dd6-4dea104a8e0a"
-        )
-      );
-      return dispatch(_pipe);
-    }
-  );
-}
 function write_localstorage2(key, value3) {
   return from((_) => {
     return write_localstorage(key, value3);
@@ -8057,7 +8297,8 @@ function write_localstorage2(key, value3) {
 var is_prod = false;
 function request_with_auth() {
   let _block;
-  let _pipe = read_localstorage("gwt");
+  let _pipe = read_localstorage("jwt");
+  echo(_pipe, "src/budget_fe/internals/effects.gleam", 38);
   _block = unwrap2(_pipe, "");
   let jwt = _block;
   let _block$1;
@@ -8080,36 +8321,6 @@ function request_with_auth() {
   let _pipe$4 = set_header(_pipe$3, "Accept", "application/json");
   return set_header(_pipe$4, "Authorization", "Bearer " + jwt);
 }
-function load_user_eff() {
-  return send2(
-    request_with_auth(),
-    expect_json(
-      user_with_token_decoder(),
-      (user_with_token) => {
-        if (!user_with_token.isOk()) {
-          debug("error");
-        } else {
-          let token3 = user_with_token[0][1];
-          write_localstorage2("jwt", token3);
-          debug("saved token");
-        }
-        return new SetUser(
-          (() => {
-            let _pipe = user_with_token;
-            return map3(
-              _pipe,
-              (user_with_token2) => {
-                let user = user_with_token2[0];
-                return user;
-              }
-            );
-          })(),
-          calculate_current_cycle()
-        );
-      }
-    )
-  );
-}
 function make_request(method, path, json, decoder, to_msg) {
   let _block;
   let _pipe = request_with_auth();
@@ -8128,6 +8339,17 @@ function make_request(method, path, json, decoder, to_msg) {
   return send2(
     req_with_body,
     expect_json(decoder, to_msg)
+  );
+}
+function load_user_eff() {
+  return make_request(
+    new Get(),
+    "user",
+    new None(),
+    user_with_token_decoder(),
+    (user_with_token) => {
+      return new LoginResult(user_with_token, calculate_current_cycle());
+    }
   );
 }
 function make_post(path, json, decoder, to_msg) {
@@ -8374,9 +8596,9 @@ function login_eff(login, pass) {
         toList([["login", string4(login)], ["pass", string4(pass)]])
       )
     ),
-    user_decoder(),
-    (result) => {
-      return new SetUser(result, calculate_current_cycle());
+    user_with_token_decoder(),
+    (user_with_token) => {
+      return new LoginResult(user_with_token, calculate_current_cycle());
     }
   );
 }
@@ -8395,6 +8617,142 @@ function get_category_suggestions() {
       }
     )
   );
+}
+function echo(value3, file, line) {
+  const grey = "\x1B[90m";
+  const reset_color = "\x1B[39m";
+  const file_line = `${file}:${line}`;
+  const string_value = echo$inspect(value3);
+  if (globalThis.process?.stderr?.write) {
+    const string5 = `${grey}${file_line}${reset_color}
+${string_value}
+`;
+    process.stderr.write(string5);
+  } else if (globalThis.Deno) {
+    const string5 = `${grey}${file_line}${reset_color}
+${string_value}
+`;
+    globalThis.Deno.stderr.writeSync(new TextEncoder().encode(string5));
+  } else {
+    const string5 = `${file_line}
+${string_value}`;
+    globalThis.console.log(string5);
+  }
+  return value3;
+}
+function echo$inspectString(str) {
+  let new_str = '"';
+  for (let i = 0; i < str.length; i++) {
+    let char = str[i];
+    if (char == "\n") new_str += "\\n";
+    else if (char == "\r") new_str += "\\r";
+    else if (char == "	") new_str += "\\t";
+    else if (char == "\f") new_str += "\\f";
+    else if (char == "\\") new_str += "\\\\";
+    else if (char == '"') new_str += '\\"';
+    else if (char < " " || char > "~" && char < "\xA0") {
+      new_str += "\\u{" + char.charCodeAt(0).toString(16).toUpperCase().padStart(4, "0") + "}";
+    } else {
+      new_str += char;
+    }
+  }
+  new_str += '"';
+  return new_str;
+}
+function echo$inspectDict(map8) {
+  let body = "dict.from_list([";
+  let first2 = true;
+  let key_value_pairs = [];
+  map8.forEach((value3, key) => {
+    key_value_pairs.push([key, value3]);
+  });
+  key_value_pairs.sort();
+  key_value_pairs.forEach(([key, value3]) => {
+    if (!first2) body = body + ", ";
+    body = body + "#(" + echo$inspect(key) + ", " + echo$inspect(value3) + ")";
+    first2 = false;
+  });
+  return body + "])";
+}
+function echo$inspectCustomType(record) {
+  const props = globalThis.Object.keys(record).map((label2) => {
+    const value3 = echo$inspect(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value3}` : value3;
+  }).join(", ");
+  return props ? `${record.constructor.name}(${props})` : record.constructor.name;
+}
+function echo$inspectObject(v) {
+  const name = Object.getPrototypeOf(v)?.constructor?.name || "Object";
+  const props = [];
+  for (const k of Object.keys(v)) {
+    props.push(`${echo$inspect(k)}: ${echo$inspect(v[k])}`);
+  }
+  const body = props.length ? " " + props.join(", ") + " " : "";
+  const head = name === "Object" ? "" : name + " ";
+  return `//js(${head}{${body}})`;
+}
+function echo$inspect(v) {
+  const t = typeof v;
+  if (v === true) return "True";
+  if (v === false) return "False";
+  if (v === null) return "//js(null)";
+  if (v === void 0) return "Nil";
+  if (t === "string") return echo$inspectString(v);
+  if (t === "bigint" || t === "number") return v.toString();
+  if (globalThis.Array.isArray(v))
+    return `#(${v.map(echo$inspect).join(", ")})`;
+  if (v instanceof List)
+    return `[${v.toArray().map(echo$inspect).join(", ")}]`;
+  if (v instanceof UtfCodepoint)
+    return `//utfcodepoint(${String.fromCodePoint(v.value)})`;
+  if (v instanceof BitArray) return echo$inspectBitArray(v);
+  if (v instanceof CustomType) return echo$inspectCustomType(v);
+  if (echo$isDict(v)) return echo$inspectDict(v);
+  if (v instanceof Set)
+    return `//js(Set(${[...v].map(echo$inspect).join(", ")}))`;
+  if (v instanceof RegExp) return `//js(${v})`;
+  if (v instanceof Date) return `//js(Date("${v.toISOString()}"))`;
+  if (v instanceof Function) {
+    const args = [];
+    for (const i of Array(v.length).keys())
+      args.push(String.fromCharCode(i + 97));
+    return `//fn(${args.join(", ")}) { ... }`;
+  }
+  return echo$inspectObject(v);
+}
+function echo$inspectBitArray(bitArray) {
+  let endOfAlignedBytes = bitArray.bitOffset + 8 * Math.trunc(bitArray.bitSize / 8);
+  let alignedBytes = bitArraySlice(
+    bitArray,
+    bitArray.bitOffset,
+    endOfAlignedBytes
+  );
+  let remainingUnalignedBits = bitArray.bitSize % 8;
+  if (remainingUnalignedBits > 0) {
+    let remainingBits = bitArraySliceToInt(
+      bitArray,
+      endOfAlignedBytes,
+      bitArray.bitSize,
+      false,
+      false
+    );
+    let alignedBytesArray = Array.from(alignedBytes.rawBuffer);
+    let suffix = `${remainingBits}:size(${remainingUnalignedBits})`;
+    if (alignedBytesArray.length === 0) {
+      return `<<${suffix}>>`;
+    } else {
+      return `<<${Array.from(alignedBytes.rawBuffer).join(", ")}, ${suffix}>>`;
+    }
+  } else {
+    return `<<${Array.from(alignedBytes.rawBuffer).join(", ")}>>`;
+  }
+}
+function echo$isDict(value3) {
+  try {
+    return value3 instanceof Dict;
+  } catch {
+    return false;
+  }
 }
 
 // build/dev/javascript/lustre/lustre/element/html.mjs
@@ -10159,11 +10517,7 @@ function init3(_) {
       ""
     ),
     batch(
-      toList([
-        init2(on_route_change),
-        load_user_eff(),
-        select_category_eff()
-      ])
+      toList([init2(on_route_change), load_user_eff()])
     )
   ];
 }
@@ -10375,9 +10729,17 @@ function update(model, msg) {
       })(),
       none()
     ];
-  } else if (msg instanceof SetUser && msg.user.isOk()) {
-    let user = msg.user[0];
+  } else if (msg instanceof LoginResult && msg.user.isOk()) {
+    let user = msg.user[0][0];
+    let token3 = msg.user[0][1];
     let cycle = msg.cycle;
+    let _block;
+    if (token3 === "") {
+      _block = none();
+    } else {
+      _block = write_localstorage2("jwt", token3);
+    }
+    let save_token_eff = _block;
     return [
       (() => {
         let _record = model;
@@ -10407,6 +10769,7 @@ function update(model, msg) {
       })(),
       batch(
         toList([
+          save_token_eff,
           get_category_groups(),
           get_categories(),
           get_transactions(),
@@ -10415,7 +10778,7 @@ function update(model, msg) {
         ])
       )
     ];
-  } else if (msg instanceof SetUser && !msg.user.isOk()) {
+  } else if (msg instanceof LoginResult && !msg.user.isOk()) {
     let err = msg.user[0];
     debug(err);
     return [model, none()];

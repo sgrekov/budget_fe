@@ -13,9 +13,9 @@ pub type Route {
 
 pub type Msg {
   OnRouteChange(route: Route)
-  LoginPassword(login : Option(String), pass : Option(String))
+  LoginPassword(login: Option(String), pass: Option(String))
   LoginSubmit
-  SetUser(user: Result(User, lustre_http.HttpError), cycle: Cycle)
+  LoginResult(user: Result(#(User, String), lustre_http.HttpError), cycle: Cycle)
   Categories(cats: Result(List(Category), lustre_http.HttpError))
   Transactions(trans: Result(List(Transaction), lustre_http.HttpError))
   Suggestions(trans: Result(dict.Dict(String, Category), lustre_http.HttpError))
@@ -110,13 +110,8 @@ pub type TransactionForm {
 }
 
 pub type LoginForm {
-  LoginForm(
-    login: Option(String),
-    pass: Option(String),
-    is_loading : Bool,
-  )
+  LoginForm(login: Option(String), pass: Option(String), is_loading: Bool)
 }
-
 
 pub type CycleShift {
   ShiftLeft

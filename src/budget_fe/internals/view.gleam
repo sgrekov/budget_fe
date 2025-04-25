@@ -44,14 +44,7 @@ pub fn view(model: Model) -> element.Element(Msg) {
             case model.current_user {
               option.None -> html.text("")
               option.Some(user) -> html.text(user.name)
-            },
-            // html.a(
-          //   [
-          //     attribute.class("text-dark text-decoration-none"),
-          //     attribute.href("/user"),
-          //   ],
-          //   [html.text(model.current_user.name)],
-          // ),
+            },          
           ],
         ),
       ]),

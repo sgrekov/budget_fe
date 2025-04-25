@@ -1,14 +1,13 @@
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_fe/internals/uuid
 import budget_shared.{
-  type Allocation, type Category, type Cycle, type Target, type User, Allocation,
-  Category, Transaction,
+  type Allocation, type Category, type Cycle, type Target, Allocation, Category,
+  Transaction,
 } as m
 import date_utils
 import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
-import gleam/io
 import gleam/json
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
@@ -36,8 +35,7 @@ fn uri_to_route(uri: Uri) -> msg.Route {
 }
 
 fn request_with_auth() -> request.Request(String) {
-  let jwt = do_read_localstorage("gwt") |> result.unwrap("")
-
+  let jwt = do_read_localstorage("jwt") |> echo |> result.unwrap("")
   let req = case is_prod {
     True ->
       request.new()
@@ -59,25 +57,14 @@ fn request_with_auth() -> request.Request(String) {
 }
 
 pub fn load_user_eff() -> effect.Effect(Msg) {
-  lustre_http.send(
-    request_with_auth(),
-    lustre_http.expect_json(m.user_with_token_decoder(), fn(user_with_token) {
-      case user_with_token {
-        Error(_) -> io.debug("error")
-        Ok(#(_, token)) -> {
-          write_localstorage("jwt", token)
-          io.debug("saved token")
-        }
-      }
-      msg.SetUser(
-        user_with_token
-          |> result.map(fn(user_with_token) {
-            let #(user, _) = user_with_token
-            user
-          }),
-        m.calculate_current_cycle(),
-      )
-    }),
+  make_request(
+    http.Get,
+    "user",
+    option.None,
+    m.user_with_token_decoder(),
+    fn(user_with_token) {
+      msg.LoginResult(user_with_token, m.calculate_current_cycle())
+    },
   )
 }
 
@@ -318,8 +305,10 @@ pub fn login_eff(login: String, pass: String) -> effect.Effect(Msg) {
     json.to_string(
       json.object([#("login", json.string(login)), #("pass", json.string(pass))]),
     ),
-    m.user_decoder(),
-    fn(result) { msg.SetUser(result, m.calculate_current_cycle()) },
+    m.user_with_token_decoder(),
+    fn(user_with_token) {
+      msg.LoginResult(user_with_token, m.calculate_current_cycle())
+    },
   )
 }
 
