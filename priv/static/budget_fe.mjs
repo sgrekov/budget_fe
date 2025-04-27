@@ -5640,11 +5640,12 @@ var User = class extends CustomType {
   }
 };
 var CategoryGroup = class extends CustomType {
-  constructor(id2, name, position) {
+  constructor(id2, name, position, is_collapsed) {
     super();
     this.id = id2;
     this.name = name;
     this.position = position;
+    this.is_collapsed = is_collapsed;
   }
 };
 var Category = class extends CustomType {
@@ -5749,6 +5750,16 @@ function user_with_token_decoder() {
     }
   );
 }
+function category_group_encode(group) {
+  return object2(
+    toList([
+      ["id", string4(group.id)],
+      ["name", string4(group.name)],
+      ["position", int3(group.position)],
+      ["is_collapsed", bool3(group.is_collapsed)]
+    ])
+  );
+}
 function category_group_decoder() {
   return field2(
     "id",
@@ -5762,7 +5773,15 @@ function category_group_decoder() {
             "position",
             int2,
             (position) => {
-              return success(new CategoryGroup(id2, name, position));
+              return field2(
+                "is_collapsed",
+                bool2,
+                (is_collapsed) => {
+                  return success(
+                    new CategoryGroup(id2, name, position, is_collapsed)
+                  );
+                }
+              );
             }
           );
         }
@@ -5821,6 +5840,7 @@ function allocation_encode(a2) {
 function allocation_form_encode(af) {
   return object2(
     toList([
+      ["id", nullable(af.id, string4)],
       ["amount", money_encode(af.amount)],
       ["category_id", string4(af.category_id)],
       ["date", cycle_encode(af.date)]
@@ -8024,6 +8044,12 @@ var UserInputCategoryGroupChange = class extends CustomType {
     this.group_name = group_name;
   }
 };
+var CollapseGroup = class extends CustomType {
+  constructor(group) {
+    super();
+    this.group = group;
+  }
+};
 var Model2 = class extends CustomType {
   constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input) {
     super();
@@ -8468,6 +8494,20 @@ function add_new_group_eff(name) {
   return make_post(
     "category/group/add",
     to_string2(object2(toList([["name", string4(name)]]))),
+    id_decoder(),
+    (var0) => {
+      return new AddCategoryGroupResult(var0);
+    }
+  );
+}
+function update_group_eff(group) {
+  return make_request(
+    new Put(),
+    "category/group",
+    (() => {
+      let _pipe = to_string2(category_group_encode(group));
+      return new Some(_pipe);
+    })(),
     id_decoder(),
     (var0) => {
       return new AddCategoryGroupResult(var0);
@@ -9941,7 +9981,8 @@ function group_ui(group, model) {
                 placeholder("category name"),
                 id("exampleFormControlInput1"),
                 class$("form-control"),
-                type_("text")
+                type_("text"),
+                value(model.user_category_name_input)
               ])
             )
           ])
@@ -9961,13 +10002,13 @@ function group_ui(group, model) {
   let add_cat_ui = _block$1;
   let _block$2;
   {
-    let _block$3;
+    let _block$32;
     if (is_current_group_active_add_ui) {
-      _block$3 = "-";
+      _block$32 = "-";
     } else {
-      _block$3 = "+";
+      _block$32 = "+";
     }
-    let btn_label = _block$3;
+    let btn_label = _block$32;
     _block$2 = button(
       toList([
         class$("ms-1"),
@@ -9977,16 +10018,46 @@ function group_ui(group, model) {
     );
   }
   let add_btn = _block$2;
+  let _block$3;
+  {
+    let _block$42;
+    let $12 = group.is_collapsed;
+    if ($12) {
+      _block$42 = " \u032C";
+    } else {
+      _block$42 = ">";
+    }
+    let btn_label = _block$42;
+    _block$3 = button(
+      toList([
+        class$("ms-1"),
+        on_click(new CollapseGroup(group))
+      ]),
+      toList([text(btn_label)])
+    );
+  }
+  let collapse_ui = _block$3;
   let group_ui$1 = tr(
     toList([
       style(toList([["background-color", "rgb(199, 208, 201)"]]))
     ]),
     toList([
-      td(toList([]), toList([text2(group.name), add_btn])),
+      td(
+        toList([]),
+        toList([text2(group.name), add_btn, collapse_ui])
+      ),
       td(toList([]), toList([]))
     ])
   );
-  let _pipe = category_list_item_ui(model.categories, model, group);
+  let _block$4;
+  let $1 = group.is_collapsed;
+  if (!$1) {
+    _block$4 = toList([]);
+  } else {
+    _block$4 = category_list_item_ui(model.categories, model, group);
+  }
+  let cats = _block$4;
+  let _pipe = cats;
   let _pipe$1 = prepend2(_pipe, add_cat_ui);
   return prepend2(_pipe$1, group_ui$1);
 }
@@ -11059,7 +11130,35 @@ function update(model, msg) {
       none()
     ];
   } else if (msg instanceof AddCategoryResult && msg.c.isOk()) {
-    return [model, get_categories()];
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.login_form,
+          _record.current_user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          "",
+          _record.transaction_add_input,
+          _record.target_edit,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          _record.category_group_change_input
+        );
+      })(),
+      get_categories()
+    ];
   } else if (msg instanceof AddCategoryResult && !msg.c.isOk()) {
     return [model, none()];
   } else if (msg instanceof AddTransaction) {
@@ -12487,6 +12586,22 @@ function update(model, msg) {
         );
       })(),
       none()
+    ];
+  } else if (msg instanceof CollapseGroup) {
+    let group = msg.group;
+    return [
+      model,
+      update_group_eff(
+        (() => {
+          let _record = group;
+          return new CategoryGroup(
+            _record.id,
+            _record.name,
+            _record.position,
+            !group.is_collapsed
+          );
+        })()
+      )
     ];
   } else if (msg instanceof CategoryGroups && !msg.c.isOk()) {
     return [model, none()];

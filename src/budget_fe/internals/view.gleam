@@ -44,7 +44,7 @@ pub fn view(model: Model) -> element.Element(Msg) {
             case model.current_user {
               option.None -> html.text("")
               option.Some(user) -> html.text(user.name)
-            },          
+            },
           ],
         ),
       ]),
@@ -1068,6 +1068,7 @@ fn group_ui(group: m.CategoryGroup, model: Model) -> List(element.Element(Msg)) 
             attribute.id("exampleFormControlInput1"),
             attribute.class("form-control"),
             attribute.type_("text"),
+            attribute.value(model.user_category_name_input),
           ]),
         ]),
         html.td([], [
@@ -1089,12 +1090,28 @@ fn group_ui(group: m.CategoryGroup, model: Model) -> List(element.Element(Msg)) 
     )
   }
 
+  let collapse_ui = {
+    let btn_label = case group.is_collapsed {
+      True -> " ̬"
+      False -> ">"
+    }
+    html.button(
+      [attribute.class("ms-1"), event.on_click(msg.CollapseGroup(group))],
+      [element.text(btn_label)],
+    )
+  }
+
   let group_ui =
     html.tr([attribute.style([#("background-color", "rgb(199, 208, 201)")])], [
-      html.td([], [html.text(group.name), add_btn]),
+      html.td([], [html.text(group.name), add_btn, collapse_ui]),
       html.td([], []),
     ])
-  category_list_item_ui(model.categories, model, group)
+  let cats = case group.is_collapsed {
+    False -> []
+    True -> category_list_item_ui(model.categories, model, group)
+  }
+  
+  cats
   |> list.prepend(add_cat_ui)
   |> list.prepend(group_ui)
 }

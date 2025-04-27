@@ -170,7 +170,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, user_category_name_input: name),
       effect.none(),
     )
-    msg.AddCategoryResult(Ok(_)) -> #(model, eff.get_categories())
+    msg.AddCategoryResult(Ok(_)) -> #(
+      Model(..model, user_category_name_input: ""),
+      eff.get_categories(),
+    )
     msg.AddCategoryResult(Error(_)) -> #(model, effect.none())
     msg.AddTransaction ->
       case
@@ -523,6 +526,13 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     msg.CategoryGroups(Ok(groups)) -> #(
       Model(..model, categories_groups: groups),
       effect.none(),
+    )
+    msg.CollapseGroup(group) -> #(
+      model,
+      // eff.update_group_eff(#(m.CategoryGroup(..group, is_collapsed: !group.is_collapsed))),
+      eff.update_group_eff(
+        m.CategoryGroup(..group, is_collapsed: !group.is_collapsed),
+      ),
     )
     msg.CategoryGroups(Error(_)) -> #(model, effect.none())
     msg.ChangeGroupForCategory(cat) -> {

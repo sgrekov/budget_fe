@@ -67,6 +67,7 @@ pub type Msg {
   CategoryGroups(c: Result(List(CategoryGroup), lustre_http.HttpError))
   ChangeGroupForCategory(cat: Category)
   UserInputCategoryGroupChange(group_name: String)
+  CollapseGroup(group : CategoryGroup)
 }
 
 pub type Model {

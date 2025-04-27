@@ -212,6 +212,19 @@ pub fn add_new_group_eff(name: String) -> effect.Effect(Msg) {
   )
 }
 
+pub fn update_group_eff(group: m.CategoryGroup) -> effect.Effect(Msg) {
+  make_request(
+    http.Put,
+    "category/group",
+    json.to_string(
+      m.category_group_encode(group),
+    )
+      |> option.Some,
+    m.id_decoder(),
+    msg.AddCategoryGroupResult,
+  )
+}
+
 fn create_allocation_eff(
   money: m.Money,
   category_id: String,
