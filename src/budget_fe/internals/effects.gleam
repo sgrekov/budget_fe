@@ -18,7 +18,7 @@ import lustre_http
 // import modem.{initial_uri}
 import rada/date as d
 
-const is_prod: Bool = False
+const is_prod: Bool = True
 
 pub fn on_route_change(uri: Uri) -> Msg {
   let route = uri_to_route(uri)
