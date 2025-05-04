@@ -1,6 +1,6 @@
 import budget_shared.{
   type Allocation, type Category, type CategoryGroup, type Cycle, type Money,
-  type Target, type Transaction, type User,
+  type Transaction, type User,
 }
 import gleam/dict
 import gleam/option.{type Option}
@@ -15,7 +15,10 @@ pub type Msg {
   OnRouteChange(route: Route)
   LoginPassword(login: Option(String), pass: Option(String))
   LoginSubmit
-  LoginResult(user: Result(#(User, String), lustre_http.HttpError), cycle: Cycle)
+  LoginResult(
+    user: Result(#(User, String), lustre_http.HttpError),
+    cycle: Cycle,
+  )
   Categories(cats: Result(List(Category), lustre_http.HttpError))
   Transactions(trans: Result(List(Transaction), lustre_http.HttpError))
   Suggestions(trans: Result(dict.Dict(String, Category), lustre_http.HttpError))
@@ -32,7 +35,7 @@ pub type Msg {
   UserUpdatedTransactionAmount(amount: String)
   UserUpdatedTransactionIsInflow(is_inflow: Bool)
   AddTransactionResult(c: Result(Transaction, lustre_http.HttpError))
-  EditTarget(c: Category)
+  StartEditTarget(c: Category)
   SaveTarget(c: Category)
   DeleteTarget(c: Category)
   UserTargetUpdateAmount(amount: String)
@@ -67,7 +70,7 @@ pub type Msg {
   CategoryGroups(c: Result(List(CategoryGroup), lustre_http.HttpError))
   ChangeGroupForCategory(cat: Category)
   UserInputCategoryGroupChange(group_name: String)
-  CollapseGroup(group : CategoryGroup)
+  CollapseGroup(group: CategoryGroup)
 }
 
 pub type Model {
@@ -86,7 +89,7 @@ pub type Model {
     show_add_category_ui: Option(String),
     user_category_name_input: String,
     transaction_add_input: TransactionForm,
-    target_edit: TargetEdit,
+    target_edit_form: option.Option(TargetEditForm),
     selected_transaction: Option(String),
     transaction_edit_form: Option(TransactionEditForm),
     suggestions: dict.Dict(String, Category),
@@ -130,9 +133,11 @@ pub type TransactionEditForm {
   )
 }
 
-pub type TargetEdit {
-  TargetEdit(cat_id: String, enabled: Bool, target: Target)
+pub type TargetEditForm {
+  TargetEditForm(
+    cat_id: String,
+    target_amount: String,
+    target_custom_date: Option(String),
+    is_custom: Bool,
+  )
 }
-// pub type AllocationEffectResult {
-//   AllocationEffectResult(alloc: Allocation, is_created: Bool)
-// }

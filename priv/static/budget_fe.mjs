@@ -1452,14 +1452,6 @@ function unwrap2(result, default$) {
     return default$;
   }
 }
-function lazy_unwrap(result, default$) {
-  if (result.isOk()) {
-    let v = result[0];
-    return v;
-  } else {
-    return default$();
-  }
-}
 
 // build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
 var DecodeError = class extends CustomType {
@@ -5789,6 +5781,65 @@ function category_group_decoder() {
     }
   );
 }
+function month_by_number(month2) {
+  if (month2 === 1) {
+    return new Jan();
+  } else if (month2 === 2) {
+    return new Feb();
+  } else if (month2 === 3) {
+    return new Mar();
+  } else if (month2 === 4) {
+    return new Apr();
+  } else if (month2 === 5) {
+    return new May();
+  } else if (month2 === 6) {
+    return new Jun();
+  } else if (month2 === 7) {
+    return new Jul();
+  } else if (month2 === 8) {
+    return new Aug();
+  } else if (month2 === 9) {
+    return new Sep();
+  } else if (month2 === 10) {
+    return new Oct();
+  } else if (month2 === 11) {
+    return new Nov();
+  } else if (month2 === 12) {
+    return new Dec();
+  } else {
+    return new Jan();
+  }
+}
+function from_date_string(date_str) {
+  return from_iso_string(date_str);
+}
+function date_to_month(d) {
+  return new MonthInYear(
+    (() => {
+      let _pipe = d;
+      return month_number(_pipe);
+    })(),
+    (() => {
+      let _pipe = d;
+      return year(_pipe);
+    })()
+  );
+}
+function date_string_to_month(date_str) {
+  let _pipe = from_date_string(date_str);
+  let _pipe$1 = map3(_pipe, (d) => {
+    return date_to_month(d);
+  });
+  return unwrap2(_pipe$1, new MonthInYear(0, 0));
+}
+function month_in_year_to_str(month_in_year) {
+  let date2 = from_calendar_date(
+    month_in_year.year,
+    month_by_number(month_in_year.month),
+    1
+  );
+  return format(date2, "yyyy-MM-dd");
+}
 function month_decoder() {
   return field2(
     "month",
@@ -6081,6 +6132,39 @@ function transaction_decoder() {
 function money_sum(a2, b) {
   return new Money(a2.value + b.value);
 }
+function target_amount(target) {
+  if (target instanceof None) {
+    return new None();
+  } else if (target instanceof Some && target[0] instanceof Custom) {
+    let amount = target[0].target;
+    let _pipe = amount;
+    return new Some(_pipe);
+  } else {
+    let amount = target[0].target;
+    let _pipe = amount;
+    return new Some(_pipe);
+  }
+}
+function target_date(target) {
+  if (target instanceof None) {
+    return new None();
+  } else if (target instanceof Some && target[0] instanceof Custom) {
+    let date = target[0].date;
+    let _pipe = date;
+    return new Some(_pipe);
+  } else {
+    return new None();
+  }
+}
+function is_target_custom(target) {
+  if (target instanceof None) {
+    return false;
+  } else if (target instanceof Some && target[0] instanceof Custom) {
+    return true;
+  } else {
+    return false;
+  }
+}
 function cycle_decrease(c) {
   let mon_num = month_to_number(c.month);
   if (mon_num === 1) {
@@ -6116,9 +6200,6 @@ function calculate_current_cycle() {
 }
 function divide_money(m, d) {
   return new Money(divideInt(m.value, d));
-}
-function euro_int_to_money(i) {
-  return new Money(i * 100);
 }
 function string_to_money(raw) {
   let _block;
@@ -7847,7 +7928,7 @@ var AddTransactionResult = class extends CustomType {
     this.c = c;
   }
 };
-var EditTarget = class extends CustomType {
+var StartEditTarget = class extends CustomType {
   constructor(c) {
     super();
     this.c = c;
@@ -8051,7 +8132,7 @@ var CollapseGroup = class extends CustomType {
   }
 };
 var Model2 = class extends CustomType {
-  constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input) {
+  constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit_form, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input) {
     super();
     this.login_form = login_form;
     this.current_user = current_user;
@@ -8067,7 +8148,7 @@ var Model2 = class extends CustomType {
     this.show_add_category_ui = show_add_category_ui;
     this.user_category_name_input = user_category_name_input;
     this.transaction_add_input = transaction_add_input;
-    this.target_edit = target_edit;
+    this.target_edit_form = target_edit_form;
     this.selected_transaction = selected_transaction;
     this.transaction_edit_form = transaction_edit_form;
     this.suggestions = suggestions;
@@ -8117,12 +8198,13 @@ var TransactionEditForm = class extends CustomType {
     this.is_inflow = is_inflow;
   }
 };
-var TargetEdit = class extends CustomType {
-  constructor(cat_id, enabled, target) {
+var TargetEditForm = class extends CustomType {
+  constructor(cat_id, target_amount2, target_custom_date, is_custom) {
     super();
     this.cat_id = cat_id;
-    this.enabled = enabled;
-    this.target = target;
+    this.target_amount = target_amount2;
+    this.target_custom_date = target_custom_date;
+    this.is_custom = is_custom;
   }
 };
 
@@ -8170,7 +8252,7 @@ function to_date_string(value3) {
 function to_date_string_input(value3) {
   return format(value3, "yyyy-MM-dd");
 }
-function from_date_string(date_str) {
+function from_date_string2(date_str) {
   return from_iso_string(date_str);
 }
 function month_to_name2(month2) {
@@ -8227,7 +8309,7 @@ function days_in_month2(_, month2) {
     return 31;
   }
 }
-function month_by_number(month2) {
+function month_by_number2(month2) {
   if (month2 === 1) {
     return new Jan();
   } else if (month2 === 2) {
@@ -8336,7 +8418,7 @@ function request_with_auth() {
     _block$1 = set_scheme(_pipe$32, new Https());
   } else {
     let _pipe$12 = new$3();
-    let _pipe$22 = set_host(_pipe$12, "localho.st");
+    let _pipe$22 = set_host(_pipe$12, "127.0.0.1");
     let _pipe$32 = set_port(_pipe$22, 8080);
     _block$1 = set_scheme(_pipe$32, new Http());
   }
@@ -8392,7 +8474,7 @@ function add_transaction_eff(transaction_form, amount, cat) {
     guidv4(),
     (() => {
       let _pipe = transaction_form.date;
-      let _pipe$1 = from_date_string(_pipe);
+      let _pipe$1 = from_date_string2(_pipe);
       return unwrap2(_pipe$1, today());
     })(),
     transaction_form.payee,
@@ -8590,25 +8672,73 @@ function delete_transaction_eff(t_id) {
     }
   );
 }
-function save_target_eff(category, target_edit) {
+function update_category_target_eff(category, target_edit) {
+  let _block;
+  let _pipe = target_edit;
+  _block = map(
+    _pipe,
+    (target_edit_form) => {
+      let $ = target_edit_form.is_custom;
+      if ($) {
+        return new Custom(
+          (() => {
+            let _pipe$1 = target_edit_form.target_amount;
+            return string_to_money(_pipe$1);
+          })(),
+          (() => {
+            let _pipe$1 = target_edit_form.target_custom_date;
+            let _pipe$2 = map(
+              _pipe$1,
+              (str) => {
+                return date_string_to_month(str);
+              }
+            );
+            return unwrap(_pipe$2, new MonthInYear(0, 0));
+          })()
+        );
+      } else {
+        return new Monthly(
+          (() => {
+            let _pipe$1 = target_edit_form.target_amount;
+            return string_to_money(_pipe$1);
+          })()
+        );
+      }
+    }
+  );
+  let target = _block;
   return make_request(
     new Put(),
     "category/" + category.id,
     (() => {
-      let _pipe = to_string2(
+      let _pipe$1 = to_string2(
         category_encode(
           (() => {
             let _record = category;
             return new Category(
               _record.id,
               _record.name,
-              target_edit,
+              target,
               _record.inflow,
               _record.group_id
             );
           })()
         )
       );
+      return new Some(_pipe$1);
+    })(),
+    id_decoder(),
+    (var0) => {
+      return new CategorySaveTarget(var0);
+    }
+  );
+}
+function update_category_eff(category) {
+  return make_request(
+    new Put(),
+    "category/" + category.id,
+    (() => {
+      let _pipe = to_string2(category_encode(category));
       return new Some(_pipe);
     })(),
     id_decoder(),
@@ -9070,7 +9200,7 @@ function cycle_bounds(c, cycle_end_day) {
     return [
       from_calendar_date(
         prev_year,
-        month_by_number(prev_month$1),
+        month_by_number2(prev_month$1),
         last_day + 1
       ),
       from_calendar_date(c.year, c.month, last_day)
@@ -9170,8 +9300,8 @@ function category_activity(cat, transactions) {
 }
 function target_switcher_ui(et) {
   let _block;
-  let $1 = et.target;
-  if ($1 instanceof Custom) {
+  let $1 = et.is_custom;
+  if ($1) {
     _block = ["", "active"];
   } else {
     _block = ["active", ""];
@@ -10319,16 +10449,15 @@ function category_details_allocation_ui(sc, allocation) {
     ])
   );
 }
-function category_details_target_ui(c, et) {
+function category_details_target_ui(cat, target_edit_option) {
   return div(
     toList([
       class$("mt-3 rounded-3 p-2 col mt-3"),
       style(toList([["background-color", side_panel_color]]))
     ]),
     (() => {
-      let $ = et.cat_id;
-      let $1 = et.enabled;
-      if ($1) {
+      if (target_edit_option instanceof Some) {
+        let target_edit = target_edit_option[0];
         return toList([
           div(
             toList([]),
@@ -10337,20 +10466,25 @@ function category_details_target_ui(c, et) {
               button(
                 toList([
                   class$("ms-3 me-1"),
-                  on_click(new SaveTarget(c))
+                  on_click(new SaveTarget(cat))
                 ]),
                 toList([text("Save")])
               ),
               button(
-                toList([on_click(new DeleteTarget(c))]),
+                toList([on_click(new DeleteTarget(cat))]),
                 toList([text("Delete")])
               )
             ])
           ),
-          target_switcher_ui(et),
+          target_switcher_ui(target_edit),
           (() => {
-            let $2 = et.target;
-            if ($2 instanceof Custom) {
+            let $ = target_edit.is_custom;
+            if ($) {
+              debug(target_edit.target_custom_date);
+              let _block;
+              let _pipe = target_edit.target_custom_date;
+              _block = unwrap(_pipe, "");
+              let target_date2 = _block;
               return div(
                 toList([class$("mt-1")]),
                 toList([
@@ -10365,7 +10499,8 @@ function category_details_target_ui(c, et) {
                       placeholder("amount"),
                       class$("form-control"),
                       type_("text"),
-                      style(toList([["width", "120px"]]))
+                      style(toList([["width", "120px"]])),
+                      value(target_edit.target_amount)
                     ])
                   ),
                   input(
@@ -10377,7 +10512,8 @@ function category_details_target_ui(c, et) {
                       ),
                       placeholder("date"),
                       class$("form-control mt-1"),
-                      type_("date")
+                      type_("date"),
+                      value(target_date2)
                     ])
                   )
                 ])
@@ -10398,8 +10534,7 @@ function category_details_target_ui(c, et) {
                       class$("form-control"),
                       type_("text"),
                       style(toList([["width", "120px"]])),
-                      style(toList([["width", "120px"]])),
-                      style(toList([["width", "120px"]]))
+                      value(target_edit.target_amount)
                     ])
                   )
                 ])
@@ -10416,7 +10551,7 @@ function category_details_target_ui(c, et) {
               button(
                 toList([
                   class$("ms-3"),
-                  on_click(new EditTarget(c))
+                  on_click(new StartEditTarget(cat))
                 ]),
                 toList([text("Edit")])
               )
@@ -10424,7 +10559,7 @@ function category_details_target_ui(c, et) {
           ),
           div(
             toList([class$("mt-2")]),
-            toList([text2(target_string(c))])
+            toList([text2(target_string(cat))])
           )
         ]);
       }
@@ -10469,7 +10604,7 @@ function category_details(category, model, sc, allocation) {
     toList([class$("col p-3")]),
     toList([
       category_activity_ui(category, model),
-      category_details_target_ui(category, model.target_edit),
+      category_details_target_ui(category, model.target_edit_form),
       category_details_allocation_ui(sc, allocation),
       category_details_allocate_needed_ui(category, allocation, model),
       category_details_cover_overspent_ui(category, model, allocation),
@@ -10579,7 +10714,7 @@ function init3(_) {
       new None(),
       "",
       new TransactionForm("", "", new None(), "", false),
-      new TargetEdit("", false, new Monthly(new Money(0))),
+      new None(),
       new None(),
       new None(),
       new_map(),
@@ -10618,7 +10753,7 @@ function money_value(m) {
 function transaction_form_to_transaction(tef, categories) {
   let _block;
   let _pipe = tef.date;
-  let _pipe$1 = from_date_string(_pipe);
+  let _pipe$1 = from_date_string2(_pipe);
   _block = from_result(_pipe$1);
   let date_option = _block;
   let _block$1;
@@ -10656,18 +10791,6 @@ function transaction_form_to_transaction(tef, categories) {
     return new None();
   }
 }
-function date_to_month(d) {
-  return new MonthInYear(
-    (() => {
-      let _pipe = d;
-      return month_number(_pipe);
-    })(),
-    (() => {
-      let _pipe = d;
-      return year(_pipe);
-    })()
-  );
-}
 function find_alloc_by_cat_id(cat_id, cycle, allocations) {
   let _pipe = allocations;
   return find(
@@ -10699,7 +10822,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -10729,7 +10852,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -10789,7 +10912,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -10829,7 +10952,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -10873,7 +10996,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -10914,7 +11037,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -10947,7 +11070,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11000,7 +11123,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          new None(),
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11056,7 +11179,7 @@ function update(model, msg) {
           })(),
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11087,7 +11210,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           "",
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11118,7 +11241,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           name,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11148,7 +11271,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           "",
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11193,7 +11316,7 @@ function update(model, msg) {
               "",
               false
             ),
-            _record.target_edit,
+            _record.target_edit_form,
             _record.selected_transaction,
             _record.transaction_edit_form,
             _record.suggestions,
@@ -11242,7 +11365,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11291,7 +11414,7 @@ function update(model, msg) {
               _record$1.is_inflow
             );
           })(),
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11331,7 +11454,7 @@ function update(model, msg) {
               _record$1.is_inflow
             );
           })(),
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11378,7 +11501,7 @@ function update(model, msg) {
               _record$1.is_inflow
             );
           })(),
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11418,7 +11541,7 @@ function update(model, msg) {
               _record$1.is_inflow
             );
           })(),
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11458,7 +11581,7 @@ function update(model, msg) {
               is_inflow
             );
           })(),
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11469,7 +11592,8 @@ function update(model, msg) {
       })(),
       none()
     ];
-  } else if (msg instanceof EditTarget) {
+  } else if (msg instanceof StartEditTarget) {
+    let c = msg.c;
     return [
       (() => {
         let _record = model;
@@ -11489,8 +11613,20 @@ function update(model, msg) {
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
-            let _record$1 = model.target_edit;
-            return new TargetEdit(_record$1.cat_id, true, _record$1.target);
+            let _pipe = new TargetEditForm(
+              c.id,
+              (() => {
+                let _pipe2 = target_amount(c.target);
+                let _pipe$1 = map(_pipe2, money_to_string_no_sign);
+                return unwrap(_pipe$1, "");
+              })(),
+              (() => {
+                let _pipe2 = target_date(c.target);
+                return map(_pipe2, month_in_year_to_str);
+              })(),
+              is_target_custom(c.target)
+            );
+            return new Some(_pipe);
           })(),
           _record.selected_transaction,
           _record.transaction_edit_form,
@@ -11522,14 +11658,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          (() => {
-            let _record$1 = model.target_edit;
-            return new TargetEdit(
-              _record$1.cat_id,
-              false,
-              _record$1.target
-            );
-          })(),
+          new None(),
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11538,13 +11667,7 @@ function update(model, msg) {
           _record.category_group_change_input
         );
       })(),
-      save_target_eff(
-        c,
-        (() => {
-          let _pipe = model.target_edit.target;
-          return new Some(_pipe);
-        })()
-      )
+      update_category_target_eff(c, model.target_edit_form)
     ];
   } else if (msg instanceof DeleteTarget) {
     let c = msg.c;
@@ -11566,14 +11689,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          (() => {
-            let _record$1 = model.target_edit;
-            return new TargetEdit(
-              _record$1.cat_id,
-              false,
-              _record$1.target
-            );
-          })(),
+          new None(),
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11586,20 +11702,6 @@ function update(model, msg) {
     ];
   } else if (msg instanceof UserTargetUpdateAmount) {
     let amount = msg.amount;
-    let _block;
-    let _pipe = amount;
-    let _pipe$1 = parse_int(_pipe);
-    _block = unwrap2(_pipe$1, 0);
-    let amount$1 = _block;
-    let _block$1;
-    let $ = model.target_edit.target;
-    if ($ instanceof Custom) {
-      let date = $.date;
-      _block$1 = new Custom(euro_int_to_money(amount$1), date);
-    } else {
-      _block$1 = new Monthly(euro_int_to_money(amount$1));
-    }
-    let target = _block$1;
     return [
       (() => {
         let _record = model;
@@ -11619,11 +11721,18 @@ function update(model, msg) {
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
-            let _record$1 = model.target_edit;
-            return new TargetEdit(
-              _record$1.cat_id,
-              _record$1.enabled,
-              target
+            let _pipe = model.target_edit_form;
+            return map(
+              _pipe,
+              (form) => {
+                let _record$1 = form;
+                return new TargetEditForm(
+                  _record$1.cat_id,
+                  amount,
+                  _record$1.target_custom_date,
+                  _record$1.is_custom
+                );
+              }
             );
           })(),
           _record.selected_transaction,
@@ -11638,19 +11747,6 @@ function update(model, msg) {
     ];
   } else if (msg instanceof EditTargetCadence) {
     let is_monthly = msg.is_monthly;
-    let _block;
-    let $ = model.target_edit.target;
-    if ($ instanceof Custom && is_monthly) {
-      let money = $.target;
-      _block = new Monthly(money);
-    } else if ($ instanceof Monthly && !is_monthly) {
-      let money = $.target;
-      _block = new Custom(money, date_to_month(today()));
-    } else {
-      let target2 = $;
-      _block = target2;
-    }
-    let target = _block;
     return [
       (() => {
         let _record = model;
@@ -11670,11 +11766,18 @@ function update(model, msg) {
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
-            let _record$1 = model.target_edit;
-            return new TargetEdit(
-              _record$1.cat_id,
-              _record$1.enabled,
-              target
+            let _pipe = model.target_edit_form;
+            return map(
+              _pipe,
+              (form) => {
+                let _record$1 = form;
+                return new TargetEditForm(
+                  _record$1.cat_id,
+                  _record$1.target_amount,
+                  _record$1.target_custom_date,
+                  !is_monthly
+                );
+              }
             );
           })(),
           _record.selected_transaction,
@@ -11689,22 +11792,6 @@ function update(model, msg) {
     ];
   } else if (msg instanceof UserTargetUpdateCustomDate) {
     let date = msg.date;
-    let _block;
-    let _pipe = from_date_string(date);
-    _block = lazy_unwrap(_pipe, () => {
-      return today();
-    });
-    let parsed_date = _block;
-    let _block$1;
-    let $ = model.target_edit.target;
-    if ($ instanceof Custom) {
-      let money = $.target;
-      _block$1 = new Custom(money, date_to_month(parsed_date));
-    } else {
-      let money = $.target;
-      _block$1 = new Monthly(money);
-    }
-    let target = _block$1;
     return [
       (() => {
         let _record = model;
@@ -11724,11 +11811,21 @@ function update(model, msg) {
           _record.user_category_name_input,
           _record.transaction_add_input,
           (() => {
-            let _record$1 = model.target_edit;
-            return new TargetEdit(
-              _record$1.cat_id,
-              _record$1.enabled,
-              target
+            let _pipe = model.target_edit_form;
+            return map(
+              _pipe,
+              (form) => {
+                let _record$1 = form;
+                return new TargetEditForm(
+                  _record$1.cat_id,
+                  _record$1.target_amount,
+                  (() => {
+                    let _pipe$1 = date;
+                    return new Some(_pipe$1);
+                  })(),
+                  _record$1.is_custom
+                );
+              }
             );
           })(),
           _record.selected_transaction,
@@ -11765,7 +11862,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           new Some(t.id),
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11796,7 +11893,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           new None(),
           _record.transaction_edit_form,
           _record.suggestions,
@@ -11828,7 +11925,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           new Some(
             new TransactionEditForm(
@@ -11882,7 +11979,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           (() => {
             let _pipe = model.transaction_edit_form;
@@ -11929,7 +12026,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           (() => {
             let _pipe = model.transaction_edit_form;
@@ -11976,7 +12073,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           (() => {
             let _pipe = model.transaction_edit_form;
@@ -12023,7 +12120,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           (() => {
             let _pipe = model.transaction_edit_form;
@@ -12070,7 +12167,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           (() => {
             let _pipe = model.transaction_edit_form;
@@ -12116,7 +12213,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           new None(),
           new None(),
           _record.suggestions,
@@ -12163,7 +12260,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -12202,7 +12299,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -12215,7 +12312,7 @@ function update(model, msg) {
         let $ = model.selected_category;
         if ($ instanceof Some) {
           let sc = $[0];
-          return save_target_eff(
+          return update_category_eff(
             (() => {
               let _record = cat;
               return new Category(
@@ -12225,8 +12322,7 @@ function update(model, msg) {
                 _record.inflow,
                 _record.group_id
               );
-            })(),
-            cat.target
+            })()
           );
         } else {
           return none();
@@ -12266,7 +12362,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -12340,7 +12436,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -12378,7 +12474,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -12409,7 +12505,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -12440,7 +12536,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           suggestions,
@@ -12480,7 +12576,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -12511,7 +12607,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -12543,7 +12639,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -12576,7 +12672,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,
@@ -12638,7 +12734,7 @@ function update(model, msg) {
             _record.show_add_category_ui,
             _record.user_category_name_input,
             _record.transaction_add_input,
-            _record.target_edit,
+            _record.target_edit_form,
             _record.selected_transaction,
             _record.transaction_edit_form,
             _record.suggestions,
@@ -12647,7 +12743,7 @@ function update(model, msg) {
             ""
           );
         })(),
-        save_target_eff(
+        update_category_eff(
           (() => {
             let _record = cat;
             return new Category(
@@ -12657,8 +12753,7 @@ function update(model, msg) {
               _record.inflow,
               group.id
             );
-          })(),
-          cat.target
+          })()
         )
       ];
     }
@@ -12682,7 +12777,7 @@ function update(model, msg) {
           _record.show_add_category_ui,
           _record.user_category_name_input,
           _record.transaction_add_input,
-          _record.target_edit,
+          _record.target_edit_form,
           _record.selected_transaction,
           _record.transaction_edit_form,
           _record.suggestions,

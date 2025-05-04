@@ -1,17 +1,14 @@
 import budget_fe/internals/msg
 import budget_fe/internals/msg.{
-  type LoginForm, type Model, type Msg, type SelectedCategory, type TargetEdit,
+  type LoginForm, type Model, type Msg, type SelectedCategory,
 } as _
 import budget_shared.{
   type Allocation, type Category, type Cycle, type Money, type MonthInYear,
   type Transaction,
 } as m
-
-// import budget_shared.{
-//   Allocation, Category, Cycle, Money, MonthInYear, Transaction,
-// }
 import date_utils
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
@@ -335,7 +332,7 @@ fn category_details(
 ) -> element.Element(Msg) {
   html.div([attribute.class("col p-3")], [
     category_activity_ui(category, model),
-    category_details_target_ui(category, model.target_edit),
+    category_details_target_ui(category, model.target_edit_form),
     category_details_allocation_ui(sc, allocation),
     category_details_allocate_needed_ui(category, allocation, model),
     category_details_cover_overspent_ui(category, model, allocation),
@@ -534,31 +531,37 @@ const side_panel_color = "rgb(134, 217, 192)"
 const activity_side_panel_color = "rgb(197, 219, 212)"
 
 fn category_details_target_ui(
-  c: Category,
-  et: TargetEdit,
+  cat: Category,
+  target_edit_option: option.Option(msg.TargetEditForm),
 ) -> element.Element(Msg) {
   html.div(
     [
       attribute.class("mt-3 rounded-3 p-2 col mt-3"),
       attribute.style([#("background-color", side_panel_color)]),
     ],
-    case et.cat_id, et.enabled {
+    case target_edit_option {
       // edit mode
-      _, True -> {
+      option.Some(target_edit) -> {
         [
           html.div([], [
             html.text("Target"),
             html.button(
-              [attribute.class("ms-3 me-1"), event.on_click(msg.SaveTarget(c))],
+              [
+                attribute.class("ms-3 me-1"),
+                event.on_click(msg.SaveTarget(cat)),
+              ],
               [element.text("Save")],
             ),
-            html.button([event.on_click(msg.DeleteTarget(c))], [
+            html.button([event.on_click(msg.DeleteTarget(cat))], [
               element.text("Delete"),
             ]),
           ]),
-          target_switcher_ui(et),
-          case et.target {
-            m.Custom(_, _) ->
+          target_switcher_ui(target_edit),
+          case target_edit.is_custom {
+            True -> {
+              io.debug(target_edit.target_custom_date)
+              let target_date =
+                target_edit.target_custom_date |> option.unwrap("")
               html.div([attribute.class("mt-1")], [
                 html.text("Amount needed for date: "),
                 html.input([
@@ -567,15 +570,18 @@ fn category_details_target_ui(
                   attribute.class("form-control"),
                   attribute.type_("text"),
                   attribute.style([#("width", "120px")]),
+                  attribute.value(target_edit.target_amount),
                 ]),
                 html.input([
                   event.on_input(msg.UserTargetUpdateCustomDate),
                   attribute.placeholder("date"),
                   attribute.class("form-control mt-1"),
                   attribute.type_("date"),
+                  attribute.value(target_date),
                 ]),
               ])
-            m.Monthly(_) ->
+            }
+            False -> {
               html.div([attribute.class("mt-1")], [
                 html.text("Amount monthly: "),
                 html.input([
@@ -584,24 +590,27 @@ fn category_details_target_ui(
                   attribute.class("form-control"),
                   attribute.type_("text"),
                   attribute.style([#("width", "120px")]),
-                  attribute.style([#("width", "120px")]),
-                  attribute.style([#("width", "120px")]),
+                  attribute.value(target_edit.target_amount),
                 ]),
               ])
+            }
           },
         ]
       }
       // view mode
-      _, _ -> {
+      option.None -> {
         [
           html.div([], [
             html.text("Target"),
             html.button(
-              [attribute.class("ms-3"), event.on_click(msg.EditTarget(c))],
+              [
+                attribute.class("ms-3"),
+                event.on_click(msg.StartEditTarget(cat)),
+              ],
               [element.text("Edit")],
             ),
           ]),
-          html.div([attribute.class("mt-2")], [html.text(target_string(c))]),
+          html.div([attribute.class("mt-2")], [html.text(target_string(cat))]),
         ]
       }
     },
@@ -614,10 +623,10 @@ fn category_activity(cat: Category, transactions: List(Transaction)) -> Money {
   |> list.fold(m.Money(0), fn(m, t) { m.money_sum(m, t.value) })
 }
 
-fn target_switcher_ui(et: TargetEdit) -> element.Element(Msg) {
-  let #(monthly, custom) = case et.target {
-    m.Custom(_, _) -> #("", "active")
-    m.Monthly(_) -> #("active", "")
+fn target_switcher_ui(et: msg.TargetEditForm) -> element.Element(Msg) {
+  let #(monthly, custom) = case et.is_custom {
+    True -> #("", "active")
+    False -> #("active", "")
   }
   html.div(
     [
@@ -1110,7 +1119,7 @@ fn group_ui(group: m.CategoryGroup, model: Model) -> List(element.Element(Msg)) 
     False -> []
     True -> category_list_item_ui(model.categories, model, group)
   }
-  
+
   cats
   |> list.prepend(add_cat_ui)
   |> list.prepend(group_ui)

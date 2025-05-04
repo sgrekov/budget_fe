@@ -44,7 +44,7 @@ fn request_with_auth() -> request.Request(String) {
       |> request.set_scheme(http.Https)
     False ->
       request.new()
-      |> request.set_host("localho.st")
+      |> request.set_host("127.0.0.1")
       |> request.set_port(8080)
       |> request.set_scheme(http.Http)
   }
@@ -216,9 +216,7 @@ pub fn update_group_eff(group: m.CategoryGroup) -> effect.Effect(Msg) {
   make_request(
     http.Put,
     "category/group",
-    json.to_string(
-      m.category_group_encode(group),
-    )
+    json.to_string(m.category_group_encode(group))
       |> option.Some,
     m.id_decoder(),
     msg.AddCategoryGroupResult,
@@ -288,14 +286,41 @@ pub fn delete_transaction_eff(t_id: String) -> effect.Effect(Msg) {
   )
 }
 
-pub fn save_target_eff(
+pub fn update_category_target_eff(
   category: Category,
-  target_edit: Option(Target),
+  target_edit: Option(msg.TargetEditForm),
 ) -> effect.Effect(Msg) {
+  let target =
+    target_edit
+    |> option.map(fn(target_edit_form) {
+      case target_edit_form.is_custom {
+        True ->
+          m.Custom(
+            target: target_edit_form.target_amount |> m.string_to_money,
+            date: target_edit_form.target_custom_date
+              |> option.map(fn(str) { m.date_string_to_month(str) })
+              |> option.unwrap(m.MonthInYear(0, 0)),
+          )
+        False ->
+          m.Monthly(target: target_edit_form.target_amount |> m.string_to_money)
+      }
+    })
+
   make_request(
     http.Put,
     "category/" <> category.id,
-    json.to_string(m.category_encode(Category(..category, target: target_edit)))
+    json.to_string(m.category_encode(Category(..category, target: target)))
+      |> option.Some,
+    m.id_decoder(),
+    msg.CategorySaveTarget,
+  )
+}
+
+pub fn update_category_eff(category: Category) -> effect.Effect(Msg) {
+  make_request(
+    http.Put,
+    "category/" <> category.id,
+    json.to_string(m.category_encode(category))
       |> option.Some,
     m.id_decoder(),
     msg.CategorySaveTarget,

@@ -41,7 +41,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       show_add_category_group_ui: False,
       user_category_name_input: "",
       transaction_add_input: msg.TransactionForm("", "", option.None, "", False),
-      target_edit: msg.TargetEdit("", False, m.Monthly(m.Money(0))),
+      target_edit_form: option.None,
       selected_transaction: option.None,
       transaction_edit_form: option.None,
       suggestions: dict.new(),
@@ -148,6 +148,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
             |> result.map(fn(a) { a.amount |> m.money_to_string_no_sign })
             |> result.unwrap(""),
         )),
+        target_edit_form: option.None,
       ),
       effect.none(),
     )
@@ -268,69 +269,67 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       ),
       effect.none(),
     )
-    msg.EditTarget(_) -> #(
+    msg.StartEditTarget(c) -> #(
       Model(
         ..model,
-        target_edit: msg.TargetEdit(..model.target_edit, enabled: True),
+        target_edit_form: msg.TargetEditForm(
+            cat_id: c.id,
+            target_amount: m.target_amount(c.target)
+              |> option.map(m.money_to_string_no_sign)
+              |> option.unwrap(""),
+            target_custom_date: m.target_date(c.target)
+              |> option.map(m.month_in_year_to_str),
+            is_custom: m.is_target_custom(c.target),
+          )
+          |> option.Some,
       ),
       effect.none(),
     )
     msg.SaveTarget(c) -> {
       #(
-        Model(
-          ..model,
-          target_edit: msg.TargetEdit(..model.target_edit, enabled: False),
-        ),
-        eff.save_target_eff(c, model.target_edit.target |> option.Some),
+        Model(..model, target_edit_form: option.None),
+        eff.update_category_target_eff(c, model.target_edit_form),
       )
     }
     msg.DeleteTarget(c) -> #(
-      Model(
-        ..model,
-        target_edit: msg.TargetEdit(..model.target_edit, enabled: False),
-      ),
+      Model(..model, target_edit_form: option.None),
       eff.delete_target_eff(c),
     )
     msg.UserTargetUpdateAmount(amount) -> {
-      let amount = amount |> int.parse |> result.unwrap(0)
-      let target = case model.target_edit.target {
-        m.Custom(_, date) -> m.Custom(m.euro_int_to_money(amount), date)
-        m.Monthly(_) -> m.Monthly(m.euro_int_to_money(amount))
-      }
       #(
         Model(
           ..model,
-          target_edit: msg.TargetEdit(..model.target_edit, target: target),
+          target_edit_form: model.target_edit_form
+            |> option.map(fn(form) {
+              msg.TargetEditForm(..form, target_amount: amount)
+            }),
         ),
         effect.none(),
       )
     }
     msg.EditTargetCadence(is_monthly) -> {
-      let target = case model.target_edit.target, is_monthly {
-        m.Custom(money, _), True -> m.Monthly(money)
-        m.Monthly(money), False -> m.Custom(money, date_to_month(d.today()))
-        target, _ -> target
-      }
       #(
         Model(
           ..model,
-          target_edit: msg.TargetEdit(..model.target_edit, target: target),
+          target_edit_form: model.target_edit_form
+            |> option.map(fn(form) {
+              msg.TargetEditForm(..form, is_custom: !is_monthly)
+            }),
         ),
         effect.none(),
       )
     }
     msg.UserTargetUpdateCustomDate(date) -> {
-      let parsed_date =
-        date_utils.from_date_string(date)
-        |> result.lazy_unwrap(fn() { d.today() })
-      let target = case model.target_edit.target {
-        m.Custom(money, _) -> m.Custom(money, date_to_month(parsed_date))
-        m.Monthly(money) -> m.Monthly(money)
-      }
       #(
         Model(
           ..model,
-          target_edit: msg.TargetEdit(..model.target_edit, target: target),
+          target_edit_form: model.target_edit_form
+            |> option.map(fn(form) {
+              msg.TargetEditForm(
+                ..form,
+                target_custom_date: date |> option.Some,
+              )
+            }),
         ),
         effect.none(),
       )
@@ -435,7 +434,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, selected_category: option.None),
       case model.selected_category {
         option.Some(sc) ->
-          eff.save_target_eff(Category(..cat, name: sc.input_name), cat.target)
+          eff.update_category_eff(Category(..cat, name: sc.input_name))
         option.None -> effect.none()
       },
     )
@@ -543,7 +542,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         Error(_) -> #(model, effect.none())
         Ok(group) -> #(
           Model(..model, category_group_change_input: ""),
-          eff.save_target_eff(Category(..cat, group_id: group.id), cat.target),
+          eff.update_category_eff(Category(..cat, group_id: group.id)),
         )
       }
     }
@@ -598,17 +597,6 @@ fn money_value(m: m.Money) -> Int {
   m.value
 }
 
-// fn find_alloc_by_id(
-//   allocations: List(Allocation),
-//   id: String,
-// ) -> Result(Allocation, Nil) {
-//   allocations |> list.find(fn(a) { a.id == id })
-// }
-
-fn date_to_month(d: Date) -> MonthInYear {
-  MonthInYear(d |> d.month_number, d |> d.year)
-}
-
 fn find_alloc_by_cat_id(
   cat_id: String,
   cycle: Cycle,
@@ -618,13 +606,3 @@ fn find_alloc_by_cat_id(
   |> list.find(fn(a) { a.category_id == cat_id && a.date == cycle })
 }
 //<!---- Effects ----!>
-
-// fn is_equal(date: d.Date, c: Cycle) -> Bool {
-//   let d_mon = date |> d.month |> d.month_to_number()
-//   let d_year = date |> d.year
-//   d_mon == c.month |> d.month_to_number() && d_year == c.year
-// }
-
-// fn prepend(body: String, prefix: String) -> String {
-//   prefix <> body
-// }
