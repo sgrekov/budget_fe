@@ -8370,11 +8370,11 @@ function write_localstorage2(key, value3) {
     return write_localstorage(key, value3);
   });
 }
-var is_prod = false;
+var is_prod = true;
 function request_with_auth() {
   let _block;
   let _pipe = read_localstorage("jwt");
-  echo(_pipe, "src/budget_fe/internals/effects.gleam", 37);
+  echo(_pipe, "src/budget_fe/internals/effects.gleam", 35);
   _block = unwrap2(_pipe, "");
   let jwt = _block;
   let _block$1;

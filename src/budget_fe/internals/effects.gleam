@@ -14,8 +14,6 @@ import gleam/result
 import gleam/uri.{type Uri}
 import lustre/effect
 import lustre_http
-
-// import modem.{initial_uri}
 import rada/date as d
 
 const is_prod: Bool = True
