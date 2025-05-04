@@ -337,10 +337,21 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     }
     msg.CategorySaveTarget(Ok(_)) -> #(model, eff.get_categories())
     msg.CategorySaveTarget(Error(_)) -> #(model, effect.none())
-    msg.SelectTransaction(t) -> #(
-      Model(..model, selected_transaction: option.Some(t.id)),
-      effect.none(),
-    )
+    msg.SelectTransaction(t) -> {
+      let cur_selected_transaction =
+        model.selected_transaction |> option.unwrap("")
+      #(
+        Model(
+          ..model,
+          selected_transaction: option.Some(t.id),
+          transaction_edit_form: case cur_selected_transaction == t.id {
+            True -> model.transaction_edit_form
+            False -> option.None
+          },
+        ),
+        effect.none(),
+      )
+    }
     msg.DeleteTransaction(id) -> #(
       Model(..model, selected_transaction: option.None),
       eff.delete_transaction_eff(id),

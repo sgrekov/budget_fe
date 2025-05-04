@@ -11812,6 +11812,10 @@ function update(model, msg) {
     return [model, none()];
   } else if (msg instanceof SelectTransaction) {
     let t = msg.t;
+    let _block;
+    let _pipe = model.selected_transaction;
+    _block = unwrap(_pipe, "");
+    let cur_selected_transaction = _block;
     return [
       (() => {
         let _record = model;
@@ -11832,7 +11836,14 @@ function update(model, msg) {
           _record.transaction_add_input,
           _record.target_edit_form,
           new Some(t.id),
-          _record.transaction_edit_form,
+          (() => {
+            let $ = cur_selected_transaction === t.id;
+            if ($) {
+              return model.transaction_edit_form;
+            } else {
+              return new None();
+            }
+          })(),
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
