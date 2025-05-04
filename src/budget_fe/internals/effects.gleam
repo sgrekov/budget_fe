@@ -1,10 +1,9 @@
 import budget_fe/internals/msg.{type Msg, type TransactionForm}
 import budget_fe/internals/uuid
 import budget_shared.{
-  type Allocation, type Category, type Cycle, type Target, Allocation, Category,
-  Transaction,
+  type Allocation, type Category, type Cycle, Allocation, Category, Transaction,
 } as m
-import date_utils
+import date_utils as budget_shared
 import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
@@ -92,7 +91,7 @@ pub fn add_transaction_eff(
     Transaction(
       id: uuid.guidv4(),
       date: transaction_form.date
-        |> date_utils.from_date_string
+        |> budget_shared.from_date_string
         |> result.unwrap(d.today()),
       payee: transaction_form.payee,
       category_id: cat.id,
@@ -298,7 +297,7 @@ pub fn update_category_target_eff(
           m.Custom(
             target: target_edit_form.target_amount |> m.string_to_money,
             date: target_edit_form.target_custom_date
-              |> option.map(fn(str) { m.date_string_to_month(str) })
+              |> option.map(fn(str) { budget_shared.date_string_to_month(str) })
               |> option.unwrap(m.MonthInYear(0, 0)),
           )
         False ->

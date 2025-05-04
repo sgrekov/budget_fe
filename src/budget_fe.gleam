@@ -2,10 +2,11 @@ import budget_fe/internals/effects as eff
 import budget_fe/internals/msg.{type Model, type Msg, Model}
 import budget_fe/internals/view as v
 import budget_shared.{
-  type Allocation, type Category, type Cycle, type MonthInYear, type Transaction,
-  Category, MonthInYear, Transaction,
+  type Allocation, type Category, type Cycle, type Transaction, Category,
+  Transaction,
 } as m
 import date_utils
+import date_utils as budget_shared
 import gleam/dict
 import gleam/int
 import gleam/io
@@ -15,7 +16,7 @@ import gleam/result
 import lustre
 import lustre/effect
 import modem
-import rada/date.{type Date} as d
+import rada/date as d
 
 pub fn main() {
   let app = lustre.application(init, update, v.view)
@@ -278,7 +279,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
               |> option.map(m.money_to_string_no_sign)
               |> option.unwrap(""),
             target_custom_date: m.target_date(c.target)
-              |> option.map(m.month_in_year_to_str),
+              |> option.map(budget_shared.month_in_year_to_str),
             is_custom: m.is_target_custom(c.target),
           )
           |> option.Some,

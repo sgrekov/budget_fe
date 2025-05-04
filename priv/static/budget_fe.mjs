@@ -5781,65 +5781,6 @@ function category_group_decoder() {
     }
   );
 }
-function month_by_number(month2) {
-  if (month2 === 1) {
-    return new Jan();
-  } else if (month2 === 2) {
-    return new Feb();
-  } else if (month2 === 3) {
-    return new Mar();
-  } else if (month2 === 4) {
-    return new Apr();
-  } else if (month2 === 5) {
-    return new May();
-  } else if (month2 === 6) {
-    return new Jun();
-  } else if (month2 === 7) {
-    return new Jul();
-  } else if (month2 === 8) {
-    return new Aug();
-  } else if (month2 === 9) {
-    return new Sep();
-  } else if (month2 === 10) {
-    return new Oct();
-  } else if (month2 === 11) {
-    return new Nov();
-  } else if (month2 === 12) {
-    return new Dec();
-  } else {
-    return new Jan();
-  }
-}
-function from_date_string(date_str) {
-  return from_iso_string(date_str);
-}
-function date_to_month(d) {
-  return new MonthInYear(
-    (() => {
-      let _pipe = d;
-      return month_number(_pipe);
-    })(),
-    (() => {
-      let _pipe = d;
-      return year(_pipe);
-    })()
-  );
-}
-function date_string_to_month(date_str) {
-  let _pipe = from_date_string(date_str);
-  let _pipe$1 = map3(_pipe, (d) => {
-    return date_to_month(d);
-  });
-  return unwrap2(_pipe$1, new MonthInYear(0, 0));
-}
-function month_in_year_to_str(month_in_year) {
-  let date2 = from_calendar_date(
-    month_in_year.year,
-    month_by_number(month_in_year.month),
-    1
-  );
-  return format(date2, "yyyy-MM-dd");
-}
 function month_decoder() {
   return field2(
     "month",
@@ -6291,6 +6232,127 @@ function is_zero_euro(m) {
   } else {
     return false;
   }
+}
+
+// build/dev/javascript/budget_shared/date_utils.mjs
+function to_date_string(value3) {
+  return format(value3, "dd.MM.yyyy");
+}
+function to_date_string_input(value3) {
+  return format(value3, "yyyy-MM-dd");
+}
+function from_date_string(date_str) {
+  return from_iso_string(date_str);
+}
+function month_to_name2(month2) {
+  if (month2 instanceof Jan) {
+    return "January";
+  } else if (month2 instanceof Feb) {
+    return "February";
+  } else if (month2 instanceof Mar) {
+    return "March";
+  } else if (month2 instanceof Apr) {
+    return "April";
+  } else if (month2 instanceof May) {
+    return "May";
+  } else if (month2 instanceof Jun) {
+    return "June";
+  } else if (month2 instanceof Jul) {
+    return "July";
+  } else if (month2 instanceof Aug) {
+    return "August";
+  } else if (month2 instanceof Sep) {
+    return "September";
+  } else if (month2 instanceof Oct) {
+    return "October";
+  } else if (month2 instanceof Nov) {
+    return "November";
+  } else {
+    return "December";
+  }
+}
+function days_in_month2(_, month2) {
+  if (month2 instanceof Jan) {
+    return 31;
+  } else if (month2 instanceof Feb) {
+    return 28;
+  } else if (month2 instanceof Mar) {
+    return 31;
+  } else if (month2 instanceof Apr) {
+    return 30;
+  } else if (month2 instanceof May) {
+    return 31;
+  } else if (month2 instanceof Jun) {
+    return 30;
+  } else if (month2 instanceof Jul) {
+    return 31;
+  } else if (month2 instanceof Aug) {
+    return 31;
+  } else if (month2 instanceof Sep) {
+    return 30;
+  } else if (month2 instanceof Oct) {
+    return 31;
+  } else if (month2 instanceof Nov) {
+    return 30;
+  } else {
+    return 31;
+  }
+}
+function month_by_number(month2) {
+  if (month2 === 1) {
+    return new Jan();
+  } else if (month2 === 2) {
+    return new Feb();
+  } else if (month2 === 3) {
+    return new Mar();
+  } else if (month2 === 4) {
+    return new Apr();
+  } else if (month2 === 5) {
+    return new May();
+  } else if (month2 === 6) {
+    return new Jun();
+  } else if (month2 === 7) {
+    return new Jul();
+  } else if (month2 === 8) {
+    return new Aug();
+  } else if (month2 === 9) {
+    return new Sep();
+  } else if (month2 === 10) {
+    return new Oct();
+  } else if (month2 === 11) {
+    return new Nov();
+  } else if (month2 === 12) {
+    return new Dec();
+  } else {
+    return new Jan();
+  }
+}
+function date_to_month(d) {
+  return new MonthInYear(
+    (() => {
+      let _pipe = d;
+      return month_number(_pipe);
+    })(),
+    (() => {
+      let _pipe = d;
+      return year(_pipe);
+    })()
+  );
+}
+function date_string_to_month(date_str) {
+  let _pipe = from_date_string(date_str);
+  let _pipe$1 = map3(_pipe, (d) => {
+    return date_to_month(d);
+  });
+  return unwrap2(_pipe$1, new MonthInYear(0, 0));
+}
+function month_in_year_to_str(month_in_year) {
+  let date2 = from_calendar_date(
+    month_in_year.year,
+    month_by_number(month_in_year.month),
+    1
+  );
+  return format(date2, "yyyy-MM-dd");
 }
 
 // build/dev/javascript/lustre/lustre/effect.mjs
@@ -8245,100 +8307,6 @@ function guidv4() {
   return format_uuid(concatened);
 }
 
-// build/dev/javascript/budget_fe/date_utils.mjs
-function to_date_string(value3) {
-  return format(value3, "dd.MM.yyyy");
-}
-function to_date_string_input(value3) {
-  return format(value3, "yyyy-MM-dd");
-}
-function from_date_string2(date_str) {
-  return from_iso_string(date_str);
-}
-function month_to_name2(month2) {
-  if (month2 instanceof Jan) {
-    return "January";
-  } else if (month2 instanceof Feb) {
-    return "February";
-  } else if (month2 instanceof Mar) {
-    return "March";
-  } else if (month2 instanceof Apr) {
-    return "April";
-  } else if (month2 instanceof May) {
-    return "May";
-  } else if (month2 instanceof Jun) {
-    return "June";
-  } else if (month2 instanceof Jul) {
-    return "July";
-  } else if (month2 instanceof Aug) {
-    return "August";
-  } else if (month2 instanceof Sep) {
-    return "September";
-  } else if (month2 instanceof Oct) {
-    return "October";
-  } else if (month2 instanceof Nov) {
-    return "November";
-  } else {
-    return "December";
-  }
-}
-function days_in_month2(_, month2) {
-  if (month2 instanceof Jan) {
-    return 31;
-  } else if (month2 instanceof Feb) {
-    return 28;
-  } else if (month2 instanceof Mar) {
-    return 31;
-  } else if (month2 instanceof Apr) {
-    return 30;
-  } else if (month2 instanceof May) {
-    return 31;
-  } else if (month2 instanceof Jun) {
-    return 30;
-  } else if (month2 instanceof Jul) {
-    return 31;
-  } else if (month2 instanceof Aug) {
-    return 31;
-  } else if (month2 instanceof Sep) {
-    return 30;
-  } else if (month2 instanceof Oct) {
-    return 31;
-  } else if (month2 instanceof Nov) {
-    return 30;
-  } else {
-    return 31;
-  }
-}
-function month_by_number2(month2) {
-  if (month2 === 1) {
-    return new Jan();
-  } else if (month2 === 2) {
-    return new Feb();
-  } else if (month2 === 3) {
-    return new Mar();
-  } else if (month2 === 4) {
-    return new Apr();
-  } else if (month2 === 5) {
-    return new May();
-  } else if (month2 === 6) {
-    return new Jun();
-  } else if (month2 === 7) {
-    return new Jul();
-  } else if (month2 === 8) {
-    return new Aug();
-  } else if (month2 === 9) {
-    return new Sep();
-  } else if (month2 === 10) {
-    return new Oct();
-  } else if (month2 === 11) {
-    return new Nov();
-  } else if (month2 === 12) {
-    return new Dec();
-  } else {
-    return new Jan();
-  }
-}
-
 // build/dev/javascript/budget_fe/budget_fe/internals/gleam.mjs
 var CustomType2 = class {
   withFields(fields) {
@@ -8406,7 +8374,7 @@ var is_prod = false;
 function request_with_auth() {
   let _block;
   let _pipe = read_localstorage("jwt");
-  echo(_pipe, "src/budget_fe/internals/effects.gleam", 38);
+  echo(_pipe, "src/budget_fe/internals/effects.gleam", 37);
   _block = unwrap2(_pipe, "");
   let jwt = _block;
   let _block$1;
@@ -8474,7 +8442,7 @@ function add_transaction_eff(transaction_form, amount, cat) {
     guidv4(),
     (() => {
       let _pipe = transaction_form.date;
-      let _pipe$1 = from_date_string2(_pipe);
+      let _pipe$1 = from_date_string(_pipe);
       return unwrap2(_pipe$1, today());
     })(),
     transaction_form.payee,
@@ -9200,7 +9168,7 @@ function cycle_bounds(c, cycle_end_day) {
     return [
       from_calendar_date(
         prev_year,
-        month_by_number2(prev_month$1),
+        month_by_number(prev_month$1),
         last_day + 1
       ),
       from_calendar_date(c.year, c.month, last_day)
@@ -10753,7 +10721,7 @@ function money_value(m) {
 function transaction_form_to_transaction(tef, categories) {
   let _block;
   let _pipe = tef.date;
-  let _pipe$1 = from_date_string2(_pipe);
+  let _pipe$1 = from_date_string(_pipe);
   _block = from_result(_pipe$1);
   let date_option = _block;
   let _block$1;
@@ -12797,7 +12765,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      22,
+      23,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
