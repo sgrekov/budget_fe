@@ -16,7 +16,7 @@ import lustre/effect
 import lustre_http
 import rada/date as d
 
-const is_prod: Bool = True
+const is_prod: Bool = False
 
 pub fn on_route_change(uri: Uri) -> Msg {
   let route = uri_to_route(uri)
@@ -26,7 +26,7 @@ pub fn on_route_change(uri: Uri) -> Msg {
 fn uri_to_route(uri: Uri) -> msg.Route {
   case uri.path_segments(uri.path) {
     ["transactions"] -> msg.TransactionsRoute
-    // ["user"] -> msg.UserRoute
+    ["import"] -> msg.ImportTransactions
     _ -> msg.Home
   }
 }

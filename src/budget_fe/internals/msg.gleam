@@ -2,6 +2,7 @@ import budget_shared.{
   type Allocation, type Category, type CategoryGroup, type Cycle, type Money,
   type Transaction, type User,
 }
+import formal/form
 import gleam/dict
 import gleam/option.{type Option}
 import lustre_http
@@ -9,6 +10,7 @@ import lustre_http
 pub type Route {
   Home
   TransactionsRoute
+  ImportTransactions
 }
 
 pub type Msg {
@@ -71,6 +73,8 @@ pub type Msg {
   ChangeGroupForCategory(cat: Category)
   UserInputCategoryGroupChange(group_name: String)
   CollapseGroup(group: CategoryGroup)
+  UserSubmittedImportForm(List(#(String, String)))
+  UserSubmittedImportForm2
 }
 
 pub type Model {
@@ -96,6 +100,7 @@ pub type Model {
     show_add_category_group_ui: Bool,
     new_category_group_name: String,
     category_group_change_input: String,
+    import_form: ImportForm,
   )
 }
 
@@ -115,6 +120,10 @@ pub type TransactionForm {
 
 pub type LoginForm {
   LoginForm(login: Option(String), pass: Option(String), is_loading: Bool)
+}
+
+pub type ImportForm {
+  ImportForm(form: form.Form)
 }
 
 pub type CycleShift {

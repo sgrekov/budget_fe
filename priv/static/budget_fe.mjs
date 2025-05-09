@@ -258,19 +258,19 @@ function bitArrayByteAt(buffer, bitOffset, index5) {
   }
 }
 var UtfCodepoint = class {
-  constructor(value3) {
-    this.value = value3;
+  constructor(value4) {
+    this.value = value4;
   }
 };
 var isBitArrayDeprecationMessagePrinted = {};
-function bitArrayPrintDeprecationWarning(name, message) {
-  if (isBitArrayDeprecationMessagePrinted[name]) {
+function bitArrayPrintDeprecationWarning(name2, message) {
+  if (isBitArrayDeprecationMessagePrinted[name2]) {
     return;
   }
   console.warn(
-    `Deprecated BitArray.${name} property used in JavaScript FFI code. ${message}.`
+    `Deprecated BitArray.${name2} property used in JavaScript FFI code. ${message}.`
   );
-  isBitArrayDeprecationMessagePrinted[name] = true;
+  isBitArrayDeprecationMessagePrinted[name2] = true;
 }
 function bitArraySlice(bitArray, start3, end) {
   end ??= bitArray.bitSize;
@@ -322,14 +322,14 @@ function bitArraySliceToInt(bitArray, start3, end, isBigEndian, isSigned) {
   if (startByteIndex == endByteIndex) {
     const mask2 = 255 >> start3 % 8;
     const unusedLowBitCount = (8 - end % 8) % 8;
-    let value3 = (bitArray.rawBuffer[startByteIndex] & mask2) >> unusedLowBitCount;
+    let value4 = (bitArray.rawBuffer[startByteIndex] & mask2) >> unusedLowBitCount;
     if (isSigned) {
       const highBit = 2 ** (size - 1);
-      if (value3 >= highBit) {
-        value3 -= highBit * 2;
+      if (value4 >= highBit) {
+        value4 -= highBit * 2;
       }
     }
-    return value3;
+    return value4;
   }
   if (size <= 53) {
     return intFromUnalignedSliceUsingNumber(
@@ -371,78 +371,78 @@ function intFromAlignedSlice(bitArray, start3, end, isBigEndian, isSigned) {
 }
 function intFromAlignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
   const byteSize = end - start3;
-  let value3 = 0;
+  let value4 = 0;
   if (isBigEndian) {
     for (let i = start3; i < end; i++) {
-      value3 *= 256;
-      value3 += buffer[i];
+      value4 *= 256;
+      value4 += buffer[i];
     }
   } else {
     for (let i = end - 1; i >= start3; i--) {
-      value3 *= 256;
-      value3 += buffer[i];
+      value4 *= 256;
+      value4 += buffer[i];
     }
   }
   if (isSigned) {
     const highBit = 2 ** (byteSize * 8 - 1);
-    if (value3 >= highBit) {
-      value3 -= highBit * 2;
+    if (value4 >= highBit) {
+      value4 -= highBit * 2;
     }
   }
-  return value3;
+  return value4;
 }
 function intFromAlignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
   const byteSize = end - start3;
-  let value3 = 0n;
+  let value4 = 0n;
   if (isBigEndian) {
     for (let i = start3; i < end; i++) {
-      value3 *= 256n;
-      value3 += BigInt(buffer[i]);
+      value4 *= 256n;
+      value4 += BigInt(buffer[i]);
     }
   } else {
     for (let i = end - 1; i >= start3; i--) {
-      value3 *= 256n;
-      value3 += BigInt(buffer[i]);
+      value4 *= 256n;
+      value4 += BigInt(buffer[i]);
     }
   }
   if (isSigned) {
     const highBit = 1n << BigInt(byteSize * 8 - 1);
-    if (value3 >= highBit) {
-      value3 -= highBit * 2n;
+    if (value4 >= highBit) {
+      value4 -= highBit * 2n;
     }
   }
-  return Number(value3);
+  return Number(value4);
 }
 function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
   const isStartByteAligned = start3 % 8 === 0;
   let size = end - start3;
   let byteIndex = Math.trunc(start3 / 8);
-  let value3 = 0;
+  let value4 = 0;
   if (isBigEndian) {
     if (!isStartByteAligned) {
       const leadingBitsCount = 8 - start3 % 8;
-      value3 = buffer[byteIndex++] & (1 << leadingBitsCount) - 1;
+      value4 = buffer[byteIndex++] & (1 << leadingBitsCount) - 1;
       size -= leadingBitsCount;
     }
     while (size >= 8) {
-      value3 *= 256;
-      value3 += buffer[byteIndex++];
+      value4 *= 256;
+      value4 += buffer[byteIndex++];
       size -= 8;
     }
     if (size > 0) {
-      value3 *= 2 ** size;
-      value3 += buffer[byteIndex] >> 8 - size;
+      value4 *= 2 ** size;
+      value4 += buffer[byteIndex] >> 8 - size;
     }
   } else {
     if (isStartByteAligned) {
       let size2 = end - start3;
       let scale = 1;
       while (size2 >= 8) {
-        value3 += buffer[byteIndex++] * scale;
+        value4 += buffer[byteIndex++] * scale;
         scale *= 256;
         size2 -= 8;
       }
-      value3 += (buffer[byteIndex] >> 8 - size2) * scale;
+      value4 += (buffer[byteIndex] >> 8 - size2) * scale;
     } else {
       const highBitsCount = start3 % 8;
       const lowBitsCount = 8 - highBitsCount;
@@ -450,7 +450,7 @@ function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSi
       let scale = 1;
       while (size2 >= 8) {
         const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
-        value3 += (byte & 255) * scale;
+        value4 += (byte & 255) * scale;
         scale *= 256;
         size2 -= 8;
         byteIndex++;
@@ -463,48 +463,48 @@ function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSi
           trailingByte *= 2 ** size2;
           trailingByte += buffer[byteIndex + 1] >> 8 - size2;
         }
-        value3 += trailingByte * scale;
+        value4 += trailingByte * scale;
       }
     }
   }
   if (isSigned) {
     const highBit = 2 ** (end - start3 - 1);
-    if (value3 >= highBit) {
-      value3 -= highBit * 2;
+    if (value4 >= highBit) {
+      value4 -= highBit * 2;
     }
   }
-  return value3;
+  return value4;
 }
 function intFromUnalignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
   const isStartByteAligned = start3 % 8 === 0;
   let size = end - start3;
   let byteIndex = Math.trunc(start3 / 8);
-  let value3 = 0n;
+  let value4 = 0n;
   if (isBigEndian) {
     if (!isStartByteAligned) {
       const leadingBitsCount = 8 - start3 % 8;
-      value3 = BigInt(buffer[byteIndex++] & (1 << leadingBitsCount) - 1);
+      value4 = BigInt(buffer[byteIndex++] & (1 << leadingBitsCount) - 1);
       size -= leadingBitsCount;
     }
     while (size >= 8) {
-      value3 *= 256n;
-      value3 += BigInt(buffer[byteIndex++]);
+      value4 *= 256n;
+      value4 += BigInt(buffer[byteIndex++]);
       size -= 8;
     }
     if (size > 0) {
-      value3 <<= BigInt(size);
-      value3 += BigInt(buffer[byteIndex] >> 8 - size);
+      value4 <<= BigInt(size);
+      value4 += BigInt(buffer[byteIndex] >> 8 - size);
     }
   } else {
     if (isStartByteAligned) {
       let size2 = end - start3;
       let shift = 0n;
       while (size2 >= 8) {
-        value3 += BigInt(buffer[byteIndex++]) << shift;
+        value4 += BigInt(buffer[byteIndex++]) << shift;
         shift += 8n;
         size2 -= 8;
       }
-      value3 += BigInt(buffer[byteIndex] >> 8 - size2) << shift;
+      value4 += BigInt(buffer[byteIndex] >> 8 - size2) << shift;
     } else {
       const highBitsCount = start3 % 8;
       const lowBitsCount = 8 - highBitsCount;
@@ -512,7 +512,7 @@ function intFromUnalignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSi
       let shift = 0n;
       while (size2 >= 8) {
         const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
-        value3 += BigInt(byte & 255) << shift;
+        value4 += BigInt(byte & 255) << shift;
         shift += 8n;
         size2 -= 8;
         byteIndex++;
@@ -525,17 +525,17 @@ function intFromUnalignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSi
           trailingByte <<= size2;
           trailingByte += buffer[byteIndex + 1] >> 8 - size2;
         }
-        value3 += BigInt(trailingByte) << shift;
+        value4 += BigInt(trailingByte) << shift;
       }
     }
   }
   if (isSigned) {
     const highBit = 2n ** BigInt(end - start3 - 1);
-    if (value3 >= highBit) {
-      value3 -= highBit * 2n;
+    if (value4 >= highBit) {
+      value4 -= highBit * 2n;
     }
   }
-  return Number(value3);
+  return Number(value4);
 }
 function bitArrayValidateRange(bitArray, start3, end) {
   if (start3 < 0 || start3 > bitArray.bitSize || end < start3 || end > bitArray.bitSize) {
@@ -550,9 +550,9 @@ var Result = class _Result extends CustomType {
   }
 };
 var Ok = class extends Result {
-  constructor(value3) {
+  constructor(value4) {
     super();
-    this[0] = value3;
+    this[0] = value4;
   }
   // @internal
   isOk() {
@@ -722,8 +722,8 @@ function do_has_key(key, dict3) {
 function has_key(dict3, key) {
   return do_has_key(key, dict3);
 }
-function insert(dict3, key, value3) {
-  return map_insert(key, value3, dict3);
+function insert(dict3, key, value4) {
+  return map_insert(key, value4, dict3);
 }
 function reverse_and_concat(loop$remaining, loop$accumulator) {
   while (true) {
@@ -732,10 +732,10 @@ function reverse_and_concat(loop$remaining, loop$accumulator) {
     if (remaining.hasLength(0)) {
       return accumulator;
     } else {
-      let first2 = remaining.head;
+      let first3 = remaining.head;
       let rest = remaining.tail;
       loop$remaining = rest;
-      loop$accumulator = prepend(first2, accumulator);
+      loop$accumulator = prepend(first3, accumulator);
     }
   }
 }
@@ -919,20 +919,20 @@ function map2(list3, fun) {
 }
 function append_loop(loop$first, loop$second) {
   while (true) {
-    let first2 = loop$first;
+    let first3 = loop$first;
     let second = loop$second;
-    if (first2.hasLength(0)) {
+    if (first3.hasLength(0)) {
       return second;
     } else {
-      let first$1 = first2.head;
-      let rest$1 = first2.tail;
+      let first$1 = first3.head;
+      let rest$1 = first3.tail;
       loop$first = rest$1;
       loop$second = prepend(first$1, second);
     }
   }
 }
-function append(first2, second) {
-  return append_loop(reverse(first2), second);
+function append(first3, second) {
+  return append_loop(reverse(first3), second);
 }
 function prepend2(list3, item) {
   return prepend(item, list3);
@@ -1212,9 +1212,9 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
-      let first2 = list22.head;
+      let first22 = list22.head;
       let rest2 = list22.tail;
-      let $ = compare4(first1, first2);
+      let $ = compare4(first1, first22);
       if ($ instanceof Lt) {
         loop$list1 = rest1;
         loop$list2 = list22;
@@ -1224,12 +1224,12 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
         loop$list1 = list1;
         loop$list2 = rest2;
         loop$compare = compare4;
-        loop$acc = prepend(first2, acc);
+        loop$acc = prepend(first22, acc);
       } else {
         loop$list1 = list1;
         loop$list2 = rest2;
         loop$compare = compare4;
-        loop$acc = prepend(first2, acc);
+        loop$acc = prepend(first22, acc);
       }
     }
   }
@@ -1275,14 +1275,14 @@ function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
-      let first2 = list22.head;
+      let first22 = list22.head;
       let rest2 = list22.tail;
-      let $ = compare4(first1, first2);
+      let $ = compare4(first1, first22);
       if ($ instanceof Lt) {
         loop$list1 = list1;
         loop$list2 = rest2;
         loop$compare = compare4;
-        loop$acc = prepend(first2, acc);
+        loop$acc = prepend(first22, acc);
       } else if ($ instanceof Gt) {
         loop$list1 = rest1;
         loop$list2 = list22;
@@ -1384,26 +1384,26 @@ function key_set_loop(loop$list, loop$key, loop$value, loop$inspected) {
   while (true) {
     let list3 = loop$list;
     let key = loop$key;
-    let value3 = loop$value;
+    let value4 = loop$value;
     let inspected = loop$inspected;
     if (list3.atLeastLength(1) && isEqual(list3.head[0], key)) {
       let k = list3.head[0];
       let rest$1 = list3.tail;
-      return reverse_and_prepend(inspected, prepend([k, value3], rest$1));
+      return reverse_and_prepend(inspected, prepend([k, value4], rest$1));
     } else if (list3.atLeastLength(1)) {
       let first$1 = list3.head;
       let rest$1 = list3.tail;
       loop$list = rest$1;
       loop$key = key;
-      loop$value = value3;
+      loop$value = value4;
       loop$inspected = prepend(first$1, inspected);
     } else {
-      return reverse(prepend([key, value3], inspected));
+      return reverse(prepend([key, value4], inspected));
     }
   }
 }
-function key_set(list3, key, value3) {
-  return key_set_loop(list3, key, value3, toList([]));
+function key_set(list3, key, value4) {
+  return key_set_loop(list3, key, value4, toList([]));
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/result.mjs
@@ -1495,8 +1495,8 @@ function do_any(decoders) {
     }
   };
 }
-function push_path(error, name) {
-  let name$1 = identity(name);
+function push_path(error, name2) {
+  let name$1 = identity(name2);
   let decoder = do_any(
     toList([
       decode_string,
@@ -1523,11 +1523,11 @@ function push_path(error, name) {
     prepend(name$2, error.path)
   );
 }
-function field(name, inner_type) {
-  return (value3) => {
+function field(name2, inner_type) {
+  return (value4) => {
     let missing_field_error = new DecodeError("field", "nothing", toList([]));
     return try$(
-      decode_field(value3, name),
+      decode_field(value4, name2),
       (maybe_inner) => {
         let _pipe = maybe_inner;
         let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
@@ -1535,7 +1535,7 @@ function field(name, inner_type) {
         return map_errors(
           _pipe$2,
           (_capture) => {
-            return push_path(_capture, name);
+            return push_path(_capture, name2);
           }
         );
       }
@@ -2253,9 +2253,9 @@ var NOT_FOUND = {};
 function identity(x) {
   return x;
 }
-function parse_int(value3) {
-  if (/^[-+]?(\d+)$/.test(value3)) {
-    return new Ok(parseInt(value3));
+function parse_int(value4) {
+  if (/^[-+]?(\d+)$/.test(value4)) {
+    return new Ok(parseInt(value4));
   } else {
     return new Error(Nil);
   }
@@ -2320,15 +2320,15 @@ function graphemes_iterator(string5) {
   }
 }
 function pop_grapheme(string5) {
-  let first2;
+  let first3;
   const iterator = graphemes_iterator(string5);
   if (iterator) {
-    first2 = iterator.next().value?.segment;
+    first3 = iterator.next().value?.segment;
   } else {
-    first2 = string5.match(/./su)?.[0];
+    first3 = string5.match(/./su)?.[0];
   }
-  if (first2) {
-    return new Ok([first2, string5.slice(first2.length)]);
+  if (first3) {
+    return new Ok([first3, string5.slice(first3.length)]);
   } else {
     return new Error(Nil);
   }
@@ -2427,14 +2427,14 @@ function map_to_list(map8) {
   return List.fromArray(map8.entries());
 }
 function map_get(map8, key) {
-  const value3 = map8.get(key, NOT_FOUND);
-  if (value3 === NOT_FOUND) {
+  const value4 = map8.get(key, NOT_FOUND);
+  if (value4 === NOT_FOUND) {
     return new Error(Nil);
   }
-  return new Ok(value3);
+  return new Ok(value4);
 }
-function map_insert(key, value3, map8) {
-  return map8.set(key, value3);
+function map_insert(key, value4, map8) {
+  return map8.set(key, value4);
 }
 function classify_dynamic(data) {
   if (typeof data === "string") {
@@ -2481,22 +2481,22 @@ function decode_int(data) {
 function decode_bool(data) {
   return typeof data === "boolean" ? new Ok(data) : decoder_error("Bool", data);
 }
-function decode_field(value3, name) {
-  const not_a_map_error = () => decoder_error("Dict", value3);
-  if (value3 instanceof Dict || value3 instanceof WeakMap || value3 instanceof Map) {
-    const entry = map_get(value3, name);
+function decode_field(value4, name2) {
+  const not_a_map_error = () => decoder_error("Dict", value4);
+  if (value4 instanceof Dict || value4 instanceof WeakMap || value4 instanceof Map) {
+    const entry = map_get(value4, name2);
     return new Ok(entry.isOk() ? new Some(entry[0]) : new None());
-  } else if (value3 === null) {
+  } else if (value4 === null) {
     return not_a_map_error();
-  } else if (Object.getPrototypeOf(value3) == Object.prototype) {
-    return try_get_field(value3, name, () => new Ok(new None()));
+  } else if (Object.getPrototypeOf(value4) == Object.prototype) {
+    return try_get_field(value4, name2, () => new Ok(new None()));
   } else {
-    return try_get_field(value3, name, not_a_map_error);
+    return try_get_field(value4, name2, not_a_map_error);
   }
 }
-function try_get_field(value3, field4, or_else) {
+function try_get_field(value4, field4, or_else) {
   try {
-    return field4 in value3 ? new Ok(new Some(value3[field4])) : or_else();
+    return field4 in value4 ? new Ok(new Some(value4[field4])) : or_else();
   } catch {
     return or_else();
   }
@@ -2569,28 +2569,28 @@ function inspectString(str) {
 }
 function inspectDict(map8) {
   let body = "dict.from_list([";
-  let first2 = true;
-  map8.forEach((value3, key) => {
-    if (!first2) body = body + ", ";
-    body = body + "#(" + inspect(key) + ", " + inspect(value3) + ")";
-    first2 = false;
+  let first3 = true;
+  map8.forEach((value4, key) => {
+    if (!first3) body = body + ", ";
+    body = body + "#(" + inspect(key) + ", " + inspect(value4) + ")";
+    first3 = false;
   });
   return body + "])";
 }
 function inspectObject(v) {
-  const name = Object.getPrototypeOf(v)?.constructor?.name || "Object";
+  const name2 = Object.getPrototypeOf(v)?.constructor?.name || "Object";
   const props = [];
   for (const k of Object.keys(v)) {
     props.push(`${inspect(k)}: ${inspect(v[k])}`);
   }
   const body = props.length ? " " + props.join(", ") + " " : "";
-  const head = name === "Object" ? "" : name + " ";
+  const head = name2 === "Object" ? "" : name2 + " ";
   return `//js(${head}{${body}})`;
 }
 function inspectCustomType(record) {
   const props = Object.keys(record).map((label2) => {
-    const value3 = inspect(record[label2]);
-    return isNaN(parseInt(label2)) ? `${label2}: ${value3}` : value3;
+    const value4 = inspect(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value4}` : value4;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
@@ -2811,8 +2811,8 @@ function index2(data, key) {
   const key_is_int = Number.isInteger(key);
   if (key_is_int && key >= 0 && key < 8 && data instanceof List) {
     let i = 0;
-    for (const value3 of data) {
-      if (i === key) return new Ok(new Some(value3));
+    for (const value4 of data) {
+      if (i === key) return new Ok(new Some(value4));
       i++;
     }
     return new Error("Indexable");
@@ -2935,10 +2935,10 @@ function run_decoders(loop$data, loop$failure, loop$decoders) {
     }
   }
 }
-function one_of(first2, alternatives) {
+function one_of(first3, alternatives) {
   return new Decoder(
     (dynamic_data) => {
-      let $ = first2.function(dynamic_data);
+      let $ = first3.function(dynamic_data);
       let layer = $;
       let errors = $[1];
       if (errors.hasLength(0)) {
@@ -2969,7 +2969,7 @@ function decode_error(expected, found) {
     new DecodeError2(expected, classify_dynamic(found), toList([]))
   ]);
 }
-function run_dynamic_function(data, name, f) {
+function run_dynamic_function(data, name2, f) {
   let $ = f(data);
   if ($.isOk()) {
     let data$1 = $[0];
@@ -2978,7 +2978,7 @@ function run_dynamic_function(data, name, f) {
     let zero = $[0];
     return [
       zero,
-      toList([new DecodeError2(name, classify_dynamic(data), toList([]))])
+      toList([new DecodeError2(name2, classify_dynamic(data), toList([]))])
     ];
   }
 }
@@ -3004,11 +3004,11 @@ function decode_string2(data) {
   return run_dynamic_function(data, "String", string2);
 }
 var string3 = /* @__PURE__ */ new Decoder(decode_string2);
-function fold_dict(acc, key, value3, key_decoder, value_decoder) {
+function fold_dict(acc, key, value4, key_decoder, value_decoder) {
   let $ = key_decoder(key);
   if ($[1].hasLength(0)) {
     let key$1 = $[0];
-    let $1 = value_decoder(value3);
+    let $1 = value_decoder(value4);
     if ($1[1].hasLength(0)) {
       let value$1 = $1[0];
       let dict$1 = insert(acc[0], key$1, value$1);
@@ -3022,7 +3022,7 @@ function fold_dict(acc, key, value3, key_decoder, value_decoder) {
     return push_path2([new_map(), errors], toList(["keys"]));
   }
 }
-function dict2(key, value3) {
+function dict2(key, value4) {
   return new Decoder(
     (data) => {
       let $ = dict(data);
@@ -3036,7 +3036,7 @@ function dict2(key, value3) {
           (a2, k, v) => {
             let $1 = a2[1];
             if ($1.hasLength(0)) {
-              return fold_dict(a2, k, v, key.function, value3.function);
+              return fold_dict(a2, k, v, key.function, value4.function);
             } else {
               return a2;
             }
@@ -3052,8 +3052,8 @@ function list2(inner) {
       return list(
         data,
         inner.function,
-        (p, k) => {
-          return push_path2(p, toList([k]));
+        (p2, k) => {
+          return push_path2(p2, toList([k]));
         },
         0,
         toList([])
@@ -3305,8 +3305,8 @@ function null$() {
 }
 function nullable(input2, inner_type) {
   if (input2 instanceof Some) {
-    let value3 = input2[0];
-    return inner_type(value3);
+    let value4 = input2[0];
+    return inner_type(value4);
   } else {
     return null$();
   }
@@ -3423,11 +3423,11 @@ var Drop = class extends CustomType {
 var NoMatch = class extends CustomType {
 };
 var Token = class extends CustomType {
-  constructor(span, lexeme, value3) {
+  constructor(span, lexeme, value4) {
     super();
     this.span = span;
     this.lexeme = lexeme;
-    this.value = value3;
+    this.value = value4;
   }
 };
 var Span = class extends CustomType {
@@ -3541,9 +3541,9 @@ function do_run(loop$lexer, loop$mode, loop$state) {
       } else if ($2 instanceof Drop) {
         return new Ok(reverse(state.tokens));
       } else {
-        let value3 = $2[0];
+        let value4 = $2[0];
         let span = new Span(start_row, start_col, state.row, state.col);
-        let token$1 = new Token(span, lexeme, value3);
+        let token$1 = new Token(span, lexeme, value4);
         return new Ok(reverse(prepend(token$1, state.tokens)));
       }
     } else {
@@ -3556,10 +3556,10 @@ function do_run(loop$lexer, loop$mode, loop$state) {
       let col = next_col(state.col, lookahead);
       let $2 = do_match(mode, lexeme, lookahead, matchers);
       if ($2 instanceof Keep) {
-        let value3 = $2[0];
+        let value4 = $2[0];
         let mode$1 = $2[1];
         let span = new Span(start_row, start_col, state.row, state.col);
-        let token$1 = new Token(span, lexeme, value3);
+        let token$1 = new Token(span, lexeme, value4);
         loop$lexer = lexer2;
         loop$mode = mode$1;
         loop$state = new State(
@@ -3732,15 +3732,15 @@ function next(state) {
     ];
   }
 }
-function return$(value3) {
+function return$(value4) {
   return new Parser(
     (state) => {
-      return new Cont(new CanBacktrack(false), value3, state);
+      return new Cont(new CanBacktrack(false), value4, state);
     }
   );
 }
-function succeed(value3) {
-  return return$(value3);
+function succeed(value4) {
+  return return$(value4);
 }
 function backtrackable(parser3) {
   return new Parser(
@@ -4805,9 +4805,9 @@ function number_to_weekday(weekday_number2) {
     return new Sun();
   }
 }
-function pad_signed_int(value3, length4) {
+function pad_signed_int(value4, length4) {
   let _block;
-  let $ = value3 < 0;
+  let $ = value4 < 0;
   if ($) {
     _block = "-";
   } else {
@@ -4815,7 +4815,7 @@ function pad_signed_int(value3, length4) {
   }
   let prefix = _block;
   let _block$1;
-  let _pipe = value3;
+  let _pipe = value4;
   let _pipe$1 = absolute_value(_pipe);
   let _pipe$2 = to_string(_pipe$1);
   _block$1 = pad_start(_pipe$2, length4, "0");
@@ -4882,8 +4882,8 @@ function weekday(date) {
   let _pipe$1 = weekday_number(_pipe);
   return number_to_weekday(_pipe$1);
 }
-function ordinal_suffix(value3) {
-  let value_mod_100 = modulo_unwrap(value3, 100);
+function ordinal_suffix(value4) {
+  let value_mod_100 = modulo_unwrap(value4, 100);
   let _block;
   let $ = value_mod_100 < 20;
   if ($) {
@@ -4903,8 +4903,8 @@ function ordinal_suffix(value3) {
     return "th";
   }
 }
-function with_ordinal_suffix(value3) {
-  return to_string(value3) + ordinal_suffix(value3);
+function with_ordinal_suffix(value4) {
+  return to_string(value4) + ordinal_suffix(value4);
 }
 function language_en() {
   return new Language(
@@ -5283,8 +5283,8 @@ function diff(unit, date1, date2) {
     return rd2 - rd1;
   }
 }
-function is_between_int(value3, lower, upper) {
-  return lower <= value3 && value3 <= upper;
+function is_between_int(value4, lower, upper) {
+  return lower <= value4 && value4 <= upper;
 }
 function from_ordinal_parts(year2, ordinal) {
   let _block;
@@ -5345,14 +5345,14 @@ function from_week_parts(week_year2, week_number2, weekday_number2) {
     );
   }
 }
-function is_between(value3, lower, upper) {
-  let value_rd = value3[0];
+function is_between(value4, lower, upper) {
+  let value_rd = value4[0];
   let lower_rd = lower[0];
   let upper_rd = upper[0];
   return is_between_int(value_rd, lower_rd, upper_rd);
 }
-function bool_to_int(value3) {
-  if (value3) {
+function bool_to_int(value4) {
+  if (value4) {
     return 1;
   } else {
     return 0;
@@ -5606,8 +5606,8 @@ function from_iso_string(str) {
     })()
   );
   if (result.isOk() && result[0].isOk()) {
-    let value3 = result[0][0];
-    return new Ok(value3);
+    let value4 = result[0][0];
+    return new Ok(value4);
   } else if (result.isOk() && !result[0].isOk()) {
     let err = result[0][0];
     return new Error(err);
@@ -5625,26 +5625,26 @@ function today() {
 
 // build/dev/javascript/budget_shared/budget_shared.mjs
 var User = class extends CustomType {
-  constructor(id2, name) {
+  constructor(id2, name2) {
     super();
     this.id = id2;
-    this.name = name;
+    this.name = name2;
   }
 };
 var CategoryGroup = class extends CustomType {
-  constructor(id2, name, position, is_collapsed) {
+  constructor(id2, name2, position, is_collapsed) {
     super();
     this.id = id2;
-    this.name = name;
+    this.name = name2;
     this.position = position;
     this.is_collapsed = is_collapsed;
   }
 };
 var Category = class extends CustomType {
-  constructor(id2, name, target, inflow, group_id) {
+  constructor(id2, name2, target, inflow, group_id) {
     super();
     this.id = id2;
-    this.name = name;
+    this.name = name2;
     this.target = target;
     this.inflow = inflow;
     this.group_id = group_id;
@@ -5696,20 +5696,20 @@ var Cycle = class extends CustomType {
   }
 };
 var Transaction = class extends CustomType {
-  constructor(id2, date, payee, category_id, value3, user_id) {
+  constructor(id2, date, payee, category_id, value4, user_id) {
     super();
     this.id = id2;
     this.date = date;
     this.payee = payee;
     this.category_id = category_id;
-    this.value = value3;
+    this.value = value4;
     this.user_id = user_id;
   }
 };
 var Money = class extends CustomType {
-  constructor(value3) {
+  constructor(value4) {
     super();
-    this.value = value3;
+    this.value = value4;
   }
 };
 function id_decoder() {
@@ -5729,12 +5729,12 @@ function user_with_token_decoder() {
       return field2(
         "name",
         string3,
-        (name) => {
+        (name2) => {
           return field2(
             "token",
             string3,
             (token3) => {
-              return success([new User(id2, name), token3]);
+              return success([new User(id2, name2), token3]);
             }
           );
         }
@@ -5760,7 +5760,7 @@ function category_group_decoder() {
       return field2(
         "name",
         string3,
-        (name) => {
+        (name2) => {
           return field2(
             "position",
             int2,
@@ -5770,7 +5770,7 @@ function category_group_decoder() {
                 bool2,
                 (is_collapsed) => {
                   return success(
-                    new CategoryGroup(id2, name, position, is_collapsed)
+                    new CategoryGroup(id2, name2, position, is_collapsed)
                   );
                 }
               );
@@ -5914,8 +5914,8 @@ function money_decoder() {
   let money_decoder$1 = field2(
     "money_value",
     int2,
-    (value3) => {
-      return success(new Money(value3));
+    (value4) => {
+      return success(new Money(value4));
     }
   );
   return money_decoder$1;
@@ -5962,7 +5962,7 @@ function category_decoder() {
       return field2(
         "name",
         string3,
-        (name) => {
+        (name2) => {
           return field2(
             "target",
             optional(target_decoder()),
@@ -5976,7 +5976,7 @@ function category_decoder() {
                     string3,
                     (group_id) => {
                       return success(
-                        new Category(id2, name, target, inflow, group_id)
+                        new Category(id2, name2, target, inflow, group_id)
                       );
                     }
                   );
@@ -6042,7 +6042,7 @@ function transaction_decoder() {
                   return field2(
                     "value",
                     money_decoder(),
-                    (value3) => {
+                    (value4) => {
                       return field2(
                         "user_id",
                         string3,
@@ -6053,7 +6053,7 @@ function transaction_decoder() {
                               from_rata_die(date),
                               payee,
                               category_id,
-                              value3,
+                              value4,
                               user_id
                             )
                           );
@@ -6191,12 +6191,12 @@ function money_to_string_no_sign(m) {
   let _block;
   let _pipe = m.value;
   _block = absolute_value(_pipe);
-  let value3 = _block;
+  let value4 = _block;
   return (() => {
-    let _pipe$1 = divideInt(value3, 100);
+    let _pipe$1 = divideInt(value4, 100);
     return to_string(_pipe$1);
   })() + "." + (() => {
-    let _pipe$1 = remainderInt(value3, 100);
+    let _pipe$1 = remainderInt(value4, 100);
     return to_string(_pipe$1);
   })();
 }
@@ -6204,12 +6204,12 @@ function money_with_currency_no_sign(m) {
   let _block;
   let _pipe = m.value;
   _block = absolute_value(_pipe);
-  let value3 = _block;
+  let value4 = _block;
   return "\u20AC" + (() => {
-    let _pipe$1 = divideInt(value3, 100);
+    let _pipe$1 = divideInt(value4, 100);
     return to_string(_pipe$1);
   })() + "." + (() => {
-    let _pipe$1 = remainderInt(value3, 100);
+    let _pipe$1 = remainderInt(value4, 100);
     return to_string(_pipe$1);
   })();
 }
@@ -6235,11 +6235,11 @@ function is_zero_euro(m) {
 }
 
 // build/dev/javascript/budget_shared/date_utils.mjs
-function to_date_string(value3) {
-  return format(value3, "dd.MM.yyyy");
+function to_date_string(value4) {
+  return format(value4, "dd.MM.yyyy");
 }
-function to_date_string_input(value3) {
-  return format(value3, "yyyy-MM-dd");
+function to_date_string_input(value4) {
+  return format(value4, "yyyy-MM-dd");
 }
 function from_date_string(date_str) {
   return from_iso_string(date_str);
@@ -6355,6 +6355,37 @@ function month_in_year_to_str(month_in_year) {
   return format(date2, "yyyy-MM-dd");
 }
 
+// build/dev/javascript/formal/formal/form.mjs
+var Form = class extends CustomType {
+  constructor(values2, errors) {
+    super();
+    this.values = values2;
+    this.errors = errors;
+  }
+};
+function new$2() {
+  return new Form(new_map(), new_map());
+}
+function value(form2, name2) {
+  let $ = map_get(form2.values, name2);
+  if ($.isOk() && $[0].atLeastLength(1)) {
+    let value$1 = $[0].head;
+    return value$1;
+  } else {
+    return "";
+  }
+}
+function field_state(form2, name2) {
+  let $ = map_get(form2.errors, name2);
+  if ($.isOk()) {
+    let e = $[0];
+    return new Error(e);
+  } else {
+    let e = $[0];
+    return new Ok(e);
+  }
+}
+
 // build/dev/javascript/lustre/lustre/effect.mjs
 var Effect = class extends CustomType {
   constructor(all) {
@@ -6436,9 +6467,9 @@ function attribute_to_event_handler(attribute2) {
   if (attribute2 instanceof Attribute) {
     return new Error(void 0);
   } else {
-    let name = attribute2[0];
+    let name2 = attribute2[0];
     let handler = attribute2[1];
-    let name$1 = drop_start(name, 2);
+    let name$1 = drop_start(name2, 2);
     return new Ok([name$1, handler]);
   }
 }
@@ -6473,9 +6504,9 @@ function do_handlers(loop$element, loop$handlers, loop$key) {
         (handlers3, attr) => {
           let $ = attribute_to_event_handler(attr);
           if ($.isOk()) {
-            let name = $[0][0];
+            let name2 = $[0][0];
             let handler = $[0][1];
-            return insert(handlers3, key + "-" + name, handler);
+            return insert(handlers3, key + "-" + name2, handler);
           } else {
             return handlers3;
           }
@@ -6490,14 +6521,14 @@ function handlers(element2) {
 }
 
 // build/dev/javascript/lustre/lustre/attribute.mjs
-function attribute(name, value3) {
-  return new Attribute(name, identity(value3), false);
+function attribute(name2, value4) {
+  return new Attribute(name2, identity(value4), false);
 }
-function property(name, value3) {
-  return new Attribute(name, identity(value3), true);
+function property(name2, value4) {
+  return new Attribute(name2, identity(value4), true);
 }
-function on(name, handler) {
-  return new Event("on" + name, handler);
+function on(name2, handler) {
+  return new Event("on" + name2, handler);
 }
 function style(properties) {
   return attribute(
@@ -6513,19 +6544,19 @@ function style(properties) {
     )
   );
 }
-function class$(name) {
-  return attribute("class", name);
+function class$(name2) {
+  return attribute("class", name2);
 }
-function id(name) {
-  return attribute("id", name);
+function id(name2) {
+  return attribute("id", name2);
 }
-function role(name) {
-  return attribute("role", name);
+function role(name2) {
+  return attribute("role", name2);
 }
-function type_(name) {
-  return attribute("type", name);
+function type_(name2) {
+  return attribute("type", name2);
 }
-function value(val) {
+function value2(val) {
   return attribute("value", val);
 }
 function checked(is_checked) {
@@ -6533,6 +6564,9 @@ function checked(is_checked) {
 }
 function placeholder(text3) {
   return attribute("placeholder", text3);
+}
+function name(name2) {
+  return attribute("name", name2);
 }
 function for$(id2) {
   return attribute("for", id2);
@@ -6577,6 +6611,9 @@ function element(tag, attrs, children2) {
 }
 function text(content) {
   return new Text2(content);
+}
+function none2() {
+  return new Text2("");
 }
 
 // build/dev/javascript/lustre/lustre/internals/patch.mjs
@@ -6739,44 +6776,44 @@ function createElementNode({ prev, next: next2, dispatch, stack }) {
   }
   const delegated = [];
   for (const attr of next2.attrs) {
-    const name = attr[0];
-    const value3 = attr[1];
+    const name2 = attr[0];
+    const value4 = attr[1];
     if (attr.as_property) {
-      if (el[name] !== value3) el[name] = value3;
-      if (canMorph) prevAttributes.delete(name);
-    } else if (name.startsWith("on")) {
-      const eventName = name.slice(2);
-      const callback = dispatch(value3, eventName === "input");
+      if (el[name2] !== value4) el[name2] = value4;
+      if (canMorph) prevAttributes.delete(name2);
+    } else if (name2.startsWith("on")) {
+      const eventName = name2.slice(2);
+      const callback = dispatch(value4, eventName === "input");
       if (!handlersForEl.has(eventName)) {
         el.addEventListener(eventName, lustreGenericEventHandler);
       }
       handlersForEl.set(eventName, callback);
       if (canMorph) prevHandlers.delete(eventName);
-    } else if (name.startsWith("data-lustre-on-")) {
-      const eventName = name.slice(15);
+    } else if (name2.startsWith("data-lustre-on-")) {
+      const eventName = name2.slice(15);
       const callback = dispatch(lustreServerEventHandler);
       if (!handlersForEl.has(eventName)) {
         el.addEventListener(eventName, lustreGenericEventHandler);
       }
       handlersForEl.set(eventName, callback);
-      el.setAttribute(name, value3);
+      el.setAttribute(name2, value4);
       if (canMorph) {
         prevHandlers.delete(eventName);
-        prevAttributes.delete(name);
+        prevAttributes.delete(name2);
       }
-    } else if (name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) {
-      el.setAttribute(name, value3);
-      delegated.push([name.slice(10), value3]);
-    } else if (name === "class") {
-      className = className === null ? value3 : className + " " + value3;
-    } else if (name === "style") {
-      style2 = style2 === null ? value3 : style2 + value3;
-    } else if (name === "dangerous-unescaped-html") {
-      innerHTML = value3;
+    } else if (name2.startsWith("delegate:data-") || name2.startsWith("delegate:aria-")) {
+      el.setAttribute(name2, value4);
+      delegated.push([name2.slice(10), value4]);
+    } else if (name2 === "class") {
+      className = className === null ? value4 : className + " " + value4;
+    } else if (name2 === "style") {
+      style2 = style2 === null ? value4 : style2 + value4;
+    } else if (name2 === "dangerous-unescaped-html") {
+      innerHTML = value4;
     } else {
-      if (el.getAttribute(name) !== value3) el.setAttribute(name, value3);
-      if (name === "value" || name === "selected") el[name] = value3;
-      if (canMorph) prevAttributes.delete(name);
+      if (el.getAttribute(name2) !== value4) el.setAttribute(name2, value4);
+      if (name2 === "value" || name2 === "selected") el[name2] = value4;
+      if (canMorph) prevAttributes.delete(name2);
     }
   }
   if (className !== null) {
@@ -6799,9 +6836,9 @@ function createElementNode({ prev, next: next2, dispatch, stack }) {
   if (next2.tag === "slot") {
     window.queueMicrotask(() => {
       for (const child of el.assignedElements()) {
-        for (const [name, value3] of delegated) {
-          if (!child.hasAttribute(name)) {
-            child.setAttribute(name, value3);
+        for (const [name2, value4] of delegated) {
+          if (!child.hasAttribute(name2)) {
+            child.setAttribute(name2, value4);
           }
         }
       }
@@ -7543,8 +7580,8 @@ function to_uri(request) {
     new None()
   );
 }
-function set_header(request, key, value3) {
-  let headers = key_set(request.headers, lowercase(key), value3);
+function set_header(request, key, value4) {
+  let headers = key_set(request.headers, lowercase(key), value4);
   let _record = request;
   return new Request(
     _record.method,
@@ -7580,7 +7617,7 @@ function set_method(req, method) {
     _record.query
   );
 }
-function new$3() {
+function new$4() {
   return new Request(
     new Get(),
     toList([]),
@@ -7660,22 +7697,22 @@ var PromiseLayer = class _PromiseLayer {
   constructor(promise) {
     this.promise = promise;
   }
-  static wrap(value3) {
-    return value3 instanceof Promise ? new _PromiseLayer(value3) : value3;
+  static wrap(value4) {
+    return value4 instanceof Promise ? new _PromiseLayer(value4) : value4;
   }
-  static unwrap(value3) {
-    return value3 instanceof _PromiseLayer ? value3.promise : value3;
+  static unwrap(value4) {
+    return value4 instanceof _PromiseLayer ? value4.promise : value4;
   }
 };
-function resolve(value3) {
-  return Promise.resolve(PromiseLayer.wrap(value3));
+function resolve(value4) {
+  return Promise.resolve(PromiseLayer.wrap(value4));
 }
 function then_await(promise, fn) {
-  return promise.then((value3) => fn(PromiseLayer.unwrap(value3)));
+  return promise.then((value4) => fn(PromiseLayer.unwrap(value4)));
 }
 function map_promise(promise, fn) {
   return promise.then(
-    (value3) => PromiseLayer.wrap(fn(PromiseLayer.unwrap(value3)))
+    (value4) => PromiseLayer.wrap(fn(PromiseLayer.unwrap(value4)))
   );
 }
 function rescue(promise, fn) {
@@ -7876,6 +7913,8 @@ var Home = class extends CustomType {
 };
 var TransactionsRoute = class extends CustomType {
 };
+var ImportTransactions = class extends CustomType {
+};
 var OnRouteChange = class extends CustomType {
   constructor(route) {
     super();
@@ -8066,9 +8105,9 @@ var TransactionEditResult = class extends CustomType {
   }
 };
 var UserTransactionEditPayee = class extends CustomType {
-  constructor(p) {
+  constructor(p2) {
     super();
-    this.p = p;
+    this.p = p2;
   }
 };
 var UserTransactionEditDate = class extends CustomType {
@@ -8156,9 +8195,9 @@ var AllocateNeeded = class extends CustomType {
 var ShowAddCategoryGroupUI = class extends CustomType {
 };
 var UserUpdatedCategoryGroupName = class extends CustomType {
-  constructor(name) {
+  constructor(name2) {
     super();
-    this.name = name;
+    this.name = name2;
   }
 };
 var CreateCategoryGroup = class extends CustomType {
@@ -8193,8 +8232,14 @@ var CollapseGroup = class extends CustomType {
     this.group = group;
   }
 };
+var UserSubmittedImportForm = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
 var Model2 = class extends CustomType {
-  constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit_form, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input) {
+  constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit_form, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input, import_form) {
     super();
     this.login_form = login_form;
     this.current_user = current_user;
@@ -8217,6 +8262,7 @@ var Model2 = class extends CustomType {
     this.show_add_category_group_ui = show_add_category_group_ui;
     this.new_category_group_name = new_category_group_name;
     this.category_group_change_input = category_group_change_input;
+    this.import_form = import_form;
   }
 };
 var SelectedCategory = class extends CustomType {
@@ -8243,6 +8289,12 @@ var LoginForm = class extends CustomType {
     this.login = login;
     this.pass = pass;
     this.is_loading = is_loading;
+  }
+};
+var ImportForm = class extends CustomType {
+  constructor(form2) {
+    super();
+    this.form = form2;
   }
 };
 var ShiftLeft = class extends CustomType {
@@ -8323,9 +8375,9 @@ var Result2 = class _Result extends CustomType2 {
   }
 };
 var Ok2 = class extends Result2 {
-  constructor(value3) {
+  constructor(value4) {
     super();
-    this[0] = value3;
+    this[0] = value4;
   }
   // @internal
   isOk() {
@@ -8345,11 +8397,11 @@ var Error2 = class extends Result2 {
 
 // build/dev/javascript/budget_fe/budget_fe/internals/app.ffi.mjs
 function read_localstorage(key) {
-  const value3 = window.localStorage.getItem(key);
-  return value3 ? new Ok2(value3) : new Error2(void 0);
+  const value4 = window.localStorage.getItem(key);
+  return value4 ? new Ok2(value4) : new Error2(void 0);
 }
-function write_localstorage(key, value3) {
-  window.localStorage.setItem(key, value3);
+function write_localstorage(key, value4) {
+  window.localStorage.setItem(key, value4);
 }
 
 // build/dev/javascript/budget_fe/budget_fe/internals/effects.mjs
@@ -8357,6 +8409,8 @@ function uri_to_route(uri) {
   let $ = path_segments(uri.path);
   if ($.hasLength(1) && $.head === "transactions") {
     return new TransactionsRoute();
+  } else if ($.hasLength(1) && $.head === "import") {
+    return new ImportTransactions();
   } else {
     return new Home();
   }
@@ -8365,12 +8419,12 @@ function on_route_change(uri) {
   let route = uri_to_route(uri);
   return new OnRouteChange(route);
 }
-function write_localstorage2(key, value3) {
+function write_localstorage2(key, value4) {
   return from((_) => {
-    return write_localstorage(key, value3);
+    return write_localstorage(key, value4);
   });
 }
-var is_prod = true;
+var is_prod = false;
 function request_with_auth() {
   let _block;
   let _pipe = read_localstorage("jwt");
@@ -8380,12 +8434,12 @@ function request_with_auth() {
   let _block$1;
   let $ = is_prod;
   if ($) {
-    let _pipe$12 = new$3();
+    let _pipe$12 = new$4();
     let _pipe$22 = set_host(_pipe$12, "budget-be.fly.dev");
     let _pipe$32 = set_port(_pipe$22, 443);
     _block$1 = set_scheme(_pipe$32, new Https());
   } else {
-    let _pipe$12 = new$3();
+    let _pipe$12 = new$4();
     let _pipe$22 = set_host(_pipe$12, "127.0.0.1");
     let _pipe$32 = set_port(_pipe$22, 8080);
     _block$1 = set_scheme(_pipe$32, new Http());
@@ -8459,13 +8513,13 @@ function add_transaction_eff(transaction_form, amount, cat) {
     }
   );
 }
-function add_category(name, group_id) {
+function add_category(name2, group_id) {
   return make_post(
     "category/add",
     to_string2(
       object2(
         toList([
-          ["name", string4(name)],
+          ["name", string4(name2)],
           ["group_id", string4(group_id)]
         ])
       )
@@ -8540,10 +8594,10 @@ function get_category_groups() {
     )
   );
 }
-function add_new_group_eff(name) {
+function add_new_group_eff(name2) {
   return make_post(
     "category/group/add",
-    to_string2(object2(toList([["name", string4(name)]]))),
+    to_string2(object2(toList([["name", string4(name2)]]))),
     id_decoder(),
     (var0) => {
       return new AddCategoryGroupResult(var0);
@@ -8756,11 +8810,11 @@ function get_category_suggestions() {
     )
   );
 }
-function echo(value3, file, line) {
+function echo(value4, file, line) {
   const grey = "\x1B[90m";
   const reset_color = "\x1B[39m";
   const file_line = `${file}:${line}`;
-  const string_value = echo$inspect(value3);
+  const string_value = echo$inspect(value4);
   if (globalThis.process?.stderr?.write) {
     const string5 = `${grey}${file_line}${reset_color}
 ${string_value}
@@ -8776,7 +8830,7 @@ ${string_value}
 ${string_value}`;
     globalThis.console.log(string5);
   }
-  return value3;
+  return value4;
 }
 function echo$inspectString(str) {
   let new_str = '"';
@@ -8799,34 +8853,34 @@ function echo$inspectString(str) {
 }
 function echo$inspectDict(map8) {
   let body = "dict.from_list([";
-  let first2 = true;
+  let first3 = true;
   let key_value_pairs = [];
-  map8.forEach((value3, key) => {
-    key_value_pairs.push([key, value3]);
+  map8.forEach((value4, key) => {
+    key_value_pairs.push([key, value4]);
   });
   key_value_pairs.sort();
-  key_value_pairs.forEach(([key, value3]) => {
-    if (!first2) body = body + ", ";
-    body = body + "#(" + echo$inspect(key) + ", " + echo$inspect(value3) + ")";
-    first2 = false;
+  key_value_pairs.forEach(([key, value4]) => {
+    if (!first3) body = body + ", ";
+    body = body + "#(" + echo$inspect(key) + ", " + echo$inspect(value4) + ")";
+    first3 = false;
   });
   return body + "])";
 }
 function echo$inspectCustomType(record) {
   const props = globalThis.Object.keys(record).map((label2) => {
-    const value3 = echo$inspect(record[label2]);
-    return isNaN(parseInt(label2)) ? `${label2}: ${value3}` : value3;
+    const value4 = echo$inspect(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value4}` : value4;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
 function echo$inspectObject(v) {
-  const name = Object.getPrototypeOf(v)?.constructor?.name || "Object";
+  const name2 = Object.getPrototypeOf(v)?.constructor?.name || "Object";
   const props = [];
   for (const k of Object.keys(v)) {
     props.push(`${echo$inspect(k)}: ${echo$inspect(v[k])}`);
   }
   const body = props.length ? " " + props.join(", ") + " " : "";
-  const head = name === "Object" ? "" : name + " ";
+  const head = name2 === "Object" ? "" : name2 + " ";
   return `//js(${head}{${body}})`;
 }
 function echo$inspect(v) {
@@ -8885,9 +8939,9 @@ function echo$inspectBitArray(bitArray) {
     return `<<${Array.from(alignedBytes.rawBuffer).join(", ")}>>`;
   }
 }
-function echo$isDict(value3) {
+function echo$isDict(value4) {
   try {
-    return value3 instanceof Dict;
+    return value4 instanceof Dict;
   } catch {
     return false;
   }
@@ -8899,6 +8953,9 @@ function text2(content) {
 }
 function div(attrs, children2) {
   return element("div", attrs, children2);
+}
+function p(attrs, children2) {
+  return element("p", attrs, children2);
 }
 function a(attrs, children2) {
   return element("a", attrs, children2);
@@ -8927,6 +8984,9 @@ function button(attrs, children2) {
 function datalist(attrs, children2) {
   return element("datalist", attrs, children2);
 }
+function form(attrs, children2) {
+  return element("form", attrs, children2);
+}
 function input(attrs) {
   return element("input", attrs, toList([]));
 }
@@ -8941,15 +9001,15 @@ function select(attrs, children2) {
 }
 
 // build/dev/javascript/lustre/lustre/event.mjs
-function on2(name, handler) {
-  return on(name, handler);
+function on2(name2, handler) {
+  return on(name2, handler);
 }
 function on_click(msg) {
   return on2("click", (_) => {
     return new Ok(msg);
   });
 }
-function value2(event2) {
+function value3(event2) {
   let _pipe = event2;
   return field("target", field("value", string))(
     _pipe
@@ -8959,7 +9019,7 @@ function on_input(msg) {
   return on2(
     "input",
     (event2) => {
-      let _pipe = value2(event2);
+      let _pipe = value3(event2);
       return map3(_pipe, msg);
     }
   );
@@ -8981,7 +9041,7 @@ function on_check(msg) {
 }
 
 // build/dev/javascript/budget_fe/budget_fe/internals/view.mjs
-function auth_screen(form) {
+function auth_screen(form2) {
   return div(
     toList([class$("mt-3 rounded-3 p-2")]),
     toList([
@@ -9000,9 +9060,9 @@ function auth_screen(form) {
           class$("form-control"),
           type_("text"),
           style(toList([["width", "120px"]])),
-          value(
+          value2(
             (() => {
-              let _pipe = form.login;
+              let _pipe = form2.login;
               return unwrap(_pipe, "");
             })()
           )
@@ -9022,9 +9082,9 @@ function auth_screen(form) {
           class$("form-control"),
           type_("password"),
           style(toList([["width", "120px"]])),
-          value(
+          value2(
             (() => {
-              let _pipe = form.pass;
+              let _pipe = form2.pass;
               return unwrap(_pipe, "");
             })()
           )
@@ -9043,13 +9103,16 @@ function auth_screen(form) {
 function section_buttons(route) {
   let _block;
   if (route instanceof Home) {
-    _block = ["active", ""];
+    _block = ["active", "", ""];
+  } else if (route instanceof TransactionsRoute) {
+    _block = ["", "active", ""];
   } else {
-    _block = ["", "active"];
+    _block = ["", "", "active"];
   }
   let $ = _block;
   let cat_active = $[0];
   let transactions_active = $[1];
+  let import_active = $[2];
   return div(
     toList([
       class$("btn-group "),
@@ -9070,6 +9133,13 @@ function section_buttons(route) {
           href("/transactions")
         ]),
         toList([text2("Transactions")])
+      ),
+      a(
+        toList([
+          class$("btn btn-primary " + import_active),
+          href("/import")
+        ]),
+        toList([text2("Import")])
       )
     ])
   );
@@ -9437,6 +9507,54 @@ function check_box(label2, is_checked, msg) {
     ])
   );
 }
+function view_input(form2, type_2, name2, label2) {
+  let state = field_state(form2, name2);
+  return div(
+    toList([]),
+    toList([
+      label(
+        toList([
+          for$(name2),
+          class$("text-xs font-bold text-slate-600")
+        ]),
+        toList([text2(label2), text2(": ")])
+      ),
+      input(
+        toList([
+          type_(type_2),
+          id(name2),
+          name(name2),
+          value2(value(form2, name2))
+        ])
+      ),
+      (() => {
+        if (state.isOk()) {
+          return none2();
+        } else {
+          let error_message = state[0];
+          return p(
+            toList([class$("mt-0.5 text-xs text-red-500")]),
+            toList([text2(error_message)])
+          );
+        }
+      })()
+    ])
+  );
+}
+function import_transactions(model) {
+  return form(
+    toList([
+      class$("p-8 w-full border rounded-2xl shadow-lg space-y-4")
+    ]),
+    toList([
+      view_input(model.import_form.form, "file", "file", "Upload file"),
+      div(
+        toList([class$("flex justify-end")]),
+        toList([button(toList([]), toList([text2("Import")]))])
+      )
+    ])
+  );
+}
 function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
   let $ = selected_id === t.id;
   if (!$) {
@@ -9486,7 +9604,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
                 }
               ),
               placeholder("date"),
-              value(tef.date),
+              value2(tef.date),
               class$("form-control"),
               type_("date"),
               style(toList([["width", "140px"]]))
@@ -9505,7 +9623,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
                 }
               ),
               placeholder("payee"),
-              value(tef.payee),
+              value2(tef.payee),
               class$("form-control"),
               type_("text"),
               style(toList([["width", "160px"]])),
@@ -9521,8 +9639,8 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               });
               return map2(
                 _pipe$1,
-                (p) => {
-                  return option(toList([value(p)]), "");
+                (p2) => {
+                  return option(toList([value2(p2)]), "");
                 }
               );
             })()
@@ -9540,7 +9658,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
                 }
               ),
               placeholder("category"),
-              value(tef.category_name),
+              value2(tef.category_name),
               class$("form-control"),
               type_("text"),
               style(toList([["width", "160px"]])),
@@ -9556,8 +9674,8 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               });
               return map2(
                 _pipe$1,
-                (p) => {
-                  return option(toList([value(p)]), "");
+                (p2) => {
+                  return option(toList([value2(p2)]), "");
                 }
               );
             })()
@@ -9575,7 +9693,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
                 }
               ),
               placeholder("amount"),
-              value(tef.amount),
+              value2(tef.amount),
               class$("form-control"),
               type_("text"),
               style(toList([["width", "160px"]]))
@@ -9678,7 +9796,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               id("addTransactionDateId"),
               class$("form-control"),
               type_("date"),
-              value(transaction_edit_form.date)
+              value2(transaction_edit_form.date)
             ])
           )
         ])
@@ -9698,7 +9816,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               class$("form-control"),
               type_("text"),
               attribute("list", "payees_list"),
-              value(transaction_edit_form.payee)
+              value2(transaction_edit_form.payee)
             ])
           ),
           datalist(
@@ -9711,8 +9829,8 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               let _pipe$2 = unique(_pipe$1);
               return map2(
                 _pipe$2,
-                (p) => {
-                  return option(toList([value(p)]), "");
+                (p2) => {
+                  return option(toList([value2(p2)]), "");
                 }
               );
             })()
@@ -9730,7 +9848,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
                 }
               ),
               class$("form-select"),
-              value(
+              value2(
                 (() => {
                   let _pipe = transaction_edit_form.category;
                   let _pipe$1 = map(_pipe, (c) => {
@@ -9747,8 +9865,8 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               });
               return map2(
                 _pipe$1,
-                (p) => {
-                  return option(toList([value(p)]), p);
+                (p2) => {
+                  return option(toList([value2(p2)]), p2);
                 }
               );
             })()
@@ -9770,7 +9888,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               class$("form-control"),
               type_("text"),
               style(toList([["width", "120px"]])),
-              value(transaction_edit_form.amount)
+              value2(transaction_edit_form.amount)
             ])
           ),
           check_box(
@@ -10080,7 +10198,7 @@ function group_ui(group, model) {
                 id("exampleFormControlInput1"),
                 class$("form-control"),
                 type_("text"),
-                value(model.user_category_name_input)
+                value2(model.user_category_name_input)
               ])
             )
           ])
@@ -10264,13 +10382,13 @@ function budget_categories(model) {
     ])
   );
 }
-function month_to_string(value3) {
+function month_to_string(value4) {
   return (() => {
-    let _pipe = value3.month;
+    let _pipe = value4.month;
     let _pipe$1 = to_string(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })() + "." + (() => {
-    let _pipe = value3.year;
+    let _pipe = value4.year;
     let _pipe$1 = to_string(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })();
@@ -10317,7 +10435,7 @@ function category_details_name_ui(category, sc) {
           class$("form-control"),
           type_("text"),
           style(toList([["width", "200px"]])),
-          value(sc.input_name),
+          value2(sc.input_name),
           class$("mb-2")
         ])
       ),
@@ -10368,8 +10486,8 @@ function category_details_change_group_ui(cat, model) {
           });
           return map2(
             _pipe$1,
-            (p) => {
-              return option(toList([value(p)]), "");
+            (p2) => {
+              return option(toList([value2(p2)]), "");
             }
           );
         })()
@@ -10404,7 +10522,7 @@ function category_details_allocation_ui(sc, allocation) {
           class$("form-control"),
           type_("text"),
           style(toList([["width", "120px"]])),
-          value(sc.allocation)
+          value2(sc.allocation)
         ])
       ),
       button(
@@ -10468,7 +10586,7 @@ function category_details_target_ui(cat, target_edit_option) {
                       class$("form-control"),
                       type_("text"),
                       style(toList([["width", "120px"]])),
-                      value(target_edit.target_amount)
+                      value2(target_edit.target_amount)
                     ])
                   ),
                   input(
@@ -10481,7 +10599,7 @@ function category_details_target_ui(cat, target_edit_option) {
                       placeholder("date"),
                       class$("form-control mt-1"),
                       type_("date"),
-                      value(target_date2)
+                      value2(target_date2)
                     ])
                   )
                 ])
@@ -10502,7 +10620,7 @@ function category_details_target_ui(cat, target_edit_option) {
                       class$("form-control"),
                       type_("text"),
                       style(toList([["width", "120px"]])),
-                      value(target_edit.target_amount)
+                      value2(target_edit.target_amount)
                     ])
                   )
                 ])
@@ -10650,8 +10768,10 @@ function view(model) {
                   let $1 = model.route;
                   if ($1 instanceof Home) {
                     return budget_categories(model);
-                  } else {
+                  } else if ($1 instanceof TransactionsRoute) {
                     return budget_transactions(model);
+                  } else {
+                    return import_transactions(model);
                   }
                 }
               })(),
@@ -10671,7 +10791,7 @@ function init3(_) {
       new LoginForm(new None(), new None(), false),
       new None(),
       calculate_current_cycle(),
-      new Home(),
+      new ImportTransactions(),
       new Some(26),
       false,
       toList([]),
@@ -10688,7 +10808,8 @@ function init3(_) {
       new_map(),
       false,
       "",
-      ""
+      "",
+      new ImportForm(new$2())
     ),
     batch(
       toList([init2(on_route_change), load_user_eff()])
@@ -10796,7 +10917,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -10826,7 +10948,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       login_eff(
@@ -10842,7 +10965,7 @@ function update(model, msg) {
     ];
   } else if (msg instanceof LoginPassword) {
     let l = msg.login;
-    let p = msg.pass;
+    let p2 = msg.pass;
     let _block;
     if (l instanceof Some) {
       let l$1 = l[0];
@@ -10852,8 +10975,8 @@ function update(model, msg) {
     }
     let login = _block;
     let _block$1;
-    if (p instanceof Some) {
-      let p$1 = p[0];
+    if (p2 instanceof Some) {
+      let p$1 = p2[0];
       _block$1 = new Some(p$1);
     } else {
       _block$1 = model.login_form.pass;
@@ -10886,7 +11009,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -10926,7 +11050,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       batch(
@@ -10970,7 +11095,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       get_transactions()
@@ -11011,7 +11137,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11044,7 +11171,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11109,7 +11237,8 @@ function update(model, msg) {
               return g.name;
             });
             return unwrap2(_pipe$2, "");
-          })()
+          })(),
+          _record.import_form
         );
       })(),
       none()
@@ -11153,7 +11282,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11184,13 +11314,14 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       add_category(model.user_category_name_input, group_id)
     ];
   } else if (msg instanceof UserUpdatedCategoryName) {
-    let name = msg.cat_name;
+    let name2 = msg.cat_name;
     return [
       (() => {
         let _record = model;
@@ -11207,7 +11338,7 @@ function update(model, msg) {
           _record.allocations,
           _record.selected_category,
           _record.show_add_category_ui,
-          name,
+          name2,
           _record.transaction_add_input,
           _record.target_edit_form,
           _record.selected_transaction,
@@ -11215,7 +11346,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11245,7 +11377,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       get_categories()
@@ -11290,7 +11423,8 @@ function update(model, msg) {
             _record.suggestions,
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
-            _record.category_group_change_input
+            _record.category_group_change_input,
+            _record.import_form
           );
         })(),
         add_transaction_eff(
@@ -11339,7 +11473,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11388,7 +11523,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11428,7 +11564,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11475,7 +11612,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11515,7 +11653,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11555,7 +11694,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11601,7 +11741,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11632,7 +11773,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       update_category_target_eff(c, model.target_edit_form)
@@ -11663,7 +11805,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       delete_target_eff(c)
@@ -11692,8 +11835,8 @@ function update(model, msg) {
             let _pipe = model.target_edit_form;
             return map(
               _pipe,
-              (form) => {
-                let _record$1 = form;
+              (form2) => {
+                let _record$1 = form2;
                 return new TargetEditForm(
                   _record$1.cat_id,
                   amount,
@@ -11708,7 +11851,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11737,8 +11881,8 @@ function update(model, msg) {
             let _pipe = model.target_edit_form;
             return map(
               _pipe,
-              (form) => {
-                let _record$1 = form;
+              (form2) => {
+                let _record$1 = form2;
                 return new TargetEditForm(
                   _record$1.cat_id,
                   _record$1.target_amount,
@@ -11753,7 +11897,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11782,8 +11927,8 @@ function update(model, msg) {
             let _pipe = model.target_edit_form;
             return map(
               _pipe,
-              (form) => {
-                let _record$1 = form;
+              (form2) => {
+                let _record$1 = form2;
                 return new TargetEditForm(
                   _record$1.cat_id,
                   _record$1.target_amount,
@@ -11801,7 +11946,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11847,7 +11993,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11878,7 +12025,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       delete_transaction_eff(id2)
@@ -11925,7 +12073,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -11980,7 +12129,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12027,7 +12177,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12074,7 +12225,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12121,7 +12273,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12168,7 +12321,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12198,7 +12352,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       (() => {
@@ -12245,7 +12400,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       (() => {
@@ -12284,7 +12440,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       (() => {
@@ -12309,7 +12466,7 @@ function update(model, msg) {
       })()
     ];
   } else if (msg instanceof UserInputCategoryUpdateName) {
-    let name = msg.n;
+    let name2 = msg.n;
     return [
       (() => {
         let _record = model;
@@ -12332,7 +12489,7 @@ function update(model, msg) {
                 let _record$1 = sc;
                 return new SelectedCategory(
                   _record$1.id,
-                  name,
+                  name2,
                   _record$1.allocation
                 );
               }
@@ -12347,7 +12504,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12421,7 +12579,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12459,7 +12618,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       batch(toList([get_transactions(), get_allocations()]))
@@ -12490,7 +12650,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12521,7 +12682,8 @@ function update(model, msg) {
           suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12561,7 +12723,8 @@ function update(model, msg) {
           _record.suggestions,
           !model.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12592,7 +12755,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           input_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12624,7 +12788,8 @@ function update(model, msg) {
           _record.suggestions,
           false,
           "",
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       get_category_groups()
@@ -12657,7 +12822,8 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          _record.category_group_change_input
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12719,7 +12885,8 @@ function update(model, msg) {
             _record.suggestions,
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
-            ""
+            "",
+            _record.import_form
           );
         })(),
         update_category_eff(
@@ -12736,7 +12903,7 @@ function update(model, msg) {
         )
       ];
     }
-  } else {
+  } else if (msg instanceof UserInputCategoryGroupChange) {
     let group_name = msg.group_name;
     return [
       (() => {
@@ -12762,7 +12929,70 @@ function update(model, msg) {
           _record.suggestions,
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
-          group_name
+          group_name,
+          _record.import_form
+        );
+      })(),
+      none()
+    ];
+  } else if (msg instanceof UserSubmittedImportForm) {
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.login_form,
+          _record.current_user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit_form,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          _record.category_group_change_input,
+          _record.import_form
+        );
+      })(),
+      none()
+    ];
+  } else {
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(
+          _record.login_form,
+          _record.current_user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit_form,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          _record.category_group_change_input,
+          _record.import_form
         );
       })(),
       none()
@@ -12776,7 +13006,7 @@ function main() {
     throw makeError(
       "let_assert",
       "budget_fe",
-      23,
+      24,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

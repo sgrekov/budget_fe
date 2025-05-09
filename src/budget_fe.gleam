@@ -7,6 +7,7 @@ import budget_shared.{
 } as m
 import date_utils
 import date_utils as budget_shared
+import formal/form
 import gleam/dict
 import gleam/int
 import gleam/io
@@ -30,7 +31,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
     msg.Model(
       current_user: option.None,
       cycle: m.calculate_current_cycle(),
-      route: msg.Home,
+      route: msg.ImportTransactions,
       cycle_end_day: option.Some(26),
       show_all_transactions: False,
       categories_groups: [],
@@ -49,6 +50,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       new_category_group_name: "",
       category_group_change_input: "",
       login_form: msg.LoginForm(None, None, False),
+      import_form: msg.ImportForm(form.new()),
     ),
     effect.batch([
       modem.init(eff.on_route_change),
@@ -562,6 +564,8 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, category_group_change_input: group_name),
       effect.none(),
     )
+    msg.UserSubmittedImportForm(_) -> #(Model(..model), effect.none())
+    msg.UserSubmittedImportForm2 -> #(Model(..model), effect.none())
   }
 }
 

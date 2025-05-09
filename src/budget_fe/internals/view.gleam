@@ -7,6 +7,7 @@ import budget_shared.{
   type Transaction,
 } as m
 import date_utils
+import formal/form.{type Form}
 import gleam/int
 import gleam/io
 import gleam/list
@@ -55,6 +56,7 @@ pub fn view(model: Model) -> element.Element(Msg) {
             case model.route {
               msg.Home -> budget_categories(model)
               msg.TransactionsRoute -> budget_transactions(model)
+              msg.ImportTransactions -> import_transactions(model)
             }
         },
         html.div([], [category_details_ui(model)]),
@@ -125,10 +127,10 @@ fn ready_to_assign(model: Model) -> element.Element(Msg) {
 }
 
 fn section_buttons(route: msg.Route) -> element.Element(Msg) {
-  let #(cat_active, transactions_active) = case route {
-    msg.Home -> #("active", "")
-    msg.TransactionsRoute -> #("", "active")
-    // msg.UserRoute -> #("", "")
+  let #(cat_active, transactions_active, import_active) = case route {
+    msg.Home -> #("active", "", "")
+    msg.TransactionsRoute -> #("", "active", "")
+    msg.ImportTransactions -> #("", "", "active")
   }
 
   html.div(
@@ -151,6 +153,13 @@ fn section_buttons(route: msg.Route) -> element.Element(Msg) {
           attribute.href("/transactions"),
         ],
         [html.text("Transactions")],
+      ),
+      html.a(
+        [
+          attribute.class("btn btn-primary " <> import_active),
+          attribute.href("/import"),
+        ],
+        [html.text("Import")],
       ),
     ],
   )
@@ -780,6 +789,77 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
   ])
 }
 
+fn import_transactions(model: Model) -> element.Element(Msg) {
+  html.form(
+    [
+      attribute.class("p-8 w-full border rounded-2xl shadow-lg space-y-4"),
+      // The message provided to the built-in `on_submit` handler receives the
+      // `FormData` associated with the form as a List of (name, value) tuples.
+      // 
+      // The event handler also calls `preventDefault()` on the form, such that
+      // Lustre can handle the submission instead off being sent off to the server.
+      // event.on_submit(msg.UserSubmittedImportForm2),
+      // event.on_submit(fn(fields) { msg.UserSubmittedImportForm2 }),
+    ],
+    [
+      //
+      view_input(
+        model.import_form.form,
+        is: "file",
+        name: "file",
+        label: "Upload file",
+      ),
+      //
+      html.div([attribute.class("flex justify-end")], [
+        html.button([], [html.text("Import")]),
+      ]),
+    ],
+  )
+}
+
+fn view_input(
+  form: Form,
+  is type_: String,
+  name name: String,
+  label label: String,
+) -> element.Element(msg) {
+  let state = form.field_state(form, name)
+
+  html.div([], [
+    html.label(
+      [attribute.for(name), attribute.class("text-xs font-bold text-slate-600")],
+      [html.text(label), html.text(": ")],
+    ),
+    html.input([
+      attribute.type_(type_),
+      // attribute.class(
+      //   "block mt-1 w-full px-3 py-1 border rounded-lg focus:shadow",
+      // ),
+      // case state {
+      //   Ok(_) -> attribute.class("focus:outline focus:outline-purple-600")
+      //   Error(_) -> attribute.class("outline outline-red-500")
+      // },
+      // we use the `id` in the associated `for` attribute on the label.
+      attribute.id(name),
+      // the `name` attribute is used as the first element of the tuple
+      // we receive for this input.
+      attribute.name(name),
+      // Associating a value with this element does _not_ make the element
+      // controlled without an event listener, allowing us to set a default.
+      attribute.value(form.value(form, name)),
+    ]),
+    // formal provides us with a customisable error message for every element
+    // in case its validation fails, which we can show right below the input.
+    case state {
+      Ok(_) -> element.none()
+      Error(error_message) ->
+        html.p([attribute.class("mt-0.5 text-xs text-red-500")], [
+          html.text(error_message),
+        ])
+    },
+  ])
+}
+
 fn transaction_list_item_html(
   t: Transaction,
   model: Model,
@@ -1176,16 +1256,6 @@ fn category_balance(cat: Category, model: Model) -> element.Element(Msg) {
       }
   }
   let add_alloc_diff = m.Money(allocated.value - target_money.value)
-  // case cat.name == "Shopping" {
-  //   True -> {
-  //     io.debug("allocated: " <> allocated.value |> int.to_string)
-  //     io.debug("target_money: " <> target_money.value |> int.to_string)
-  //     io.debug("add_alloc_diff: " <> add_alloc_diff.value |> int.to_string)
-  //   }
-  //   False -> {
-  //     io.debug("")
-  //   }
-  // }
 
   let warn_text = case add_alloc_diff.value < 0 {
     False -> html.text("")
@@ -1222,29 +1292,3 @@ pub fn month_to_string(value: MonthInYear) -> String {
     |> string.pad_start(2, "0")
   }
 }
-// html.div([attribute.class("container-fluid bg-dark")], [
-//   html.div([attribute.class("col")], [
-//     html.div([attribute.class("d-flex flex-row")], [
-//       html.div(
-//         [
-//           attribute.class("bg-warning border border-5"),
-//           attribute.style([#("width", "120px")]),
-//         ],
-//         [html.text("TEST1")],
-//       ),
-//       html.div(
-//         [
-//           attribute.class("w-25"),
-//           attribute.style([
-//             #("width", "200px"),
-//             #("background-color", "rgba(64,185,78,1)"),
-//           ]),
-//         ],
-//         [html.text("TEST2")],
-//       ),
-//       html.div([attribute.class("ms-auto w-25 rounded-3 bg-danger")], [
-//         html.text("TEST3"),
-//       ]),
-//     ]),
-//   ]),
-// ])
