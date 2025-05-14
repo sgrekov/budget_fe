@@ -74,7 +74,6 @@ pub type Msg {
   UserInputCategoryGroupChange(group_name: String)
   CollapseGroup(group: CategoryGroup)
   UserSubmittedImportForm(List(#(String, String)))
-  UserSubmittedImportForm2
 }
 
 pub type Model {

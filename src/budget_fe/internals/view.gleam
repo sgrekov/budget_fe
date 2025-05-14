@@ -29,14 +29,14 @@ pub fn view(model: Model) -> element.Element(Msg) {
           [
             // border border-dark
             attribute.class("d-flex flex-row  justify-content-center"),
-            attribute.style([#("width", "100%")]),
+            attribute.styles([#("width", "100%")]),
           ],
           [ready_to_assign(model)],
         ),
         html.div(
           [
             attribute.class("d-flex align-items-center fs-5"),
-            attribute.style([]),
+            attribute.styles([]),
           ],
           [
             case model.current_user {
@@ -69,7 +69,7 @@ fn auth_screen(form: LoginForm) -> element.Element(Msg) {
   html.div(
     [
       attribute.class("mt-3 rounded-3 p-2"),
-      // attribute.style([#("background-color", side_panel_color)]),
+      // attribute.styles([#("background-color", side_panel_color)]),
     ],
     [
       html.text("Log in:"),
@@ -80,7 +80,7 @@ fn auth_screen(form: LoginForm) -> element.Element(Msg) {
         attribute.placeholder("Login"),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "120px")]),
+        attribute.styles([#("width", "120px")]),
         attribute.value(form.login |> option.unwrap("")),
       ]),
       html.input([
@@ -90,7 +90,7 @@ fn auth_screen(form: LoginForm) -> element.Element(Msg) {
         attribute.placeholder("Password"),
         attribute.class("form-control"),
         attribute.type_("password"),
-        attribute.style([#("width", "120px")]),
+        attribute.styles([#("width", "120px")]),
         attribute.value(form.pass |> option.unwrap("")),
       ]),
       html.button([attribute.class("mt-1"), event.on_click(msg.LoginSubmit)], [
@@ -104,7 +104,7 @@ fn ready_to_assign(model: Model) -> element.Element(Msg) {
   html.div(
     [
       attribute.class(" text-black rounded-3 p-2"),
-      attribute.style([
+      attribute.styles([
         #("width", "200px"),
         #("height", "fit-content"),
         #("background-color", "rgb(187, 235, 156)"),
@@ -136,7 +136,7 @@ fn section_buttons(route: msg.Route) -> element.Element(Msg) {
   html.div(
     [
       attribute.class("btn-group "),
-      attribute.style([#("height", "fit-content")]),
+      attribute.styles([#("height", "fit-content")]),
     ],
     [
       html.a(
@@ -175,7 +175,7 @@ fn row2(
   fun: fn() -> List(element.Element(Msg)),
 ) -> element.Element(Msg) {
   html.div(
-    [attribute.class("d-flex flex-row " <> class), attribute.style(style)],
+    [attribute.class("d-flex flex-row " <> class), attribute.styles(style)],
     fun(),
   )
 }
@@ -193,7 +193,7 @@ fn column2(
     [
       //border border-dark
       attribute.class("d-flex flex-column  p-1" <> class),
-      attribute.style(style),
+      attribute.styles(style),
     ],
     fun(),
   )
@@ -205,7 +205,7 @@ fn cycle_display(model: Model) -> element.Element(Msg) {
       html.button(
         [
           attribute.class("btn btn-secondary mt-2 me-2"),
-          attribute.style([#("height", "fit-content")]),
+          attribute.styles([#("height", "fit-content")]),
           event.on_click(msg.CycleShift(msg.ShiftLeft)),
         ],
         [element.text("<")],
@@ -215,7 +215,7 @@ fn cycle_display(model: Model) -> element.Element(Msg) {
           html.div(
             [
               attribute.class("text-center fs-4"),
-              attribute.style([
+              attribute.styles([
                 #("justify-content", "center"),
                 #("width", "170px"),
               ]),
@@ -225,7 +225,7 @@ fn cycle_display(model: Model) -> element.Element(Msg) {
           html.div(
             [
               attribute.class("text-start fs-6"),
-              attribute.style([#("width", "200px")]),
+              attribute.styles([#("width", "200px")]),
             ],
             [element.text(current_cycle_bounds(model))],
           ),
@@ -234,7 +234,7 @@ fn cycle_display(model: Model) -> element.Element(Msg) {
       html.button(
         [
           attribute.class("btn btn-secondary mt-2 "),
-          attribute.style([#("height", "fit-content")]),
+          attribute.styles([#("height", "fit-content")]),
           event.on_click(msg.CycleShift(msg.ShiftRight)),
         ],
         [element.text(">")],
@@ -357,7 +357,7 @@ fn category_details_name_ui(
   html.div(
     [
       attribute.class("rounded-3 p-2 mt-3"),
-      attribute.style([
+      attribute.styles([
         #("height", "fit-content"),
         #("background-color", edit_name_side_panel_color),
       ]),
@@ -368,7 +368,7 @@ fn category_details_name_ui(
         attribute.placeholder("category name"),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "200px")]),
+        attribute.styles([#("width", "200px")]),
         attribute.value(sc.input_name),
         attribute.class("mb-2"),
       ]),
@@ -388,7 +388,7 @@ fn category_activity_ui(cat: Category, model: Model) -> element.Element(Msg) {
   html.div(
     [
       attribute.class("mt-3 rounded-3 p-2"),
-      attribute.style([#("background-color", activity_side_panel_color)]),
+      attribute.styles([#("background-color", activity_side_panel_color)]),
     ],
     [
       html.div([attribute.class("col")], [
@@ -411,7 +411,7 @@ fn category_details_change_group_ui(
   html.div(
     [
       attribute.class("mt-3 rounded-3 p-2"),
-      attribute.style([#("background-color", edit_name_side_panel_color)]),
+      attribute.styles([#("background-color", edit_name_side_panel_color)]),
     ],
     [
       html.text("Change group"),
@@ -420,7 +420,7 @@ fn category_details_change_group_ui(
         attribute.placeholder("group"),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "160px")]),
+        attribute.styles([#("width", "160px")]),
         attribute.attribute("list", "group_list"),
       ]),
       html.datalist(
@@ -510,7 +510,7 @@ fn category_details_allocation_ui(
   html.div(
     [
       attribute.class("mt-3 rounded-3 p-2"),
-      attribute.style([#("background-color", side_panel_color)]),
+      attribute.styles([#("background-color", side_panel_color)]),
     ],
     [
       html.text("Allocated: "),
@@ -519,7 +519,7 @@ fn category_details_allocation_ui(
         attribute.placeholder("amount"),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "120px")]),
+        attribute.styles([#("width", "120px")]),
         attribute.value(sc.allocation),
       ]),
       html.button(
@@ -546,7 +546,7 @@ fn category_details_target_ui(
   html.div(
     [
       attribute.class("mt-3 rounded-3 p-2 col mt-3"),
-      attribute.style([#("background-color", side_panel_color)]),
+      attribute.styles([#("background-color", side_panel_color)]),
     ],
     case target_edit_option {
       // edit mode
@@ -578,7 +578,7 @@ fn category_details_target_ui(
                   attribute.placeholder("amount"),
                   attribute.class("form-control"),
                   attribute.type_("text"),
-                  attribute.style([#("width", "120px")]),
+                  attribute.styles([#("width", "120px")]),
                   attribute.value(target_edit.target_amount),
                 ]),
                 html.input([
@@ -598,7 +598,7 @@ fn category_details_target_ui(
                   attribute.placeholder("amount"),
                   attribute.class("form-control"),
                   attribute.type_("text"),
-                  attribute.style([#("width", "120px")]),
+                  attribute.styles([#("width", "120px")]),
                   attribute.value(target_edit.target_amount),
                 ]),
               ])
@@ -798,8 +798,7 @@ fn import_transactions(model: Model) -> element.Element(Msg) {
       // 
       // The event handler also calls `preventDefault()` on the form, such that
       // Lustre can handle the submission instead off being sent off to the server.
-      // event.on_submit(msg.UserSubmittedImportForm2),
-      // event.on_submit(fn(fields) { msg.UserSubmittedImportForm2 }),
+      event.on_submit(msg.UserSubmittedImportForm),    
     ],
     [
       //
@@ -912,7 +911,7 @@ fn transaction_edit_ui(
         attribute.value(tef.date),
         attribute.class("form-control"),
         attribute.type_("date"),
-        attribute.style([#("width", "140px")]),
+        attribute.styles([#("width", "140px")]),
       ]),
     ]),
     html.td([], [
@@ -922,7 +921,7 @@ fn transaction_edit_ui(
         attribute.value(tef.payee),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "160px")]),
+        attribute.styles([#("width", "160px")]),
         attribute.attribute("list", "payees_list"),
       ]),
       html.datalist(
@@ -939,7 +938,7 @@ fn transaction_edit_ui(
         attribute.value(tef.category_name),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "160px")]),
+        attribute.styles([#("width", "160px")]),
         attribute.attribute("list", "categories_list"),
       ]),
       html.datalist(
@@ -956,7 +955,7 @@ fn transaction_edit_ui(
         attribute.value(tef.amount),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "160px")]),
+        attribute.styles([#("width", "160px")]),
       ]),
       check_box("is inflow", tef.is_inflow, msg.UserEditTransactionIsInflow),
       {
@@ -1058,7 +1057,7 @@ fn add_transaction_ui(
         attribute.id("addTransactionAmountId"),
         attribute.class("form-control"),
         attribute.type_("text"),
-        attribute.style([#("width", "120px")]),
+        attribute.styles([#("width", "120px")]),
         attribute.value(transaction_edit_form.amount),
       ]),
       check_box(
@@ -1191,7 +1190,7 @@ fn group_ui(group: m.CategoryGroup, model: Model) -> List(element.Element(Msg)) 
   }
 
   let group_ui =
-    html.tr([attribute.style([#("background-color", "rgb(199, 208, 201)")])], [
+    html.tr([attribute.styles([#("background-color", "rgb(199, 208, 201)")])], [
       html.td([], [html.text(group.name), add_btn, collapse_ui]),
       html.td([], []),
     ])
@@ -1275,7 +1274,7 @@ fn div_context(text: String, color: String) -> element.Element(Msg) {
   html.div(
     [
       attribute.class("ms-2 p-1"),
-      attribute.style([#("background-color", color), #("width", "fit-content")]),
+      attribute.styles([#("background-color", color), #("width", "fit-content")]),
     ],
     [html.text(text)],
   )

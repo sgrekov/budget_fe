@@ -564,8 +564,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, category_group_change_input: group_name),
       effect.none(),
     )
-    msg.UserSubmittedImportForm(_) -> #(Model(..model), effect.none())
-    msg.UserSubmittedImportForm2 -> #(Model(..model), effect.none())
+    msg.UserSubmittedImportForm(fields) -> #(Model(..model), effect.none())
   }
 }
 

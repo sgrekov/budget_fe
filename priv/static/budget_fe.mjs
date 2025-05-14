@@ -44,11 +44,11 @@ var List = class {
     return length4 - 1;
   }
 };
-function prepend(element2, tail) {
-  return new NonEmpty(element2, tail);
+function prepend(element3, tail) {
+  return new NonEmpty(element3, tail);
 }
-function toList(elements2, tail) {
-  return List.fromArray(elements2, tail);
+function toList(elements, tail) {
+  return List.fromArray(elements, tail);
 }
 var ListIterator = class {
   #current;
@@ -258,8 +258,8 @@ function bitArrayByteAt(buffer, bitOffset, index5) {
   }
 }
 var UtfCodepoint = class {
-  constructor(value4) {
-    this.value = value4;
+  constructor(value3) {
+    this.value = value3;
   }
 };
 var isBitArrayDeprecationMessagePrinted = {};
@@ -272,18 +272,18 @@ function bitArrayPrintDeprecationWarning(name2, message) {
   );
   isBitArrayDeprecationMessagePrinted[name2] = true;
 }
-function bitArraySlice(bitArray, start3, end) {
+function bitArraySlice(bitArray, start4, end) {
   end ??= bitArray.bitSize;
-  bitArrayValidateRange(bitArray, start3, end);
-  if (start3 === end) {
+  bitArrayValidateRange(bitArray, start4, end);
+  if (start4 === end) {
     return new BitArray(new Uint8Array());
   }
-  if (start3 === 0 && end === bitArray.bitSize) {
+  if (start4 === 0 && end === bitArray.bitSize) {
     return bitArray;
   }
-  start3 += bitArray.bitOffset;
+  start4 += bitArray.bitOffset;
   end += bitArray.bitOffset;
-  const startByteIndex = Math.trunc(start3 / 8);
+  const startByteIndex = Math.trunc(start4 / 8);
   const endByteIndex = Math.trunc((end + 7) / 8);
   const byteLength = endByteIndex - startByteIndex;
   let buffer;
@@ -296,45 +296,45 @@ function bitArraySlice(bitArray, start3, end) {
       byteLength
     );
   }
-  return new BitArray(buffer, end - start3, start3 % 8);
+  return new BitArray(buffer, end - start4, start4 % 8);
 }
-function bitArraySliceToInt(bitArray, start3, end, isBigEndian, isSigned) {
-  bitArrayValidateRange(bitArray, start3, end);
-  if (start3 === end) {
+function bitArraySliceToInt(bitArray, start4, end, isBigEndian, isSigned) {
+  bitArrayValidateRange(bitArray, start4, end);
+  if (start4 === end) {
     return 0;
   }
-  start3 += bitArray.bitOffset;
+  start4 += bitArray.bitOffset;
   end += bitArray.bitOffset;
-  const isStartByteAligned = start3 % 8 === 0;
+  const isStartByteAligned = start4 % 8 === 0;
   const isEndByteAligned = end % 8 === 0;
   if (isStartByteAligned && isEndByteAligned) {
     return intFromAlignedSlice(
       bitArray,
-      start3 / 8,
+      start4 / 8,
       end / 8,
       isBigEndian,
       isSigned
     );
   }
-  const size = end - start3;
-  const startByteIndex = Math.trunc(start3 / 8);
+  const size2 = end - start4;
+  const startByteIndex = Math.trunc(start4 / 8);
   const endByteIndex = Math.trunc((end - 1) / 8);
   if (startByteIndex == endByteIndex) {
-    const mask2 = 255 >> start3 % 8;
+    const mask2 = 255 >> start4 % 8;
     const unusedLowBitCount = (8 - end % 8) % 8;
-    let value4 = (bitArray.rawBuffer[startByteIndex] & mask2) >> unusedLowBitCount;
+    let value3 = (bitArray.rawBuffer[startByteIndex] & mask2) >> unusedLowBitCount;
     if (isSigned) {
-      const highBit = 2 ** (size - 1);
-      if (value4 >= highBit) {
-        value4 -= highBit * 2;
+      const highBit = 2 ** (size2 - 1);
+      if (value3 >= highBit) {
+        value3 -= highBit * 2;
       }
     }
-    return value4;
+    return value3;
   }
-  if (size <= 53) {
+  if (size2 <= 53) {
     return intFromUnalignedSliceUsingNumber(
       bitArray.rawBuffer,
-      start3,
+      start4,
       end,
       isBigEndian,
       isSigned
@@ -342,19 +342,19 @@ function bitArraySliceToInt(bitArray, start3, end, isBigEndian, isSigned) {
   } else {
     return intFromUnalignedSliceUsingBigInt(
       bitArray.rawBuffer,
-      start3,
+      start4,
       end,
       isBigEndian,
       isSigned
     );
   }
 }
-function intFromAlignedSlice(bitArray, start3, end, isBigEndian, isSigned) {
-  const byteSize = end - start3;
+function intFromAlignedSlice(bitArray, start4, end, isBigEndian, isSigned) {
+  const byteSize = end - start4;
   if (byteSize <= 6) {
     return intFromAlignedSliceUsingNumber(
       bitArray.rawBuffer,
-      start3,
+      start4,
       end,
       isBigEndian,
       isSigned
@@ -362,184 +362,184 @@ function intFromAlignedSlice(bitArray, start3, end, isBigEndian, isSigned) {
   } else {
     return intFromAlignedSliceUsingBigInt(
       bitArray.rawBuffer,
-      start3,
+      start4,
       end,
       isBigEndian,
       isSigned
     );
   }
 }
-function intFromAlignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
-  const byteSize = end - start3;
-  let value4 = 0;
+function intFromAlignedSliceUsingNumber(buffer, start4, end, isBigEndian, isSigned) {
+  const byteSize = end - start4;
+  let value3 = 0;
   if (isBigEndian) {
-    for (let i = start3; i < end; i++) {
-      value4 *= 256;
-      value4 += buffer[i];
+    for (let i = start4; i < end; i++) {
+      value3 *= 256;
+      value3 += buffer[i];
     }
   } else {
-    for (let i = end - 1; i >= start3; i--) {
-      value4 *= 256;
-      value4 += buffer[i];
+    for (let i = end - 1; i >= start4; i--) {
+      value3 *= 256;
+      value3 += buffer[i];
     }
   }
   if (isSigned) {
     const highBit = 2 ** (byteSize * 8 - 1);
-    if (value4 >= highBit) {
-      value4 -= highBit * 2;
+    if (value3 >= highBit) {
+      value3 -= highBit * 2;
     }
   }
-  return value4;
+  return value3;
 }
-function intFromAlignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
-  const byteSize = end - start3;
-  let value4 = 0n;
+function intFromAlignedSliceUsingBigInt(buffer, start4, end, isBigEndian, isSigned) {
+  const byteSize = end - start4;
+  let value3 = 0n;
   if (isBigEndian) {
-    for (let i = start3; i < end; i++) {
-      value4 *= 256n;
-      value4 += BigInt(buffer[i]);
+    for (let i = start4; i < end; i++) {
+      value3 *= 256n;
+      value3 += BigInt(buffer[i]);
     }
   } else {
-    for (let i = end - 1; i >= start3; i--) {
-      value4 *= 256n;
-      value4 += BigInt(buffer[i]);
+    for (let i = end - 1; i >= start4; i--) {
+      value3 *= 256n;
+      value3 += BigInt(buffer[i]);
     }
   }
   if (isSigned) {
     const highBit = 1n << BigInt(byteSize * 8 - 1);
-    if (value4 >= highBit) {
-      value4 -= highBit * 2n;
+    if (value3 >= highBit) {
+      value3 -= highBit * 2n;
     }
   }
-  return Number(value4);
+  return Number(value3);
 }
-function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
-  const isStartByteAligned = start3 % 8 === 0;
-  let size = end - start3;
-  let byteIndex = Math.trunc(start3 / 8);
-  let value4 = 0;
+function intFromUnalignedSliceUsingNumber(buffer, start4, end, isBigEndian, isSigned) {
+  const isStartByteAligned = start4 % 8 === 0;
+  let size2 = end - start4;
+  let byteIndex = Math.trunc(start4 / 8);
+  let value3 = 0;
   if (isBigEndian) {
     if (!isStartByteAligned) {
-      const leadingBitsCount = 8 - start3 % 8;
-      value4 = buffer[byteIndex++] & (1 << leadingBitsCount) - 1;
-      size -= leadingBitsCount;
+      const leadingBitsCount = 8 - start4 % 8;
+      value3 = buffer[byteIndex++] & (1 << leadingBitsCount) - 1;
+      size2 -= leadingBitsCount;
     }
-    while (size >= 8) {
-      value4 *= 256;
-      value4 += buffer[byteIndex++];
-      size -= 8;
+    while (size2 >= 8) {
+      value3 *= 256;
+      value3 += buffer[byteIndex++];
+      size2 -= 8;
     }
-    if (size > 0) {
-      value4 *= 2 ** size;
-      value4 += buffer[byteIndex] >> 8 - size;
+    if (size2 > 0) {
+      value3 *= 2 ** size2;
+      value3 += buffer[byteIndex] >> 8 - size2;
     }
   } else {
     if (isStartByteAligned) {
-      let size2 = end - start3;
+      let size3 = end - start4;
       let scale = 1;
-      while (size2 >= 8) {
-        value4 += buffer[byteIndex++] * scale;
+      while (size3 >= 8) {
+        value3 += buffer[byteIndex++] * scale;
         scale *= 256;
-        size2 -= 8;
+        size3 -= 8;
       }
-      value4 += (buffer[byteIndex] >> 8 - size2) * scale;
+      value3 += (buffer[byteIndex] >> 8 - size3) * scale;
     } else {
-      const highBitsCount = start3 % 8;
+      const highBitsCount = start4 % 8;
       const lowBitsCount = 8 - highBitsCount;
-      let size2 = end - start3;
+      let size3 = end - start4;
       let scale = 1;
-      while (size2 >= 8) {
+      while (size3 >= 8) {
         const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
-        value4 += (byte & 255) * scale;
+        value3 += (byte & 255) * scale;
         scale *= 256;
-        size2 -= 8;
+        size3 -= 8;
         byteIndex++;
       }
-      if (size2 > 0) {
-        const lowBitsUsed = size2 - Math.max(0, size2 - lowBitsCount);
+      if (size3 > 0) {
+        const lowBitsUsed = size3 - Math.max(0, size3 - lowBitsCount);
         let trailingByte = (buffer[byteIndex] & (1 << lowBitsCount) - 1) >> lowBitsCount - lowBitsUsed;
-        size2 -= lowBitsUsed;
-        if (size2 > 0) {
-          trailingByte *= 2 ** size2;
-          trailingByte += buffer[byteIndex + 1] >> 8 - size2;
+        size3 -= lowBitsUsed;
+        if (size3 > 0) {
+          trailingByte *= 2 ** size3;
+          trailingByte += buffer[byteIndex + 1] >> 8 - size3;
         }
-        value4 += trailingByte * scale;
+        value3 += trailingByte * scale;
       }
     }
   }
   if (isSigned) {
-    const highBit = 2 ** (end - start3 - 1);
-    if (value4 >= highBit) {
-      value4 -= highBit * 2;
+    const highBit = 2 ** (end - start4 - 1);
+    if (value3 >= highBit) {
+      value3 -= highBit * 2;
     }
   }
-  return value4;
+  return value3;
 }
-function intFromUnalignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
-  const isStartByteAligned = start3 % 8 === 0;
-  let size = end - start3;
-  let byteIndex = Math.trunc(start3 / 8);
-  let value4 = 0n;
+function intFromUnalignedSliceUsingBigInt(buffer, start4, end, isBigEndian, isSigned) {
+  const isStartByteAligned = start4 % 8 === 0;
+  let size2 = end - start4;
+  let byteIndex = Math.trunc(start4 / 8);
+  let value3 = 0n;
   if (isBigEndian) {
     if (!isStartByteAligned) {
-      const leadingBitsCount = 8 - start3 % 8;
-      value4 = BigInt(buffer[byteIndex++] & (1 << leadingBitsCount) - 1);
-      size -= leadingBitsCount;
+      const leadingBitsCount = 8 - start4 % 8;
+      value3 = BigInt(buffer[byteIndex++] & (1 << leadingBitsCount) - 1);
+      size2 -= leadingBitsCount;
     }
-    while (size >= 8) {
-      value4 *= 256n;
-      value4 += BigInt(buffer[byteIndex++]);
-      size -= 8;
+    while (size2 >= 8) {
+      value3 *= 256n;
+      value3 += BigInt(buffer[byteIndex++]);
+      size2 -= 8;
     }
-    if (size > 0) {
-      value4 <<= BigInt(size);
-      value4 += BigInt(buffer[byteIndex] >> 8 - size);
+    if (size2 > 0) {
+      value3 <<= BigInt(size2);
+      value3 += BigInt(buffer[byteIndex] >> 8 - size2);
     }
   } else {
     if (isStartByteAligned) {
-      let size2 = end - start3;
+      let size3 = end - start4;
       let shift = 0n;
-      while (size2 >= 8) {
-        value4 += BigInt(buffer[byteIndex++]) << shift;
+      while (size3 >= 8) {
+        value3 += BigInt(buffer[byteIndex++]) << shift;
         shift += 8n;
-        size2 -= 8;
+        size3 -= 8;
       }
-      value4 += BigInt(buffer[byteIndex] >> 8 - size2) << shift;
+      value3 += BigInt(buffer[byteIndex] >> 8 - size3) << shift;
     } else {
-      const highBitsCount = start3 % 8;
+      const highBitsCount = start4 % 8;
       const lowBitsCount = 8 - highBitsCount;
-      let size2 = end - start3;
+      let size3 = end - start4;
       let shift = 0n;
-      while (size2 >= 8) {
+      while (size3 >= 8) {
         const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
-        value4 += BigInt(byte & 255) << shift;
+        value3 += BigInt(byte & 255) << shift;
         shift += 8n;
-        size2 -= 8;
+        size3 -= 8;
         byteIndex++;
       }
-      if (size2 > 0) {
-        const lowBitsUsed = size2 - Math.max(0, size2 - lowBitsCount);
+      if (size3 > 0) {
+        const lowBitsUsed = size3 - Math.max(0, size3 - lowBitsCount);
         let trailingByte = (buffer[byteIndex] & (1 << lowBitsCount) - 1) >> lowBitsCount - lowBitsUsed;
-        size2 -= lowBitsUsed;
-        if (size2 > 0) {
-          trailingByte <<= size2;
-          trailingByte += buffer[byteIndex + 1] >> 8 - size2;
+        size3 -= lowBitsUsed;
+        if (size3 > 0) {
+          trailingByte <<= size3;
+          trailingByte += buffer[byteIndex + 1] >> 8 - size3;
         }
-        value4 += BigInt(trailingByte) << shift;
+        value3 += BigInt(trailingByte) << shift;
       }
     }
   }
   if (isSigned) {
-    const highBit = 2n ** BigInt(end - start3 - 1);
-    if (value4 >= highBit) {
-      value4 -= highBit * 2n;
+    const highBit = 2n ** BigInt(end - start4 - 1);
+    if (value3 >= highBit) {
+      value3 -= highBit * 2n;
     }
   }
-  return Number(value4);
+  return Number(value3);
 }
-function bitArrayValidateRange(bitArray, start3, end) {
-  if (start3 < 0 || start3 > bitArray.bitSize || end < start3 || end > bitArray.bitSize) {
-    const msg = `Invalid bit array slice: start = ${start3}, end = ${end}, bit size = ${bitArray.bitSize}`;
+function bitArrayValidateRange(bitArray, start4, end) {
+  if (start4 < 0 || start4 > bitArray.bitSize || end < start4 || end > bitArray.bitSize) {
+    const msg = `Invalid bit array slice: start = ${start4}, end = ${end}, bit size = ${bitArray.bitSize}`;
     throw new globalThis.Error(msg);
   }
 }
@@ -550,9 +550,9 @@ var Result = class _Result extends CustomType {
   }
 };
 var Ok = class extends Result {
-  constructor(value4) {
+  constructor(value3) {
     super();
-    this[0] = value4;
+    this[0] = value3;
   }
   // @internal
   isOk() {
@@ -570,10 +570,10 @@ var Error = class extends Result {
   }
 };
 function isEqual(x, y) {
-  let values2 = [x, y];
-  while (values2.length) {
-    let a2 = values2.pop();
-    let b = values2.pop();
+  let values3 = [x, y];
+  while (values3.length) {
+    let a2 = values3.pop();
+    let b = values3.pop();
     if (a2 === b) continue;
     if (!isObject(a2) || !isObject(b)) return false;
     let unequal = !structurallyCompatibleObjects(a2, b) || unequalDates(a2, b) || unequalBuffers(a2, b) || unequalArrays(a2, b) || unequalMaps(a2, b) || unequalSets(a2, b) || unequalRegExps(a2, b);
@@ -586,18 +586,18 @@ function isEqual(x, y) {
       } catch {
       }
     }
-    let [keys2, get3] = getters(a2);
+    let [keys2, get4] = getters(a2);
     for (let k of keys2(a2)) {
-      values2.push(get3(a2, k), get3(b, k));
+      values3.push(get4(a2, k), get4(b, k));
     }
   }
   return true;
 }
-function getters(object3) {
-  if (object3 instanceof Map) {
+function getters(object4) {
+  if (object4 instanceof Map) {
     return [(x) => x.keys(), (x, y) => x.get(y)];
   } else {
-    let extra = object3 instanceof globalThis.Error ? ["message"] : [];
+    let extra = object4 instanceof globalThis.Error ? ["message"] : [];
     return [(x) => [...extra, ...Object.keys(x)], (x, y) => x[y]];
   }
 }
@@ -674,14 +674,6 @@ var Some = class extends CustomType {
 };
 var None = class extends CustomType {
 };
-function to_result(option2, e) {
-  if (option2 instanceof Some) {
-    let a2 = option2[0];
-    return new Ok(a2);
-  } else {
-    return new Error(e);
-  }
-}
 function from_result(result) {
   if (result.isOk()) {
     let a2 = result[0];
@@ -722,51 +714,20 @@ function do_has_key(key, dict3) {
 function has_key(dict3, key) {
   return do_has_key(key, dict3);
 }
-function insert(dict3, key, value4) {
-  return map_insert(key, value4, dict3);
-}
-function reverse_and_concat(loop$remaining, loop$accumulator) {
-  while (true) {
-    let remaining = loop$remaining;
-    let accumulator = loop$accumulator;
-    if (remaining.hasLength(0)) {
-      return accumulator;
-    } else {
-      let first3 = remaining.head;
-      let rest = remaining.tail;
-      loop$remaining = rest;
-      loop$accumulator = prepend(first3, accumulator);
-    }
-  }
-}
-function do_keys_loop(loop$list, loop$acc) {
-  while (true) {
-    let list3 = loop$list;
-    let acc = loop$acc;
-    if (list3.hasLength(0)) {
-      return reverse_and_concat(acc, toList([]));
-    } else {
-      let key = list3.head[0];
-      let rest = list3.tail;
-      loop$list = rest;
-      loop$acc = prepend(key, acc);
-    }
-  }
-}
-function keys(dict3) {
-  return do_keys_loop(map_to_list(dict3), toList([]));
+function insert(dict3, key, value3) {
+  return map_insert(key, value3, dict3);
 }
 function fold_loop(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return initial;
     } else {
-      let k = list3.head[0];
-      let v = list3.head[1];
-      let rest = list3.tail;
+      let k = list4.head[0];
+      let v = list4.head[1];
+      let rest = list4.tail;
       loop$list = rest;
       loop$initial = fun(initial, k, v);
       loop$fun = fun;
@@ -775,6 +736,11 @@ function fold_loop(loop$list, loop$initial, loop$fun) {
 }
 function fold(dict3, initial, fun) {
   return fold_loop(map_to_list(dict3), initial, fun);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/pair.mjs
+function new$(first2, second) {
+  return [first2, second];
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
@@ -796,10 +762,10 @@ var Descending = class extends CustomType {
 };
 function length_loop(loop$list, loop$count) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let count = loop$count;
-    if (list3.atLeastLength(1)) {
-      let list$1 = list3.tail;
+    if (list4.atLeastLength(1)) {
+      let list$1 = list4.tail;
       loop$list = list$1;
       loop$count = count + 1;
     } else {
@@ -807,8 +773,8 @@ function length_loop(loop$list, loop$count) {
     }
   }
 }
-function length(list3) {
-  return length_loop(list3, 0);
+function length(list4) {
+  return length_loop(list4, 0);
 }
 function reverse_and_prepend(loop$prefix, loop$suffix) {
   while (true) {
@@ -824,20 +790,20 @@ function reverse_and_prepend(loop$prefix, loop$suffix) {
     }
   }
 }
-function reverse(list3) {
-  return reverse_and_prepend(list3, toList([]));
+function reverse(list4) {
+  return reverse_and_prepend(list4, toList([]));
 }
 function contains(loop$list, loop$elem) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let elem = loop$elem;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return false;
-    } else if (list3.atLeastLength(1) && isEqual(list3.head, elem)) {
-      let first$1 = list3.head;
+    } else if (list4.atLeastLength(1) && isEqual(list4.head, elem)) {
+      let first$1 = list4.head;
       return true;
     } else {
-      let rest$1 = list3.tail;
+      let rest$1 = list4.tail;
       loop$list = rest$1;
       loop$elem = elem;
     }
@@ -845,14 +811,14 @@ function contains(loop$list, loop$elem) {
 }
 function filter_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       let _block;
       let $ = fun(first$1);
       if ($) {
@@ -867,19 +833,19 @@ function filter_loop(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter(list3, predicate) {
-  return filter_loop(list3, predicate, toList([]));
+function filter(list4, predicate) {
+  return filter_loop(list4, predicate, toList([]));
 }
 function filter_map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       let _block;
       let $ = fun(first$1);
       if ($.isOk()) {
@@ -895,47 +861,47 @@ function filter_map_loop(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function filter_map(list3, fun) {
-  return filter_map_loop(list3, fun, toList([]));
+function filter_map(list4, fun) {
+  return filter_map_loop(list4, fun, toList([]));
 }
 function map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let fun = loop$fun;
     let acc = loop$acc;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       loop$list = rest$1;
       loop$fun = fun;
       loop$acc = prepend(fun(first$1), acc);
     }
   }
 }
-function map2(list3, fun) {
-  return map_loop(list3, fun, toList([]));
+function map2(list4, fun) {
+  return map_loop(list4, fun, toList([]));
 }
 function append_loop(loop$first, loop$second) {
   while (true) {
-    let first3 = loop$first;
+    let first2 = loop$first;
     let second = loop$second;
-    if (first3.hasLength(0)) {
+    if (first2.hasLength(0)) {
       return second;
     } else {
-      let first$1 = first3.head;
-      let rest$1 = first3.tail;
+      let first$1 = first2.head;
+      let rest$1 = first2.tail;
       loop$first = rest$1;
       loop$second = prepend(first$1, second);
     }
   }
 }
-function append(first3, second) {
-  return append_loop(reverse(first3), second);
+function append(first2, second) {
+  return append_loop(reverse(first2), second);
 }
-function prepend2(list3, item) {
-  return prepend(item, list3);
+function prepend2(list4, item) {
+  return prepend(item, list4);
 }
 function flatten_loop(loop$lists, loop$acc) {
   while (true) {
@@ -944,67 +910,46 @@ function flatten_loop(loop$lists, loop$acc) {
     if (lists.hasLength(0)) {
       return reverse(acc);
     } else {
-      let list3 = lists.head;
+      let list4 = lists.head;
       let further_lists = lists.tail;
       loop$lists = further_lists;
-      loop$acc = reverse_and_prepend(list3, acc);
+      loop$acc = reverse_and_prepend(list4, acc);
     }
   }
 }
 function flatten2(lists) {
   return flatten_loop(lists, toList([]));
 }
-function flat_map(list3, fun) {
-  let _pipe = map2(list3, fun);
+function flat_map(list4, fun) {
+  let _pipe = map2(list4, fun);
   return flatten2(_pipe);
 }
 function fold2(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return initial;
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       loop$list = rest$1;
       loop$initial = fun(initial, first$1);
       loop$fun = fun;
     }
   }
 }
-function index_fold_loop(loop$over, loop$acc, loop$with, loop$index) {
-  while (true) {
-    let over = loop$over;
-    let acc = loop$acc;
-    let with$ = loop$with;
-    let index5 = loop$index;
-    if (over.hasLength(0)) {
-      return acc;
-    } else {
-      let first$1 = over.head;
-      let rest$1 = over.tail;
-      loop$over = rest$1;
-      loop$acc = with$(acc, first$1, index5);
-      loop$with = with$;
-      loop$index = index5 + 1;
-    }
-  }
-}
-function index_fold(list3, initial, fun) {
-  return index_fold_loop(list3, initial, fun, 0);
-}
 function fold_until(loop$list, loop$initial, loop$fun) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let initial = loop$initial;
     let fun = loop$fun;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return initial;
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       let $ = fun(initial, first$1);
       if ($ instanceof Continue) {
         let next_accumulator = $[0];
@@ -1020,13 +965,13 @@ function fold_until(loop$list, loop$initial, loop$fun) {
 }
 function find(loop$list, loop$is_desired) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let is_desired = loop$is_desired;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return new Error(void 0);
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       let $ = is_desired(first$1);
       if ($) {
         return new Ok(first$1);
@@ -1039,14 +984,14 @@ function find(loop$list, loop$is_desired) {
 }
 function unique_loop(loop$list, loop$seen, loop$acc) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let seen = loop$seen;
     let acc = loop$acc;
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       return reverse(acc);
     } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       let $ = has_key(seen, first$1);
       if ($) {
         loop$list = rest$1;
@@ -1060,45 +1005,45 @@ function unique_loop(loop$list, loop$seen, loop$acc) {
     }
   }
 }
-function unique(list3) {
-  return unique_loop(list3, new_map(), toList([]));
+function unique(list4) {
+  return unique_loop(list4, new_map(), toList([]));
 }
 function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$prev, loop$acc) {
   while (true) {
-    let list3 = loop$list;
-    let compare4 = loop$compare;
+    let list4 = loop$list;
+    let compare5 = loop$compare;
     let growing = loop$growing;
     let direction = loop$direction;
     let prev = loop$prev;
     let acc = loop$acc;
     let growing$1 = prepend(prev, growing);
-    if (list3.hasLength(0)) {
+    if (list4.hasLength(0)) {
       if (direction instanceof Ascending) {
         return prepend(reverse(growing$1), acc);
       } else {
         return prepend(growing$1, acc);
       }
     } else {
-      let new$1 = list3.head;
-      let rest$1 = list3.tail;
-      let $ = compare4(prev, new$1);
+      let new$1 = list4.head;
+      let rest$1 = list4.tail;
+      let $ = compare5(prev, new$1);
       if ($ instanceof Gt && direction instanceof Descending) {
         loop$list = rest$1;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$growing = growing$1;
         loop$direction = direction;
         loop$prev = new$1;
         loop$acc = acc;
       } else if ($ instanceof Lt && direction instanceof Ascending) {
         loop$list = rest$1;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$growing = growing$1;
         loop$direction = direction;
         loop$prev = new$1;
         loop$acc = acc;
       } else if ($ instanceof Eq && direction instanceof Ascending) {
         loop$list = rest$1;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$growing = growing$1;
         loop$direction = direction;
         loop$prev = new$1;
@@ -1117,7 +1062,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           let next2 = rest$1.head;
           let rest$2 = rest$1.tail;
           let _block$1;
-          let $1 = compare4(new$1, next2);
+          let $1 = compare5(new$1, next2);
           if ($1 instanceof Lt) {
             _block$1 = new Ascending();
           } else if ($1 instanceof Eq) {
@@ -1127,7 +1072,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           }
           let direction$1 = _block$1;
           loop$list = rest$2;
-          loop$compare = compare4;
+          loop$compare = compare5;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
           loop$prev = next2;
@@ -1147,7 +1092,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           let next2 = rest$1.head;
           let rest$2 = rest$1.tail;
           let _block$1;
-          let $1 = compare4(new$1, next2);
+          let $1 = compare5(new$1, next2);
           if ($1 instanceof Lt) {
             _block$1 = new Ascending();
           } else if ($1 instanceof Eq) {
@@ -1157,7 +1102,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           }
           let direction$1 = _block$1;
           loop$list = rest$2;
-          loop$compare = compare4;
+          loop$compare = compare5;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
           loop$prev = next2;
@@ -1177,7 +1122,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           let next2 = rest$1.head;
           let rest$2 = rest$1.tail;
           let _block$1;
-          let $1 = compare4(new$1, next2);
+          let $1 = compare5(new$1, next2);
           if ($1 instanceof Lt) {
             _block$1 = new Ascending();
           } else if ($1 instanceof Eq) {
@@ -1187,7 +1132,7 @@ function sequences(loop$list, loop$compare, loop$growing, loop$direction, loop$p
           }
           let direction$1 = _block$1;
           loop$list = rest$2;
-          loop$compare = compare4;
+          loop$compare = compare5;
           loop$growing = toList([new$1]);
           loop$direction = direction$1;
           loop$prev = next2;
@@ -1201,35 +1146,35 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
   while (true) {
     let list1 = loop$list1;
     let list22 = loop$list2;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     let acc = loop$acc;
     if (list1.hasLength(0)) {
-      let list3 = list22;
-      return reverse_and_prepend(list3, acc);
+      let list4 = list22;
+      return reverse_and_prepend(list4, acc);
     } else if (list22.hasLength(0)) {
-      let list3 = list1;
-      return reverse_and_prepend(list3, acc);
+      let list4 = list1;
+      return reverse_and_prepend(list4, acc);
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
-      let first22 = list22.head;
+      let first2 = list22.head;
       let rest2 = list22.tail;
-      let $ = compare4(first1, first22);
+      let $ = compare5(first1, first2);
       if ($ instanceof Lt) {
         loop$list1 = rest1;
         loop$list2 = list22;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$acc = prepend(first1, acc);
       } else if ($ instanceof Gt) {
         loop$list1 = list1;
         loop$list2 = rest2;
-        loop$compare = compare4;
-        loop$acc = prepend(first22, acc);
+        loop$compare = compare5;
+        loop$acc = prepend(first2, acc);
       } else {
         loop$list1 = list1;
         loop$list2 = rest2;
-        loop$compare = compare4;
-        loop$acc = prepend(first22, acc);
+        loop$compare = compare5;
+        loop$acc = prepend(first2, acc);
       }
     }
   }
@@ -1237,7 +1182,7 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
 function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
   while (true) {
     let sequences2 = loop$sequences;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     let acc = loop$acc;
     if (sequences2.hasLength(0)) {
       return reverse(acc);
@@ -1251,11 +1196,11 @@ function merge_ascending_pairs(loop$sequences, loop$compare, loop$acc) {
       let descending = merge_ascendings(
         ascending1,
         ascending2,
-        compare4,
+        compare5,
         toList([])
       );
       loop$sequences = rest$1;
-      loop$compare = compare4;
+      loop$compare = compare5;
       loop$acc = prepend(descending, acc);
     }
   }
@@ -1264,34 +1209,34 @@ function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
   while (true) {
     let list1 = loop$list1;
     let list22 = loop$list2;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     let acc = loop$acc;
     if (list1.hasLength(0)) {
-      let list3 = list22;
-      return reverse_and_prepend(list3, acc);
+      let list4 = list22;
+      return reverse_and_prepend(list4, acc);
     } else if (list22.hasLength(0)) {
-      let list3 = list1;
-      return reverse_and_prepend(list3, acc);
+      let list4 = list1;
+      return reverse_and_prepend(list4, acc);
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
-      let first22 = list22.head;
+      let first2 = list22.head;
       let rest2 = list22.tail;
-      let $ = compare4(first1, first22);
+      let $ = compare5(first1, first2);
       if ($ instanceof Lt) {
         loop$list1 = list1;
         loop$list2 = rest2;
-        loop$compare = compare4;
-        loop$acc = prepend(first22, acc);
+        loop$compare = compare5;
+        loop$acc = prepend(first2, acc);
       } else if ($ instanceof Gt) {
         loop$list1 = rest1;
         loop$list2 = list22;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$acc = prepend(first1, acc);
       } else {
         loop$list1 = rest1;
         loop$list2 = list22;
-        loop$compare = compare4;
+        loop$compare = compare5;
         loop$acc = prepend(first1, acc);
       }
     }
@@ -1300,7 +1245,7 @@ function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
 function merge_descending_pairs(loop$sequences, loop$compare, loop$acc) {
   while (true) {
     let sequences2 = loop$sequences;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     let acc = loop$acc;
     if (sequences2.hasLength(0)) {
       return reverse(acc);
@@ -1314,11 +1259,11 @@ function merge_descending_pairs(loop$sequences, loop$compare, loop$acc) {
       let ascending = merge_descendings(
         descending1,
         descending2,
-        compare4,
+        compare5,
         toList([])
       );
       loop$sequences = rest$1;
-      loop$compare = compare4;
+      loop$compare = compare5;
       loop$acc = prepend(ascending, acc);
     }
   }
@@ -1327,7 +1272,7 @@ function merge_all(loop$sequences, loop$direction, loop$compare) {
   while (true) {
     let sequences2 = loop$sequences;
     let direction = loop$direction;
-    let compare4 = loop$compare;
+    let compare5 = loop$compare;
     if (sequences2.hasLength(0)) {
       return toList([]);
     } else if (sequences2.hasLength(1) && direction instanceof Ascending) {
@@ -1337,30 +1282,30 @@ function merge_all(loop$sequences, loop$direction, loop$compare) {
       let sequence = sequences2.head;
       return reverse(sequence);
     } else if (direction instanceof Ascending) {
-      let sequences$1 = merge_ascending_pairs(sequences2, compare4, toList([]));
+      let sequences$1 = merge_ascending_pairs(sequences2, compare5, toList([]));
       loop$sequences = sequences$1;
       loop$direction = new Descending();
-      loop$compare = compare4;
+      loop$compare = compare5;
     } else {
-      let sequences$1 = merge_descending_pairs(sequences2, compare4, toList([]));
+      let sequences$1 = merge_descending_pairs(sequences2, compare5, toList([]));
       loop$sequences = sequences$1;
       loop$direction = new Ascending();
-      loop$compare = compare4;
+      loop$compare = compare5;
     }
   }
 }
-function sort(list3, compare4) {
-  if (list3.hasLength(0)) {
+function sort(list4, compare5) {
+  if (list4.hasLength(0)) {
     return toList([]);
-  } else if (list3.hasLength(1)) {
-    let x = list3.head;
+  } else if (list4.hasLength(1)) {
+    let x = list4.head;
     return toList([x]);
   } else {
-    let x = list3.head;
-    let y = list3.tail.head;
-    let rest$1 = list3.tail.tail;
+    let x = list4.head;
+    let y = list4.tail.head;
+    let rest$1 = list4.tail.tail;
     let _block;
-    let $ = compare4(x, y);
+    let $ = compare5(x, y);
     if ($ instanceof Lt) {
       _block = new Ascending();
     } else if ($ instanceof Eq) {
@@ -1371,39 +1316,39 @@ function sort(list3, compare4) {
     let direction = _block;
     let sequences$1 = sequences(
       rest$1,
-      compare4,
+      compare5,
       toList([x]),
       direction,
       y,
       toList([])
     );
-    return merge_all(sequences$1, new Ascending(), compare4);
+    return merge_all(sequences$1, new Ascending(), compare5);
   }
 }
 function key_set_loop(loop$list, loop$key, loop$value, loop$inspected) {
   while (true) {
-    let list3 = loop$list;
+    let list4 = loop$list;
     let key = loop$key;
-    let value4 = loop$value;
+    let value3 = loop$value;
     let inspected = loop$inspected;
-    if (list3.atLeastLength(1) && isEqual(list3.head[0], key)) {
-      let k = list3.head[0];
-      let rest$1 = list3.tail;
-      return reverse_and_prepend(inspected, prepend([k, value4], rest$1));
-    } else if (list3.atLeastLength(1)) {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
+    if (list4.atLeastLength(1) && isEqual(list4.head[0], key)) {
+      let k = list4.head[0];
+      let rest$1 = list4.tail;
+      return reverse_and_prepend(inspected, prepend([k, value3], rest$1));
+    } else if (list4.atLeastLength(1)) {
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
       loop$list = rest$1;
       loop$key = key;
-      loop$value = value4;
+      loop$value = value3;
       loop$inspected = prepend(first$1, inspected);
     } else {
-      return reverse(prepend([key, value4], inspected));
+      return reverse(prepend([key, value3], inspected));
     }
   }
 }
-function key_set(list3, key, value4) {
-  return key_set_loop(list3, key, value4, toList([]));
+function key_set(list4, key, value3) {
+  return key_set_loop(list4, key, value3, toList([]));
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/result.mjs
@@ -1452,95 +1397,10 @@ function unwrap2(result, default$) {
     return default$;
   }
 }
-
-// build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
-var DecodeError = class extends CustomType {
-  constructor(expected, found, path) {
-    super();
-    this.expected = expected;
-    this.found = found;
-    this.path = path;
-  }
-};
-function map_errors(result, f) {
-  return map_error(
-    result,
-    (_capture) => {
-      return map2(_capture, f);
-    }
-  );
-}
-function string(data) {
-  return decode_string(data);
-}
-function bool(data) {
-  return decode_bool(data);
-}
-function do_any(decoders) {
-  return (data) => {
-    if (decoders.hasLength(0)) {
-      return new Error(
-        toList([new DecodeError("another type", classify_dynamic(data), toList([]))])
-      );
-    } else {
-      let decoder = decoders.head;
-      let decoders$1 = decoders.tail;
-      let $ = decoder(data);
-      if ($.isOk()) {
-        let decoded = $[0];
-        return new Ok(decoded);
-      } else {
-        return do_any(decoders$1)(data);
-      }
-    }
-  };
-}
-function push_path(error, name2) {
-  let name$1 = identity(name2);
-  let decoder = do_any(
-    toList([
-      decode_string,
-      (x) => {
-        return map3(decode_int(x), to_string);
-      }
-    ])
-  );
-  let _block;
-  let $ = decoder(name$1);
-  if ($.isOk()) {
-    let name$22 = $[0];
-    _block = name$22;
-  } else {
-    let _pipe = toList(["<", classify_dynamic(name$1), ">"]);
-    let _pipe$1 = concat(_pipe);
-    _block = identity(_pipe$1);
-  }
-  let name$2 = _block;
-  let _record = error;
-  return new DecodeError(
-    _record.expected,
-    _record.found,
-    prepend(name$2, error.path)
-  );
-}
-function field(name2, inner_type) {
-  return (value4) => {
-    let missing_field_error = new DecodeError("field", "nothing", toList([]));
-    return try$(
-      decode_field(value4, name2),
-      (maybe_inner) => {
-        let _pipe = maybe_inner;
-        let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
-        let _pipe$2 = try$(_pipe$1, inner_type);
-        return map_errors(
-          _pipe$2,
-          (_capture) => {
-            return push_path(_capture, name2);
-          }
-        );
-      }
-    );
-  };
+function values2(results) {
+  return filter_map(results, (r) => {
+    return r;
+  });
 }
 
 // build/dev/javascript/gleam_stdlib/dict.mjs
@@ -1736,36 +1596,36 @@ function createNode(shift, key1, val1, key2hash, key2, val2) {
     addedLeaf
   );
 }
-function assoc(root, shift, hash, key, val, addedLeaf) {
-  switch (root.type) {
+function assoc(root3, shift, hash, key, val, addedLeaf) {
+  switch (root3.type) {
     case ARRAY_NODE:
-      return assocArray(root, shift, hash, key, val, addedLeaf);
+      return assocArray(root3, shift, hash, key, val, addedLeaf);
     case INDEX_NODE:
-      return assocIndex(root, shift, hash, key, val, addedLeaf);
+      return assocIndex(root3, shift, hash, key, val, addedLeaf);
     case COLLISION_NODE:
-      return assocCollision(root, shift, hash, key, val, addedLeaf);
+      return assocCollision(root3, shift, hash, key, val, addedLeaf);
   }
 }
-function assocArray(root, shift, hash, key, val, addedLeaf) {
+function assocArray(root3, shift, hash, key, val, addedLeaf) {
   const idx = mask(hash, shift);
-  const node = root.array[idx];
+  const node = root3.array[idx];
   if (node === void 0) {
     addedLeaf.val = true;
     return {
       type: ARRAY_NODE,
-      size: root.size + 1,
-      array: cloneAndSet(root.array, idx, { type: ENTRY, k: key, v: val })
+      size: root3.size + 1,
+      array: cloneAndSet(root3.array, idx, { type: ENTRY, k: key, v: val })
     };
   }
   if (node.type === ENTRY) {
     if (isEqual(key, node.k)) {
       if (val === node.v) {
-        return root;
+        return root3;
       }
       return {
         type: ARRAY_NODE,
-        size: root.size,
-        array: cloneAndSet(root.array, idx, {
+        size: root3.size,
+        array: cloneAndSet(root3.array, idx, {
           type: ENTRY,
           k: key,
           v: val
@@ -1775,9 +1635,9 @@ function assocArray(root, shift, hash, key, val, addedLeaf) {
     addedLeaf.val = true;
     return {
       type: ARRAY_NODE,
-      size: root.size,
+      size: root3.size,
       array: cloneAndSet(
-        root.array,
+        root3.array,
         idx,
         createNode(shift + SHIFT, node.k, node.v, hash, key, val)
       )
@@ -1785,39 +1645,39 @@ function assocArray(root, shift, hash, key, val, addedLeaf) {
   }
   const n = assoc(node, shift + SHIFT, hash, key, val, addedLeaf);
   if (n === node) {
-    return root;
+    return root3;
   }
   return {
     type: ARRAY_NODE,
-    size: root.size,
-    array: cloneAndSet(root.array, idx, n)
+    size: root3.size,
+    array: cloneAndSet(root3.array, idx, n)
   };
 }
-function assocIndex(root, shift, hash, key, val, addedLeaf) {
+function assocIndex(root3, shift, hash, key, val, addedLeaf) {
   const bit = bitpos(hash, shift);
-  const idx = index(root.bitmap, bit);
-  if ((root.bitmap & bit) !== 0) {
-    const node = root.array[idx];
+  const idx = index(root3.bitmap, bit);
+  if ((root3.bitmap & bit) !== 0) {
+    const node = root3.array[idx];
     if (node.type !== ENTRY) {
       const n = assoc(node, shift + SHIFT, hash, key, val, addedLeaf);
       if (n === node) {
-        return root;
+        return root3;
       }
       return {
         type: INDEX_NODE,
-        bitmap: root.bitmap,
-        array: cloneAndSet(root.array, idx, n)
+        bitmap: root3.bitmap,
+        array: cloneAndSet(root3.array, idx, n)
       };
     }
     const nodeKey = node.k;
     if (isEqual(key, nodeKey)) {
       if (val === node.v) {
-        return root;
+        return root3;
       }
       return {
         type: INDEX_NODE,
-        bitmap: root.bitmap,
-        array: cloneAndSet(root.array, idx, {
+        bitmap: root3.bitmap,
+        array: cloneAndSet(root3.array, idx, {
           type: ENTRY,
           k: key,
           v: val
@@ -1827,24 +1687,24 @@ function assocIndex(root, shift, hash, key, val, addedLeaf) {
     addedLeaf.val = true;
     return {
       type: INDEX_NODE,
-      bitmap: root.bitmap,
+      bitmap: root3.bitmap,
       array: cloneAndSet(
-        root.array,
+        root3.array,
         idx,
         createNode(shift + SHIFT, nodeKey, node.v, hash, key, val)
       )
     };
   } else {
-    const n = root.array.length;
+    const n = root3.array.length;
     if (n >= MAX_INDEX_NODE) {
       const nodes = new Array(32);
       const jdx = mask(hash, shift);
       nodes[jdx] = assocIndex(EMPTY, shift + SHIFT, hash, key, val, addedLeaf);
       let j = 0;
-      let bitmap = root.bitmap;
+      let bitmap = root3.bitmap;
       for (let i = 0; i < 32; i++) {
         if ((bitmap & 1) !== 0) {
-          const node = root.array[j++];
+          const node = root3.array[j++];
           nodes[i] = node;
         }
         bitmap = bitmap >>> 1;
@@ -1855,7 +1715,7 @@ function assocIndex(root, shift, hash, key, val, addedLeaf) {
         array: nodes
       };
     } else {
-      const newArray2 = spliceIn(root.array, idx, {
+      const newArray2 = spliceIn(root3.array, idx, {
         type: ENTRY,
         k: key,
         v: val
@@ -1863,39 +1723,39 @@ function assocIndex(root, shift, hash, key, val, addedLeaf) {
       addedLeaf.val = true;
       return {
         type: INDEX_NODE,
-        bitmap: root.bitmap | bit,
+        bitmap: root3.bitmap | bit,
         array: newArray2
       };
     }
   }
 }
-function assocCollision(root, shift, hash, key, val, addedLeaf) {
-  if (hash === root.hash) {
-    const idx = collisionIndexOf(root, key);
+function assocCollision(root3, shift, hash, key, val, addedLeaf) {
+  if (hash === root3.hash) {
+    const idx = collisionIndexOf(root3, key);
     if (idx !== -1) {
-      const entry = root.array[idx];
+      const entry = root3.array[idx];
       if (entry.v === val) {
-        return root;
+        return root3;
       }
       return {
         type: COLLISION_NODE,
         hash,
-        array: cloneAndSet(root.array, idx, { type: ENTRY, k: key, v: val })
+        array: cloneAndSet(root3.array, idx, { type: ENTRY, k: key, v: val })
       };
     }
-    const size = root.array.length;
+    const size2 = root3.array.length;
     addedLeaf.val = true;
     return {
       type: COLLISION_NODE,
       hash,
-      array: cloneAndSet(root.array, size, { type: ENTRY, k: key, v: val })
+      array: cloneAndSet(root3.array, size2, { type: ENTRY, k: key, v: val })
     };
   }
   return assoc(
     {
       type: INDEX_NODE,
-      bitmap: bitpos(root.hash, shift),
-      array: [root]
+      bitmap: bitpos(root3.hash, shift),
+      array: [root3]
     },
     shift,
     hash,
@@ -1904,28 +1764,28 @@ function assocCollision(root, shift, hash, key, val, addedLeaf) {
     addedLeaf
   );
 }
-function collisionIndexOf(root, key) {
-  const size = root.array.length;
-  for (let i = 0; i < size; i++) {
-    if (isEqual(key, root.array[i].k)) {
+function collisionIndexOf(root3, key) {
+  const size2 = root3.array.length;
+  for (let i = 0; i < size2; i++) {
+    if (isEqual(key, root3.array[i].k)) {
       return i;
     }
   }
   return -1;
 }
-function find2(root, shift, hash, key) {
-  switch (root.type) {
+function find2(root3, shift, hash, key) {
+  switch (root3.type) {
     case ARRAY_NODE:
-      return findArray(root, shift, hash, key);
+      return findArray(root3, shift, hash, key);
     case INDEX_NODE:
-      return findIndex(root, shift, hash, key);
+      return findIndex(root3, shift, hash, key);
     case COLLISION_NODE:
-      return findCollision(root, key);
+      return findCollision(root3, key);
   }
 }
-function findArray(root, shift, hash, key) {
+function findArray(root3, shift, hash, key) {
   const idx = mask(hash, shift);
-  const node = root.array[idx];
+  const node = root3.array[idx];
   if (node === void 0) {
     return void 0;
   }
@@ -1937,13 +1797,13 @@ function findArray(root, shift, hash, key) {
   }
   return void 0;
 }
-function findIndex(root, shift, hash, key) {
+function findIndex(root3, shift, hash, key) {
   const bit = bitpos(hash, shift);
-  if ((root.bitmap & bit) === 0) {
+  if ((root3.bitmap & bit) === 0) {
     return void 0;
   }
-  const idx = index(root.bitmap, bit);
-  const node = root.array[idx];
+  const idx = index(root3.bitmap, bit);
+  const node = root3.array[idx];
   if (node.type !== ENTRY) {
     return find2(node, shift + SHIFT, hash, key);
   }
@@ -1952,44 +1812,44 @@ function findIndex(root, shift, hash, key) {
   }
   return void 0;
 }
-function findCollision(root, key) {
-  const idx = collisionIndexOf(root, key);
+function findCollision(root3, key) {
+  const idx = collisionIndexOf(root3, key);
   if (idx < 0) {
     return void 0;
   }
-  return root.array[idx];
+  return root3.array[idx];
 }
-function without(root, shift, hash, key) {
-  switch (root.type) {
+function without(root3, shift, hash, key) {
+  switch (root3.type) {
     case ARRAY_NODE:
-      return withoutArray(root, shift, hash, key);
+      return withoutArray(root3, shift, hash, key);
     case INDEX_NODE:
-      return withoutIndex(root, shift, hash, key);
+      return withoutIndex(root3, shift, hash, key);
     case COLLISION_NODE:
-      return withoutCollision(root, key);
+      return withoutCollision(root3, key);
   }
 }
-function withoutArray(root, shift, hash, key) {
+function withoutArray(root3, shift, hash, key) {
   const idx = mask(hash, shift);
-  const node = root.array[idx];
+  const node = root3.array[idx];
   if (node === void 0) {
-    return root;
+    return root3;
   }
   let n = void 0;
   if (node.type === ENTRY) {
     if (!isEqual(node.k, key)) {
-      return root;
+      return root3;
     }
   } else {
     n = without(node, shift + SHIFT, hash, key);
     if (n === node) {
-      return root;
+      return root3;
     }
   }
   if (n === void 0) {
-    if (root.size <= MIN_ARRAY_NODE) {
-      const arr = root.array;
-      const out = new Array(root.size - 1);
+    if (root3.size <= MIN_ARRAY_NODE) {
+      const arr = root3.array;
+      const out = new Array(root3.size - 1);
       let i = 0;
       let j = 0;
       let bitmap = 0;
@@ -2020,77 +1880,77 @@ function withoutArray(root, shift, hash, key) {
     }
     return {
       type: ARRAY_NODE,
-      size: root.size - 1,
-      array: cloneAndSet(root.array, idx, n)
+      size: root3.size - 1,
+      array: cloneAndSet(root3.array, idx, n)
     };
   }
   return {
     type: ARRAY_NODE,
-    size: root.size,
-    array: cloneAndSet(root.array, idx, n)
+    size: root3.size,
+    array: cloneAndSet(root3.array, idx, n)
   };
 }
-function withoutIndex(root, shift, hash, key) {
+function withoutIndex(root3, shift, hash, key) {
   const bit = bitpos(hash, shift);
-  if ((root.bitmap & bit) === 0) {
-    return root;
+  if ((root3.bitmap & bit) === 0) {
+    return root3;
   }
-  const idx = index(root.bitmap, bit);
-  const node = root.array[idx];
+  const idx = index(root3.bitmap, bit);
+  const node = root3.array[idx];
   if (node.type !== ENTRY) {
     const n = without(node, shift + SHIFT, hash, key);
     if (n === node) {
-      return root;
+      return root3;
     }
     if (n !== void 0) {
       return {
         type: INDEX_NODE,
-        bitmap: root.bitmap,
-        array: cloneAndSet(root.array, idx, n)
+        bitmap: root3.bitmap,
+        array: cloneAndSet(root3.array, idx, n)
       };
     }
-    if (root.bitmap === bit) {
+    if (root3.bitmap === bit) {
       return void 0;
     }
     return {
       type: INDEX_NODE,
-      bitmap: root.bitmap ^ bit,
-      array: spliceOut(root.array, idx)
+      bitmap: root3.bitmap ^ bit,
+      array: spliceOut(root3.array, idx)
     };
   }
   if (isEqual(key, node.k)) {
-    if (root.bitmap === bit) {
+    if (root3.bitmap === bit) {
       return void 0;
     }
     return {
       type: INDEX_NODE,
-      bitmap: root.bitmap ^ bit,
-      array: spliceOut(root.array, idx)
+      bitmap: root3.bitmap ^ bit,
+      array: spliceOut(root3.array, idx)
     };
   }
-  return root;
+  return root3;
 }
-function withoutCollision(root, key) {
-  const idx = collisionIndexOf(root, key);
+function withoutCollision(root3, key) {
+  const idx = collisionIndexOf(root3, key);
   if (idx < 0) {
-    return root;
+    return root3;
   }
-  if (root.array.length === 1) {
+  if (root3.array.length === 1) {
     return void 0;
   }
   return {
     type: COLLISION_NODE,
-    hash: root.hash,
-    array: spliceOut(root.array, idx)
+    hash: root3.hash,
+    array: spliceOut(root3.array, idx)
   };
 }
-function forEach(root, fn) {
-  if (root === void 0) {
+function forEach(root3, fn) {
+  if (root3 === void 0) {
     return;
   }
-  const items = root.array;
-  const size = items.length;
-  for (let i = 0; i < size; i++) {
+  const items = root3.array;
+  const size2 = items.length;
+  for (let i = 0; i < size2; i++) {
     const item = items[i];
     if (item === void 0) {
       continue;
@@ -2136,9 +1996,9 @@ var Dict = class _Dict {
    * @param {undefined | Node<K,V>} root
    * @param {number} size
    */
-  constructor(root, size) {
-    this.root = root;
-    this.size = size;
+  constructor(root3, size2) {
+    this.root = root3;
+    this.size = size2;
   }
   /**
    * @template NotFound
@@ -2163,8 +2023,8 @@ var Dict = class _Dict {
    */
   set(key, val) {
     const addedLeaf = { val: false };
-    const root = this.root === void 0 ? EMPTY : this.root;
-    const newRoot = assoc(root, 0, getHash(key), key, val, addedLeaf);
+    const root3 = this.root === void 0 ? EMPTY : this.root;
+    const newRoot = assoc(root3, 0, getHash(key), key, val, addedLeaf);
     if (newRoot === this.root) {
       return this;
     }
@@ -2253,9 +2113,9 @@ var NOT_FOUND = {};
 function identity(x) {
   return x;
 }
-function parse_int(value4) {
-  if (/^[-+]?(\d+)$/.test(value4)) {
-    return new Ok(parseInt(value4));
+function parse_int(value3) {
+  if (/^[-+]?(\d+)$/.test(value3)) {
+    return new Ok(parseInt(value3));
   } else {
     return new Error(Nil);
   }
@@ -2263,8 +2123,8 @@ function parse_int(value4) {
 function to_string(term) {
   return term.toString();
 }
-function float_to_string(float4) {
-  const string5 = float4.toString().replace("+", "");
+function float_to_string(float2) {
+  const string5 = float2.toString().replace("+", "");
   if (string5.indexOf(".") >= 0) {
     return string5;
   } else {
@@ -2276,8 +2136,8 @@ function float_to_string(float4) {
     }
   }
 }
-function int_to_base_string(int4, base) {
-  return int4.toString(base).toUpperCase();
+function int_to_base_string(int5, base) {
+  return int5.toString(base).toUpperCase();
 }
 function string_replace(string5, target, substitute) {
   if (typeof string5.replaceAll !== "undefined") {
@@ -2319,32 +2179,11 @@ function graphemes_iterator(string5) {
     return segmenter.segment(string5)[Symbol.iterator]();
   }
 }
-function pop_grapheme(string5) {
-  let first3;
-  const iterator = graphemes_iterator(string5);
-  if (iterator) {
-    first3 = iterator.next().value?.segment;
-  } else {
-    first3 = string5.match(/./su)?.[0];
-  }
-  if (first3) {
-    return new Ok([first3, string5.slice(first3.length)]);
-  } else {
-    return new Error(Nil);
-  }
-}
 function lowercase(string5) {
   return string5.toLowerCase();
 }
 function split(xs, pattern) {
   return List.fromArray(xs.split(pattern));
-}
-function concat(xs) {
-  let result = "";
-  for (const x of xs) {
-    result = result + x;
-  }
-  return result;
 }
 function string_slice(string5, idx, len) {
   if (len <= 0 || idx >= string5.length) {
@@ -2404,14 +2243,14 @@ function print_debug(string5) {
     console.log(string5);
   }
 }
-function floor(float4) {
-  return Math.floor(float4);
+function floor(float2) {
+  return Math.floor(float2);
 }
-function round2(float4) {
-  return Math.round(float4);
+function round2(float2) {
+  return Math.round(float2);
 }
-function truncate(float4) {
-  return Math.trunc(float4);
+function truncate(float2) {
+  return Math.trunc(float2);
 }
 function random_uniform() {
   const random_uniform_result = Math.random();
@@ -2423,18 +2262,18 @@ function random_uniform() {
 function new_map() {
   return Dict.new();
 }
-function map_to_list(map8) {
-  return List.fromArray(map8.entries());
+function map_to_list(map7) {
+  return List.fromArray(map7.entries());
 }
-function map_get(map8, key) {
-  const value4 = map8.get(key, NOT_FOUND);
-  if (value4 === NOT_FOUND) {
+function map_get(map7, key) {
+  const value3 = map7.get(key, NOT_FOUND);
+  if (value3 === NOT_FOUND) {
     return new Error(Nil);
   }
-  return new Ok(value4);
+  return new Ok(value3);
 }
-function map_insert(key, value4, map8) {
-  return map8.set(key, value4);
+function map_insert(key, value3, map7) {
+  return map7.set(key, value3);
 }
 function classify_dynamic(data) {
   if (typeof data === "string") {
@@ -2462,43 +2301,6 @@ function classify_dynamic(data) {
   } else {
     const type = typeof data;
     return type.charAt(0).toUpperCase() + type.slice(1);
-  }
-}
-function decoder_error(expected, got) {
-  return decoder_error_no_classify(expected, classify_dynamic(got));
-}
-function decoder_error_no_classify(expected, got) {
-  return new Error(
-    List.fromArray([new DecodeError(expected, got, List.fromArray([]))])
-  );
-}
-function decode_string(data) {
-  return typeof data === "string" ? new Ok(data) : decoder_error("String", data);
-}
-function decode_int(data) {
-  return Number.isInteger(data) ? new Ok(data) : decoder_error("Int", data);
-}
-function decode_bool(data) {
-  return typeof data === "boolean" ? new Ok(data) : decoder_error("Bool", data);
-}
-function decode_field(value4, name2) {
-  const not_a_map_error = () => decoder_error("Dict", value4);
-  if (value4 instanceof Dict || value4 instanceof WeakMap || value4 instanceof Map) {
-    const entry = map_get(value4, name2);
-    return new Ok(entry.isOk() ? new Some(entry[0]) : new None());
-  } else if (value4 === null) {
-    return not_a_map_error();
-  } else if (Object.getPrototypeOf(value4) == Object.prototype) {
-    return try_get_field(value4, name2, () => new Ok(new None()));
-  } else {
-    return try_get_field(value4, name2, not_a_map_error);
-  }
-}
-function try_get_field(value4, field4, or_else) {
-  try {
-    return field4 in value4 ? new Ok(new Some(value4[field4])) : or_else();
-  } catch {
-    return or_else();
   }
 }
 function bitwise_and(x, y) {
@@ -2567,13 +2369,13 @@ function inspectString(str) {
   new_str += '"';
   return new_str;
 }
-function inspectDict(map8) {
+function inspectDict(map7) {
   let body = "dict.from_list([";
-  let first3 = true;
-  map8.forEach((value4, key) => {
-    if (!first3) body = body + ", ";
-    body = body + "#(" + inspect(key) + ", " + inspect(value4) + ")";
-    first3 = false;
+  let first2 = true;
+  map7.forEach((value3, key) => {
+    if (!first2) body = body + ", ";
+    body = body + "#(" + inspect(key) + ", " + inspect(value3) + ")";
+    first2 = false;
   });
   return body + "])";
 }
@@ -2589,13 +2391,13 @@ function inspectObject(v) {
 }
 function inspectCustomType(record) {
   const props = Object.keys(record).map((label2) => {
-    const value4 = inspect(record[label2]);
-    return isNaN(parseInt(label2)) ? `${label2}: ${value4}` : value4;
+    const value3 = inspect(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value3}` : value3;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
-function inspectList(list3) {
-  return `[${list3.toArray().map(inspect).join(", ")}]`;
+function inspectList(list4) {
+  return `[${list4.toArray().map(inspect).join(", ")}]`;
 }
 function inspectUtfCodepoint(codepoint2) {
   return `//utfcodepoint(${String.fromCodePoint(codepoint2.value)})`;
@@ -2717,10 +2519,22 @@ function slice(string5, idx, len) {
     }
   }
 }
+function concat_loop(loop$strings, loop$accumulator) {
+  while (true) {
+    let strings = loop$strings;
+    let accumulator = loop$accumulator;
+    if (strings.atLeastLength(1)) {
+      let string5 = strings.head;
+      let strings$1 = strings.tail;
+      loop$strings = strings$1;
+      loop$accumulator = accumulator + string5;
+    } else {
+      return accumulator;
+    }
+  }
+}
 function concat2(strings) {
-  let _pipe = strings;
-  let _pipe$1 = concat(_pipe);
-  return identity(_pipe$1);
+  return concat_loop(strings, "");
 }
 function repeat_loop(loop$string, loop$times, loop$acc) {
   while (true) {
@@ -2740,10 +2554,10 @@ function repeat_loop(loop$string, loop$times, loop$acc) {
 function repeat(string5, times) {
   return repeat_loop(string5, times, "");
 }
-function padding(size, pad_string) {
+function padding(size2, pad_string) {
   let pad_string_length = string_length(pad_string);
-  let num_pads = divideInt(size, pad_string_length);
-  let extra = remainderInt(size, pad_string_length);
+  let num_pads = divideInt(size2, pad_string_length);
+  let extra = remainderInt(size2, pad_string_length);
   return repeat(pad_string, num_pads) + slice(pad_string, 0, extra);
 }
 function pad_start(string5, desired_length, pad_string) {
@@ -2764,25 +2578,6 @@ function pad_end(string5, desired_length, pad_string) {
     return string5;
   } else {
     return string5 + padding(to_pad_length, pad_string);
-  }
-}
-function drop_start(loop$string, loop$num_graphemes) {
-  while (true) {
-    let string5 = loop$string;
-    let num_graphemes = loop$num_graphemes;
-    let $ = num_graphemes > 0;
-    if (!$) {
-      return string5;
-    } else {
-      let $1 = pop_grapheme(string5);
-      if ($1.isOk()) {
-        let string$1 = $1[0][1];
-        loop$string = string$1;
-        loop$num_graphemes = num_graphemes - 1;
-      } else {
-        return string5;
-      }
-    }
   }
 }
 function split2(x, substring) {
@@ -2811,8 +2606,8 @@ function index2(data, key) {
   const key_is_int = Number.isInteger(key);
   if (key_is_int && key >= 0 && key < 8 && data instanceof List) {
     let i = 0;
-    for (const value4 of data) {
-      if (i === key) return new Ok(new Some(value4));
+    for (const value3 of data) {
+      if (i === key) return new Ok(new Some(value3));
       i++;
     }
     return new Error("Indexable");
@@ -2829,8 +2624,8 @@ function list(data, decode2, pushPath, index5, emptyList) {
     return [emptyList, List.fromArray([error])];
   }
   const decoded = [];
-  for (const element2 of data) {
-    const layer = decode2(element2);
+  for (const element3 of data) {
+    const layer = decode2(element3);
     const [out, errors] = layer;
     if (errors instanceof NonEmpty) {
       const [_, errors2] = pushPath(layer, index5.toString());
@@ -2864,9 +2659,9 @@ function int(data) {
   if (Number.isInteger(data)) return new Ok(data);
   return new Error(0);
 }
-function string2(data) {
+function string(data) {
   if (typeof data === "string") return new Ok(data);
-  return new Error(0);
+  return new Error("");
 }
 function is_null(data) {
   return data === null || data === void 0;
@@ -2915,10 +2710,10 @@ function map4(decoder, transformer) {
 function run_decoders(loop$data, loop$failure, loop$decoders) {
   while (true) {
     let data = loop$data;
-    let failure = loop$failure;
+    let failure2 = loop$failure;
     let decoders = loop$decoders;
     if (decoders.hasLength(0)) {
-      return failure;
+      return failure2;
     } else {
       let decoder = decoders.head;
       let decoders$1 = decoders.tail;
@@ -2929,16 +2724,16 @@ function run_decoders(loop$data, loop$failure, loop$decoders) {
         return layer;
       } else {
         loop$data = data;
-        loop$failure = failure;
+        loop$failure = failure2;
         loop$decoders = decoders$1;
       }
     }
   }
 }
-function one_of(first3, alternatives) {
+function one_of(first2, alternatives) {
   return new Decoder(
     (dynamic_data) => {
-      let $ = first3.function(dynamic_data);
+      let $ = first2.function(dynamic_data);
       let layer = $;
       let errors = $[1];
       if (errors.hasLength(0)) {
@@ -2998,31 +2793,31 @@ function decode_bool2(data) {
 function decode_int2(data) {
   return run_dynamic_function(data, "Int", int);
 }
-var bool2 = /* @__PURE__ */ new Decoder(decode_bool2);
+var bool = /* @__PURE__ */ new Decoder(decode_bool2);
 var int2 = /* @__PURE__ */ new Decoder(decode_int2);
 function decode_string2(data) {
-  return run_dynamic_function(data, "String", string2);
+  return run_dynamic_function(data, "String", string);
 }
-var string3 = /* @__PURE__ */ new Decoder(decode_string2);
-function fold_dict(acc, key, value4, key_decoder, value_decoder) {
+var string2 = /* @__PURE__ */ new Decoder(decode_string2);
+function fold_dict(acc, key, value3, key_decoder, value_decoder) {
   let $ = key_decoder(key);
   if ($[1].hasLength(0)) {
     let key$1 = $[0];
-    let $1 = value_decoder(value4);
+    let $1 = value_decoder(value3);
     if ($1[1].hasLength(0)) {
       let value$1 = $1[0];
       let dict$1 = insert(acc[0], key$1, value$1);
       return [dict$1, acc[1]];
     } else {
       let errors = $1[1];
-      return push_path2([new_map(), errors], toList(["values"]));
+      return push_path([new_map(), errors], toList(["values"]));
     }
   } else {
     let errors = $[1];
-    return push_path2([new_map(), errors], toList(["keys"]));
+    return push_path([new_map(), errors], toList(["keys"]));
   }
 }
-function dict2(key, value4) {
+function dict2(key, value3) {
   return new Decoder(
     (data) => {
       let $ = dict(data);
@@ -3036,7 +2831,7 @@ function dict2(key, value4) {
           (a2, k, v) => {
             let $1 = a2[1];
             if ($1.hasLength(0)) {
-              return fold_dict(a2, k, v, key.function, value4.function);
+              return fold_dict(a2, k, v, key.function, value3.function);
             } else {
               return a2;
             }
@@ -3053,7 +2848,7 @@ function list2(inner) {
         data,
         inner.function,
         (p2, k) => {
-          return push_path2(p2, toList([k]));
+          return push_path(p2, toList([k]));
         },
         0,
         toList([])
@@ -3061,9 +2856,9 @@ function list2(inner) {
     }
   );
 }
-function push_path2(layer, path) {
+function push_path(layer, path) {
   let decoder = one_of(
-    string3,
+    string2,
     toList([
       (() => {
         let _pipe = int2;
@@ -3106,7 +2901,7 @@ function index3(loop$path, loop$position, loop$inner, loop$data, loop$handle_mis
     let handle_miss = loop$handle_miss;
     if (path.hasLength(0)) {
       let _pipe = inner(data);
-      return push_path2(_pipe, reverse(position));
+      return push_path(_pipe, reverse(position));
     } else {
       let key = path.head;
       let path$1 = path.tail;
@@ -3128,7 +2923,7 @@ function index3(loop$path, loop$position, loop$inner, loop$data, loop$handle_mis
           default$,
           toList([new DecodeError2(kind, classify_dynamic(data), toList([]))])
         ];
-        return push_path2(_pipe, reverse(position));
+        return push_path(_pipe, reverse(position));
       }
     }
   }
@@ -3148,7 +2943,7 @@ function subfield(field_path, field_decoder, next2) {
             default$,
             toList([new DecodeError2("Field", "Nothing", toList([]))])
           ];
-          return push_path2(_pipe, reverse(position));
+          return push_path(_pipe, reverse(position));
         }
       );
       let out = $[0];
@@ -3160,13 +2955,13 @@ function subfield(field_path, field_decoder, next2) {
     }
   );
 }
-function field2(field_name, field_decoder, next2) {
+function field(field_name, field_decoder, next2) {
   return subfield(toList([field_name]), field_decoder, next2);
 }
 
 // build/dev/javascript/gleam_json/gleam_json_ffi.mjs
-function json_to_string(json) {
-  return JSON.stringify(json);
+function json_to_string(json2) {
+  return JSON.stringify(json2);
 }
 function object(entries) {
   return Object.fromEntries(entries);
@@ -3185,15 +2980,15 @@ function decode(string5) {
     return new Error(getJsonDecodeError(err, string5));
   }
 }
-function getJsonDecodeError(stdErr, json) {
+function getJsonDecodeError(stdErr, json2) {
   if (isUnexpectedEndOfInput(stdErr)) return new UnexpectedEndOfInput();
-  return toUnexpectedByteError(stdErr, json);
+  return toUnexpectedByteError(stdErr, json2);
 }
 function isUnexpectedEndOfInput(err) {
   const unexpectedEndOfInputRegex = /((unexpected (end|eof))|(end of data)|(unterminated string)|(json( parse error|\.parse)\: expected '(\:|\}|\])'))/i;
   return unexpectedEndOfInputRegex.test(err.message);
 }
-function toUnexpectedByteError(err, json) {
+function toUnexpectedByteError(err, json2) {
   let converters = [
     v8UnexpectedByteError,
     oldV8UnexpectedByteError,
@@ -3201,7 +2996,7 @@ function toUnexpectedByteError(err, json) {
     spidermonkeyUnexpectedByteError
   ];
   for (let converter of converters) {
-    let result = converter(err, json);
+    let result = converter(err, json2);
     if (result) return result;
   }
   return new UnexpectedByte("", 0);
@@ -3221,14 +3016,14 @@ function oldV8UnexpectedByteError(err) {
   const position = Number(match[2]);
   return new UnexpectedByte(byte, position);
 }
-function spidermonkeyUnexpectedByteError(err, json) {
+function spidermonkeyUnexpectedByteError(err, json2) {
   const regex = /(unexpected character|expected .*) at line (\d+) column (\d+)/i;
   const match = regex.exec(err.message);
   if (!match) return null;
   const line = Number(match[2]);
   const column3 = Number(match[3]);
-  const position = getPositionFromMultiline(line, column3, json);
-  const byte = toHex(json[position]);
+  const position = getPositionFromMultiline(line, column3, json2);
+  const byte = toHex(json2[position]);
   return new UnexpectedByte(byte, position);
 }
 function jsCoreUnexpectedByteError(err) {
@@ -3271,9 +3066,9 @@ var UnableToDecode = class extends CustomType {
     this[0] = x0;
   }
 };
-function do_parse(json, decoder) {
+function do_parse(json2, decoder) {
   return then$(
-    decode(json),
+    decode(json2),
     (dynamic_value) => {
       let _pipe = run(dynamic_value, decoder);
       return map_error(
@@ -3285,16 +3080,16 @@ function do_parse(json, decoder) {
     }
   );
 }
-function parse(json, decoder) {
-  return do_parse(json, decoder);
+function parse(json2, decoder) {
+  return do_parse(json2, decoder);
 }
-function to_string2(json) {
-  return json_to_string(json);
+function to_string2(json2) {
+  return json_to_string(json2);
 }
-function string4(input2) {
+function string3(input2) {
   return identity2(input2);
 }
-function bool3(input2) {
+function bool2(input2) {
   return identity2(input2);
 }
 function int3(input2) {
@@ -3305,8 +3100,8 @@ function null$() {
 }
 function nullable(input2, inner_type) {
   if (input2 instanceof Some) {
-    let value4 = input2[0];
-    return inner_type(value4);
+    let value3 = input2[0];
+    return inner_type(value3);
   } else {
     return null$();
   }
@@ -3378,7 +3173,7 @@ var Set2 = class extends CustomType {
     this.dict = dict3;
   }
 };
-function new$() {
+function new$2() {
   return new Set2(new_map());
 }
 function contains2(set2, member) {
@@ -3387,6 +3182,9 @@ function contains2(set2, member) {
   return is_ok(_pipe$1);
 }
 var token = void 0;
+function insert2(set2, member) {
+  return new Set2(insert(set2.dict, member, token));
+}
 function from_list2(members) {
   let dict3 = fold2(
     members,
@@ -3423,11 +3221,11 @@ var Drop = class extends CustomType {
 var NoMatch = class extends CustomType {
 };
 var Token = class extends CustomType {
-  constructor(span, lexeme, value4) {
+  constructor(span, lexeme, value3) {
     super();
     this.span = span;
     this.lexeme = lexeme;
-    this.value = value4;
+    this.value = value3;
   }
 };
 var Span = class extends CustomType {
@@ -3541,9 +3339,9 @@ function do_run(loop$lexer, loop$mode, loop$state) {
       } else if ($2 instanceof Drop) {
         return new Ok(reverse(state.tokens));
       } else {
-        let value4 = $2[0];
+        let value3 = $2[0];
         let span = new Span(start_row, start_col, state.row, state.col);
-        let token$1 = new Token(span, lexeme, value4);
+        let token$1 = new Token(span, lexeme, value3);
         return new Ok(reverse(prepend(token$1, state.tokens)));
       }
     } else {
@@ -3556,10 +3354,10 @@ function do_run(loop$lexer, loop$mode, loop$state) {
       let col = next_col(state.col, lookahead);
       let $2 = do_match(mode, lexeme, lookahead, matchers);
       if ($2 instanceof Keep) {
-        let value4 = $2[0];
+        let value3 = $2[0];
         let mode$1 = $2[1];
         let span = new Span(start_row, start_col, state.row, state.col);
-        let token$1 = new Token(span, lexeme, value4);
+        let token$1 = new Token(span, lexeme, value3);
         loop$lexer = lexer2;
         loop$mode = mode$1;
         loop$state = new State(
@@ -3613,8 +3411,8 @@ function run2(source, lexer2) {
 }
 
 // build/dev/javascript/nibble/glearray_ffi.mjs
-function fromList(list3) {
-  return list3.toArray();
+function fromList(list4) {
+  return list4.toArray();
 }
 function arrayLength(array3) {
   return array3.length;
@@ -3732,15 +3530,15 @@ function next(state) {
     ];
   }
 }
-function return$(value4) {
+function return$(value3) {
   return new Parser(
     (state) => {
-      return new Cont(new CanBacktrack(false), value4, state);
+      return new Cont(new CanBacktrack(false), value3, state);
     }
   );
 }
-function succeed(value4) {
-  return return$(value4);
+function succeed(value3) {
+  return return$(value3);
 }
 function backtrackable(parser3) {
   return new Parser(
@@ -3946,13 +3744,13 @@ function to_deadends(loop$bag, loop$acc) {
   }
 }
 function run3(src, parser3) {
-  let init4 = new State2(
+  let init3 = new State2(
     fromList(src),
     0,
     new Span(1, 1, 1, 1),
     toList([])
   );
-  let $ = runwrap(init4, parser3);
+  let $ = runwrap(init3, parser3);
   if ($ instanceof Cont) {
     let a2 = $[1];
     return new Ok(a2);
@@ -3976,10 +3774,10 @@ function add_bag_to_step(step, left) {
 function one_of2(parsers) {
   return new Parser(
     (state) => {
-      let init4 = new Fail(new CanBacktrack(false), new Empty2());
+      let init3 = new Fail(new CanBacktrack(false), new Empty2());
       return fold_until(
         parsers,
-        init4,
+        init3,
         (result, next2) => {
           if (result instanceof Cont) {
             return new Stop(result);
@@ -4149,7 +3947,7 @@ function extract_content(tokens) {
     }
   }
 }
-function field3() {
+function field2() {
   return do$(
     take_if("Expecting an Alpha token", is_alpha),
     (alpha) => {
@@ -4185,13 +3983,13 @@ function escaped_quote() {
 function literal() {
   return do$(
     take_if("Expecting an Text token", is_text),
-    (text3) => {
+    (text4) => {
       return do$(
         take_while(is_text),
         (rest) => {
           let _block;
           let _pipe = map2(
-            prepend(text3, rest),
+            prepend(text4, rest),
             (entry) => {
               if (!(entry instanceof Text)) {
                 throw makeError(
@@ -4249,7 +4047,7 @@ function quoted() {
     (_) => {
       return do$(
         quoted_help(""),
-        (text3) => {
+        (text4) => {
           return do$(
             one_of2(
               toList([
@@ -4263,7 +4061,7 @@ function quoted() {
               ])
             ),
             (_2) => {
-              return return$(new Literal(text3));
+              return return$(new Literal(text4));
             }
           );
         }
@@ -4292,7 +4090,7 @@ function parser(tokens) {
     toList([
       (() => {
         let _pipe = one_of2(
-          toList([field3(), literal(), escaped_quote(), quoted()])
+          toList([field2(), literal(), escaped_quote(), quoted()])
         );
         return then$3(
           _pipe,
@@ -4589,8 +4387,8 @@ function int_4() {
               { value: $ }
             );
           }
-          let int4 = $[0];
-          return return$(int4);
+          let int5 = $[0];
+          return return$(int5);
         }
       );
     }
@@ -4634,8 +4432,8 @@ function int_3() {
           { value: $ }
         );
       }
-      let int4 = $[0];
-      return return$(int4);
+      let int5 = $[0];
+      return return$(int5);
     }
   );
 }
@@ -4685,8 +4483,8 @@ function int_2() {
           { value: $ }
         );
       }
-      let int4 = $[0];
-      return return$(int4);
+      let int5 = $[0];
+      return return$(int5);
     }
   );
 }
@@ -4719,8 +4517,8 @@ function int_1() {
           { value: $ }
         );
       }
-      let int4 = $[0];
-      return return$(int4);
+      let int5 = $[0];
+      return return$(int5);
     }
   );
 }
@@ -4805,9 +4603,9 @@ function number_to_weekday(weekday_number2) {
     return new Sun();
   }
 }
-function pad_signed_int(value4, length4) {
+function pad_signed_int(value3, length4) {
   let _block;
-  let $ = value4 < 0;
+  let $ = value3 < 0;
   if ($) {
     _block = "-";
   } else {
@@ -4815,7 +4613,7 @@ function pad_signed_int(value4, length4) {
   }
   let prefix = _block;
   let _block$1;
-  let _pipe = value4;
+  let _pipe = value3;
   let _pipe$1 = absolute_value(_pipe);
   let _pipe$2 = to_string(_pipe$1);
   _block$1 = pad_start(_pipe$2, length4, "0");
@@ -4882,8 +4680,8 @@ function weekday(date) {
   let _pipe$1 = weekday_number(_pipe);
   return number_to_weekday(_pipe$1);
 }
-function ordinal_suffix(value4) {
-  let value_mod_100 = modulo_unwrap(value4, 100);
+function ordinal_suffix(value3) {
+  let value_mod_100 = modulo_unwrap(value3, 100);
   let _block;
   let $ = value_mod_100 < 20;
   if ($) {
@@ -4903,8 +4701,8 @@ function ordinal_suffix(value4) {
     return "th";
   }
 }
-function with_ordinal_suffix(value4) {
-  return to_string(value4) + ordinal_suffix(value4);
+function with_ordinal_suffix(value3) {
+  return to_string(value3) + ordinal_suffix(value3);
 }
 function language_en() {
   return new Language(
@@ -5283,8 +5081,8 @@ function diff(unit, date1, date2) {
     return rd2 - rd1;
   }
 }
-function is_between_int(value4, lower, upper) {
-  return lower <= value4 && value4 <= upper;
+function is_between_int(value3, lower, upper) {
+  return lower <= value3 && value3 <= upper;
 }
 function from_ordinal_parts(year2, ordinal) {
   let _block;
@@ -5345,14 +5143,14 @@ function from_week_parts(week_year2, week_number2, weekday_number2) {
     );
   }
 }
-function is_between(value4, lower, upper) {
-  let value_rd = value4[0];
+function is_between(value3, lower, upper) {
+  let value_rd = value3[0];
   let lower_rd = lower[0];
   let upper_rd = upper[0];
   return is_between_int(value_rd, lower_rd, upper_rd);
 }
-function bool_to_int(value4) {
-  if (value4) {
+function bool_to_int(value3) {
+  if (value3) {
     return 1;
   } else {
     return 0;
@@ -5606,8 +5404,8 @@ function from_iso_string(str) {
     })()
   );
   if (result.isOk() && result[0].isOk()) {
-    let value4 = result[0][0];
-    return new Ok(value4);
+    let value3 = result[0][0];
+    return new Ok(value3);
   } else if (result.isOk() && !result[0].isOk()) {
     let err = result[0][0];
     return new Error(err);
@@ -5696,43 +5494,43 @@ var Cycle = class extends CustomType {
   }
 };
 var Transaction = class extends CustomType {
-  constructor(id2, date, payee, category_id, value4, user_id) {
+  constructor(id2, date, payee, category_id, value3, user_id) {
     super();
     this.id = id2;
     this.date = date;
     this.payee = payee;
     this.category_id = category_id;
-    this.value = value4;
+    this.value = value3;
     this.user_id = user_id;
   }
 };
 var Money = class extends CustomType {
-  constructor(value4) {
+  constructor(value3) {
     super();
-    this.value = value4;
+    this.value = value3;
   }
 };
 function id_decoder() {
-  return field2(
+  return field(
     "id",
-    string3,
+    string2,
     (id2) => {
       return success(id2);
     }
   );
 }
 function user_with_token_decoder() {
-  return field2(
+  return field(
     "id",
-    string3,
+    string2,
     (id2) => {
-      return field2(
+      return field(
         "name",
-        string3,
+        string2,
         (name2) => {
-          return field2(
+          return field(
             "token",
-            string3,
+            string2,
             (token3) => {
               return success([new User(id2, name2), token3]);
             }
@@ -5745,29 +5543,29 @@ function user_with_token_decoder() {
 function category_group_encode(group) {
   return object2(
     toList([
-      ["id", string4(group.id)],
-      ["name", string4(group.name)],
+      ["id", string3(group.id)],
+      ["name", string3(group.name)],
       ["position", int3(group.position)],
-      ["is_collapsed", bool3(group.is_collapsed)]
+      ["is_collapsed", bool2(group.is_collapsed)]
     ])
   );
 }
 function category_group_decoder() {
-  return field2(
+  return field(
     "id",
-    string3,
+    string2,
     (id2) => {
-      return field2(
+      return field(
         "name",
-        string3,
+        string2,
         (name2) => {
-          return field2(
+          return field(
             "position",
             int2,
             (position) => {
-              return field2(
+              return field(
                 "is_collapsed",
-                bool2,
+                bool,
                 (is_collapsed) => {
                   return success(
                     new CategoryGroup(id2, name2, position, is_collapsed)
@@ -5782,11 +5580,11 @@ function category_group_decoder() {
   );
 }
 function month_decoder() {
-  return field2(
+  return field(
     "month",
     int2,
     (month2) => {
-      return field2(
+      return field(
         "year",
         int2,
         (year2) => {
@@ -5822,9 +5620,9 @@ function money_encode(money) {
 function allocation_encode(a2) {
   return object2(
     toList([
-      ["id", string4(a2.id)],
+      ["id", string3(a2.id)],
       ["amount", money_encode(a2.amount)],
-      ["category_id", string4(a2.category_id)],
+      ["category_id", string3(a2.category_id)],
       ["date", cycle_encode(a2.date)]
     ])
   );
@@ -5832,9 +5630,9 @@ function allocation_encode(a2) {
 function allocation_form_encode(af) {
   return object2(
     toList([
-      ["id", nullable(af.id, string4)],
+      ["id", nullable(af.id, string3)],
       ["amount", money_encode(af.amount)],
-      ["category_id", string4(af.category_id)],
+      ["category_id", string3(af.category_id)],
       ["date", cycle_encode(af.date)]
     ])
   );
@@ -5843,14 +5641,14 @@ function target_encode(target) {
   if (target instanceof Monthly) {
     let money = target.target;
     return object2(
-      toList([["type", string4("monthly")], ["money", money_encode(money)]])
+      toList([["type", string3("monthly")], ["money", money_encode(money)]])
     );
   } else {
     let money = target.target;
     let month2 = target.date;
     return object2(
       toList([
-        ["type", string4("custom")],
+        ["type", string3("custom")],
         ["money", money_encode(money)],
         ["date", month_in_year_encode(month2)]
       ])
@@ -5860,20 +5658,20 @@ function target_encode(target) {
 function category_encode(cat) {
   return object2(
     toList([
-      ["id", string4(cat.id)],
-      ["name", string4(cat.name)],
+      ["id", string3(cat.id)],
+      ["name", string3(cat.name)],
       ["target", nullable(cat.target, target_encode)],
-      ["inflow", bool3(cat.inflow)],
-      ["group_id", string4(cat.group_id)]
+      ["inflow", bool2(cat.inflow)],
+      ["group_id", string3(cat.group_id)]
     ])
   );
 }
 function cycle_decoder() {
-  let cycle_decoder$1 = field2(
+  let cycle_decoder$1 = field(
     "month",
     int2,
     (month2) => {
-      return field2(
+      return field(
         "year",
         int2,
         (year2) => {
@@ -5895,7 +5693,7 @@ function cycle_decoder() {
 function transaction_encode(t) {
   return object2(
     toList([
-      ["id", string4(t.id)],
+      ["id", string3(t.id)],
       [
         "date",
         (() => {
@@ -5903,36 +5701,36 @@ function transaction_encode(t) {
           return int3(_pipe);
         })()
       ],
-      ["payee", string4(t.payee)],
-      ["category_id", string4(t.category_id)],
+      ["payee", string3(t.payee)],
+      ["category_id", string3(t.category_id)],
       ["value", money_encode(t.value)],
-      ["user_id", string4(t.user_id)]
+      ["user_id", string3(t.user_id)]
     ])
   );
 }
 function money_decoder() {
-  let money_decoder$1 = field2(
+  let money_decoder$1 = field(
     "money_value",
     int2,
-    (value4) => {
-      return success(new Money(value4));
+    (value3) => {
+      return success(new Money(value3));
     }
   );
   return money_decoder$1;
 }
 function target_decoder() {
-  let monthly_decoder = field2(
+  let monthly_decoder = field(
     "money",
     money_decoder(),
     (money) => {
       return success(new Monthly(money));
     }
   );
-  let custom_decoder = field2(
+  let custom_decoder = field(
     "money",
     money_decoder(),
     (money) => {
-      return field2(
+      return field(
         "date",
         month_decoder(),
         (date) => {
@@ -5941,9 +5739,9 @@ function target_decoder() {
       );
     }
   );
-  let target_decoder$1 = field2(
+  let target_decoder$1 = field(
     "type",
-    string3,
+    string2,
     (tag) => {
       if (tag === "monthly") {
         return monthly_decoder;
@@ -5955,25 +5753,25 @@ function target_decoder() {
   return target_decoder$1;
 }
 function category_decoder() {
-  return field2(
+  return field(
     "id",
-    string3,
+    string2,
     (id2) => {
-      return field2(
+      return field(
         "name",
-        string3,
+        string2,
         (name2) => {
-          return field2(
+          return field(
             "target",
             optional(target_decoder()),
             (target) => {
-              return field2(
+              return field(
                 "inflow",
-                bool2,
+                bool,
                 (inflow) => {
-                  return field2(
+                  return field(
                     "group_id",
-                    string3,
+                    string2,
                     (group_id) => {
                       return success(
                         new Category(id2, name2, target, inflow, group_id)
@@ -5990,22 +5788,22 @@ function category_decoder() {
   );
 }
 function category_suggestions_decoder() {
-  return dict2(string3, category_decoder());
+  return dict2(string2, category_decoder());
 }
 function allocation_decoder() {
-  let allocation_decoder$1 = field2(
+  let allocation_decoder$1 = field(
     "id",
-    string3,
+    string2,
     (id2) => {
-      return field2(
+      return field(
         "amount",
         money_decoder(),
         (amount) => {
-          return field2(
+          return field(
             "category_id",
-            string3,
+            string2,
             (category_id) => {
-              return field2(
+              return field(
                 "date",
                 cycle_decoder(),
                 (date) => {
@@ -6023,29 +5821,29 @@ function allocation_decoder() {
   return allocation_decoder$1;
 }
 function transaction_decoder() {
-  return field2(
+  return field(
     "id",
-    string3,
+    string2,
     (id2) => {
-      return field2(
+      return field(
         "date",
         int2,
         (date) => {
-          return field2(
+          return field(
             "payee",
-            string3,
+            string2,
             (payee) => {
-              return field2(
+              return field(
                 "category_id",
-                string3,
+                string2,
                 (category_id) => {
-                  return field2(
+                  return field(
                     "value",
                     money_decoder(),
-                    (value4) => {
-                      return field2(
+                    (value3) => {
+                      return field(
                         "user_id",
-                        string3,
+                        string2,
                         (user_id) => {
                           return success(
                             new Transaction(
@@ -6053,7 +5851,7 @@ function transaction_decoder() {
                               from_rata_die(date),
                               payee,
                               category_id,
-                              value4,
+                              value3,
                               user_id
                             )
                           );
@@ -6191,12 +5989,12 @@ function money_to_string_no_sign(m) {
   let _block;
   let _pipe = m.value;
   _block = absolute_value(_pipe);
-  let value4 = _block;
+  let value3 = _block;
   return (() => {
-    let _pipe$1 = divideInt(value4, 100);
+    let _pipe$1 = divideInt(value3, 100);
     return to_string(_pipe$1);
   })() + "." + (() => {
-    let _pipe$1 = remainderInt(value4, 100);
+    let _pipe$1 = remainderInt(value3, 100);
     return to_string(_pipe$1);
   })();
 }
@@ -6204,12 +6002,12 @@ function money_with_currency_no_sign(m) {
   let _block;
   let _pipe = m.value;
   _block = absolute_value(_pipe);
-  let value4 = _block;
+  let value3 = _block;
   return "\u20AC" + (() => {
-    let _pipe$1 = divideInt(value4, 100);
+    let _pipe$1 = divideInt(value3, 100);
     return to_string(_pipe$1);
   })() + "." + (() => {
-    let _pipe$1 = remainderInt(value4, 100);
+    let _pipe$1 = remainderInt(value3, 100);
     return to_string(_pipe$1);
   })();
 }
@@ -6235,11 +6033,11 @@ function is_zero_euro(m) {
 }
 
 // build/dev/javascript/budget_shared/date_utils.mjs
-function to_date_string(value4) {
-  return format(value4, "dd.MM.yyyy");
+function to_date_string(value3) {
+  return format(value3, "dd.MM.yyyy");
 }
-function to_date_string_input(value4) {
-  return format(value4, "yyyy-MM-dd");
+function to_date_string_input(value3) {
+  return format(value3, "yyyy-MM-dd");
 }
 function from_date_string(date_str) {
   return from_iso_string(date_str);
@@ -6357,13 +6155,13 @@ function month_in_year_to_str(month_in_year) {
 
 // build/dev/javascript/formal/formal/form.mjs
 var Form = class extends CustomType {
-  constructor(values2, errors) {
+  constructor(values3, errors) {
     super();
-    this.values = values2;
+    this.values = values3;
     this.errors = errors;
   }
 };
-function new$2() {
+function new$3() {
   return new Form(new_map(), new_map());
 }
 function value(form2, name2) {
@@ -6386,874 +6184,2548 @@ function field_state(form2, name2) {
   }
 }
 
-// build/dev/javascript/lustre/lustre/effect.mjs
-var Effect = class extends CustomType {
-  constructor(all) {
+// build/dev/javascript/gleam_stdlib/gleam/function.mjs
+function identity3(x) {
+  return x;
+}
+
+// build/dev/javascript/lustre/lustre/internals/constants.ffi.mjs
+var EMPTY_DICT = /* @__PURE__ */ Dict.new();
+function empty_dict() {
+  return EMPTY_DICT;
+}
+var EMPTY_SET = /* @__PURE__ */ new$2();
+function empty_set() {
+  return EMPTY_SET;
+}
+var document2 = globalThis?.document;
+var NAMESPACE_HTML = "http://www.w3.org/1999/xhtml";
+var ELEMENT_NODE = 1;
+var TEXT_NODE = 3;
+var DOCUMENT_FRAGMENT_NODE = 11;
+var SUPPORTS_MOVE_BEFORE = !!globalThis.HTMLElement?.prototype?.moveBefore;
+
+// build/dev/javascript/lustre/lustre/internals/constants.mjs
+var empty_list = /* @__PURE__ */ toList([]);
+var option_none = /* @__PURE__ */ new None();
+
+// build/dev/javascript/lustre/lustre/vdom/vattr.ffi.mjs
+var GT = /* @__PURE__ */ new Gt();
+var LT = /* @__PURE__ */ new Lt();
+var EQ = /* @__PURE__ */ new Eq();
+function compare4(a2, b) {
+  if (a2.name === b.name) {
+    return EQ;
+  } else if (a2.name < b.name) {
+    return LT;
+  } else {
+    return GT;
+  }
+}
+
+// build/dev/javascript/lustre/lustre/vdom/vattr.mjs
+var Attribute = class extends CustomType {
+  constructor(kind, name2, value3) {
     super();
-    this.all = all;
+    this.kind = kind;
+    this.name = name2;
+    this.value = value3;
   }
 };
-function custom2(run4) {
-  return new Effect(
-    toList([
-      (actions) => {
-        return run4(actions.dispatch, actions.emit, actions.select, actions.root);
-      }
-    ])
+var Property = class extends CustomType {
+  constructor(kind, name2, value3) {
+    super();
+    this.kind = kind;
+    this.name = name2;
+    this.value = value3;
+  }
+};
+var Event2 = class extends CustomType {
+  constructor(kind, name2, handler, include, prevent_default2, stop_propagation, immediate2, limit) {
+    super();
+    this.kind = kind;
+    this.name = name2;
+    this.handler = handler;
+    this.include = include;
+    this.prevent_default = prevent_default2;
+    this.stop_propagation = stop_propagation;
+    this.immediate = immediate2;
+    this.limit = limit;
+  }
+};
+var NoLimit = class extends CustomType {
+  constructor(kind) {
+    super();
+    this.kind = kind;
+  }
+};
+var Debounce = class extends CustomType {
+  constructor(kind, delay) {
+    super();
+    this.kind = kind;
+    this.delay = delay;
+  }
+};
+var Throttle = class extends CustomType {
+  constructor(kind, delay) {
+    super();
+    this.kind = kind;
+    this.delay = delay;
+  }
+};
+function limit_equals(a2, b) {
+  if (a2 instanceof NoLimit && b instanceof NoLimit) {
+    return true;
+  } else if (a2 instanceof Debounce && b instanceof Debounce && a2.delay === b.delay) {
+    let d1 = a2.delay;
+    let d2 = b.delay;
+    return true;
+  } else if (a2 instanceof Throttle && b instanceof Throttle && a2.delay === b.delay) {
+    let d1 = a2.delay;
+    let d2 = b.delay;
+    return true;
+  } else {
+    return false;
+  }
+}
+function merge(loop$attributes, loop$merged) {
+  while (true) {
+    let attributes = loop$attributes;
+    let merged = loop$merged;
+    if (attributes.hasLength(0)) {
+      return merged;
+    } else if (attributes.atLeastLength(2) && attributes.head instanceof Attribute && attributes.head.name === "class" && attributes.tail.head instanceof Attribute && attributes.tail.head.name === "class") {
+      let kind = attributes.head.kind;
+      let class1 = attributes.head.value;
+      let class2 = attributes.tail.head.value;
+      let rest = attributes.tail.tail;
+      let value3 = class1 + " " + class2;
+      let attribute$1 = new Attribute(kind, "class", value3);
+      loop$attributes = prepend(attribute$1, rest);
+      loop$merged = merged;
+    } else if (attributes.atLeastLength(2) && attributes.head instanceof Attribute && attributes.head.name === "style" && attributes.tail.head instanceof Attribute && attributes.tail.head.name === "style") {
+      let kind = attributes.head.kind;
+      let style1 = attributes.head.value;
+      let style2 = attributes.tail.head.value;
+      let rest = attributes.tail.tail;
+      let value3 = style1 + ";" + style2;
+      let attribute$1 = new Attribute(kind, "style", value3);
+      loop$attributes = prepend(attribute$1, rest);
+      loop$merged = merged;
+    } else {
+      let attribute$1 = attributes.head;
+      let rest = attributes.tail;
+      loop$attributes = rest;
+      loop$merged = prepend(attribute$1, merged);
+    }
+  }
+}
+function prepare(attributes) {
+  if (attributes.hasLength(0)) {
+    return attributes;
+  } else if (attributes.hasLength(1)) {
+    return attributes;
+  } else {
+    let _pipe = attributes;
+    let _pipe$1 = sort(_pipe, (a2, b) => {
+      return compare4(b, a2);
+    });
+    return merge(_pipe$1, empty_list);
+  }
+}
+var attribute_kind = 0;
+function attribute(name2, value3) {
+  return new Attribute(attribute_kind, name2, value3);
+}
+var property_kind = 1;
+function property(name2, value3) {
+  return new Property(property_kind, name2, value3);
+}
+var event_kind = 2;
+function event(name2, handler, include, prevent_default2, stop_propagation, immediate2, limit) {
+  return new Event2(
+    event_kind,
+    name2,
+    handler,
+    include,
+    prevent_default2,
+    stop_propagation,
+    immediate2,
+    limit
   );
 }
-function from(effect) {
-  return custom2((dispatch, _, _1, _2) => {
-    return effect(dispatch);
-  });
+var debounce_kind = 1;
+var throttle_kind = 2;
+
+// build/dev/javascript/lustre/lustre/attribute.mjs
+function attribute2(name2, value3) {
+  return attribute(name2, value3);
 }
+function property2(name2, value3) {
+  return property(name2, value3);
+}
+function boolean_attribute(name2, value3) {
+  if (value3) {
+    return attribute2(name2, "");
+  } else {
+    return property2(name2, bool2(false));
+  }
+}
+function class$(name2) {
+  return attribute2("class", name2);
+}
+function id(value3) {
+  return attribute2("id", value3);
+}
+function do_styles(loop$properties, loop$styles) {
+  while (true) {
+    let properties = loop$properties;
+    let styles2 = loop$styles;
+    if (properties.hasLength(0)) {
+      return styles2;
+    } else if (properties.atLeastLength(1) && properties.head[0] === "") {
+      let rest = properties.tail;
+      loop$properties = rest;
+      loop$styles = styles2;
+    } else if (properties.atLeastLength(1) && properties.head[1] === "") {
+      let rest = properties.tail;
+      loop$properties = rest;
+      loop$styles = styles2;
+    } else {
+      let name$1 = properties.head[0];
+      let value$1 = properties.head[1];
+      let rest = properties.tail;
+      loop$properties = rest;
+      loop$styles = styles2 + name$1 + ":" + value$1 + ";";
+    }
+  }
+}
+function styles(properties) {
+  return attribute2("style", do_styles(properties, ""));
+}
+function href(url) {
+  return attribute2("href", url);
+}
+function checked(is_checked) {
+  return boolean_attribute("checked", is_checked);
+}
+function for$(id2) {
+  return attribute2("for", id2);
+}
+function name(element_name) {
+  return attribute2("name", element_name);
+}
+function placeholder(text4) {
+  return attribute2("placeholder", text4);
+}
+function type_(control_type) {
+  return attribute2("type", control_type);
+}
+function value2(control_value) {
+  return attribute2("value", control_value);
+}
+function role(name2) {
+  return attribute2("role", name2);
+}
+
+// build/dev/javascript/lustre/lustre/effect.mjs
+var Effect = class extends CustomType {
+  constructor(synchronous, before_paint2, after_paint) {
+    super();
+    this.synchronous = synchronous;
+    this.before_paint = before_paint2;
+    this.after_paint = after_paint;
+  }
+};
+var empty = /* @__PURE__ */ new Effect(
+  /* @__PURE__ */ toList([]),
+  /* @__PURE__ */ toList([]),
+  /* @__PURE__ */ toList([])
+);
 function none() {
-  return new Effect(toList([]));
+  return empty;
+}
+function from(effect) {
+  let task = (actions) => {
+    let dispatch = actions.dispatch;
+    return effect(dispatch);
+  };
+  let _record = empty;
+  return new Effect(toList([task]), _record.before_paint, _record.after_paint);
 }
 function batch(effects) {
-  return new Effect(
-    fold2(
-      effects,
-      toList([]),
-      (b, _use1) => {
-        let a2 = _use1.all;
-        return append(b, a2);
-      }
-    )
+  return fold2(
+    effects,
+    empty,
+    (acc, eff) => {
+      return new Effect(
+        fold2(eff.synchronous, acc.synchronous, prepend2),
+        fold2(eff.before_paint, acc.before_paint, prepend2),
+        fold2(eff.after_paint, acc.after_paint, prepend2)
+      );
+    }
   );
 }
 
-// build/dev/javascript/lustre/lustre/internals/vdom.mjs
-var Text2 = class extends CustomType {
-  constructor(content) {
+// build/dev/javascript/lustre/lustre/internals/mutable_map.ffi.mjs
+function empty2() {
+  return null;
+}
+function get3(map7, key) {
+  const value3 = map7?.get(key);
+  if (value3 != null) {
+    return new Ok(value3);
+  } else {
+    return new Error(void 0);
+  }
+}
+function insert4(map7, key, value3) {
+  map7 ??= /* @__PURE__ */ new Map();
+  map7.set(key, value3);
+  return map7;
+}
+function remove(map7, key) {
+  map7?.delete(key);
+  return map7;
+}
+
+// build/dev/javascript/lustre/lustre/vdom/path.mjs
+var Root = class extends CustomType {
+};
+var Key = class extends CustomType {
+  constructor(key, parent) {
     super();
-    this.content = content;
+    this.key = key;
+    this.parent = parent;
+  }
+};
+var Index = class extends CustomType {
+  constructor(index5, parent) {
+    super();
+    this.index = index5;
+    this.parent = parent;
+  }
+};
+function do_matches(loop$path, loop$candidates) {
+  while (true) {
+    let path = loop$path;
+    let candidates = loop$candidates;
+    if (candidates.hasLength(0)) {
+      return false;
+    } else {
+      let candidate = candidates.head;
+      let rest = candidates.tail;
+      let $ = starts_with(path, candidate);
+      if ($) {
+        return true;
+      } else {
+        loop$path = path;
+        loop$candidates = rest;
+      }
+    }
+  }
+}
+function add2(parent, index5, key) {
+  if (key === "") {
+    return new Index(index5, parent);
+  } else {
+    return new Key(key, parent);
+  }
+}
+var root2 = /* @__PURE__ */ new Root();
+var separator_index = "\n";
+var separator_key = "	";
+function do_to_string(loop$path, loop$acc) {
+  while (true) {
+    let path = loop$path;
+    let acc = loop$acc;
+    if (path instanceof Root) {
+      if (acc.hasLength(0)) {
+        return "";
+      } else {
+        let segments = acc.tail;
+        return concat2(segments);
+      }
+    } else if (path instanceof Key) {
+      let key = path.key;
+      let parent = path.parent;
+      loop$path = parent;
+      loop$acc = prepend(separator_key, prepend(key, acc));
+    } else {
+      let index5 = path.index;
+      let parent = path.parent;
+      loop$path = parent;
+      loop$acc = prepend(
+        separator_index,
+        prepend(to_string(index5), acc)
+      );
+    }
+  }
+}
+function to_string3(path) {
+  return do_to_string(path, toList([]));
+}
+function matches(path, candidates) {
+  if (candidates.hasLength(0)) {
+    return false;
+  } else {
+    return do_matches(to_string3(path), candidates);
+  }
+}
+var separator_event = "\f";
+function event2(path, event4) {
+  return do_to_string(path, toList([separator_event, event4]));
+}
+
+// build/dev/javascript/lustre/lustre/vdom/vnode.mjs
+var Fragment = class extends CustomType {
+  constructor(kind, key, mapper, children, keyed_children, children_count) {
+    super();
+    this.kind = kind;
+    this.key = key;
+    this.mapper = mapper;
+    this.children = children;
+    this.keyed_children = keyed_children;
+    this.children_count = children_count;
   }
 };
 var Element = class extends CustomType {
-  constructor(key, namespace, tag, attrs, children2, self_closing, void$) {
+  constructor(kind, key, mapper, namespace, tag, attributes, children, keyed_children, self_closing, void$) {
     super();
+    this.kind = kind;
     this.key = key;
+    this.mapper = mapper;
     this.namespace = namespace;
     this.tag = tag;
-    this.attrs = attrs;
-    this.children = children2;
+    this.attributes = attributes;
+    this.children = children;
+    this.keyed_children = keyed_children;
     this.self_closing = self_closing;
     this.void = void$;
   }
 };
-var Map2 = class extends CustomType {
-  constructor(subtree) {
+var Text2 = class extends CustomType {
+  constructor(kind, key, mapper, content) {
     super();
-    this.subtree = subtree;
+    this.kind = kind;
+    this.key = key;
+    this.mapper = mapper;
+    this.content = content;
   }
 };
-var Attribute = class extends CustomType {
-  constructor(x0, x1, as_property) {
+var UnsafeInnerHtml = class extends CustomType {
+  constructor(kind, key, mapper, namespace, tag, attributes, inner_html) {
     super();
-    this[0] = x0;
-    this[1] = x1;
-    this.as_property = as_property;
+    this.kind = kind;
+    this.key = key;
+    this.mapper = mapper;
+    this.namespace = namespace;
+    this.tag = tag;
+    this.attributes = attributes;
+    this.inner_html = inner_html;
   }
 };
-var Event = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
-  }
-};
-function attribute_to_event_handler(attribute2) {
-  if (attribute2 instanceof Attribute) {
-    return new Error(void 0);
+function is_void_element(tag, namespace) {
+  if (namespace === "") {
+    if (tag === "area") {
+      return true;
+    } else if (tag === "base") {
+      return true;
+    } else if (tag === "br") {
+      return true;
+    } else if (tag === "col") {
+      return true;
+    } else if (tag === "embed") {
+      return true;
+    } else if (tag === "hr") {
+      return true;
+    } else if (tag === "img") {
+      return true;
+    } else if (tag === "input") {
+      return true;
+    } else if (tag === "link") {
+      return true;
+    } else if (tag === "meta") {
+      return true;
+    } else if (tag === "param") {
+      return true;
+    } else if (tag === "source") {
+      return true;
+    } else if (tag === "track") {
+      return true;
+    } else if (tag === "wbr") {
+      return true;
+    } else {
+      return false;
+    }
   } else {
-    let name2 = attribute2[0];
-    let handler = attribute2[1];
-    let name$1 = drop_start(name2, 2);
-    return new Ok([name$1, handler]);
+    return false;
   }
 }
-function do_element_list_handlers(elements2, handlers2, key) {
-  return index_fold(
-    elements2,
-    handlers2,
-    (handlers3, element2, index5) => {
-      let key$1 = key + "-" + to_string(index5);
-      return do_handlers(element2, handlers3, key$1);
-    }
+function advance(node) {
+  if (node instanceof Fragment) {
+    let children_count = node.children_count;
+    return 1 + children_count;
+  } else {
+    return 1;
+  }
+}
+var fragment_kind = 0;
+function fragment(key, mapper, children, keyed_children, children_count) {
+  return new Fragment(
+    fragment_kind,
+    key,
+    mapper,
+    children,
+    keyed_children,
+    children_count
   );
 }
-function do_handlers(loop$element, loop$handlers, loop$key) {
+var element_kind = 1;
+function element(key, mapper, namespace, tag, attributes, children, keyed_children, self_closing, void$) {
+  return new Element(
+    element_kind,
+    key,
+    mapper,
+    namespace,
+    tag,
+    prepare(attributes),
+    children,
+    keyed_children,
+    self_closing,
+    void$ || is_void_element(tag, namespace)
+  );
+}
+var text_kind = 2;
+function text(key, mapper, content) {
+  return new Text2(text_kind, key, mapper, content);
+}
+var unsafe_inner_html_kind = 3;
+function set_fragment_key(loop$key, loop$children, loop$index, loop$new_children, loop$keyed_children) {
   while (true) {
-    let element2 = loop$element;
-    let handlers2 = loop$handlers;
     let key = loop$key;
-    if (element2 instanceof Text2) {
-      return handlers2;
-    } else if (element2 instanceof Map2) {
-      let subtree = element2.subtree;
-      loop$element = subtree();
-      loop$handlers = handlers2;
-      loop$key = key;
-    } else {
-      let attrs = element2.attrs;
-      let children2 = element2.children;
-      let handlers$1 = fold2(
-        attrs,
-        handlers2,
-        (handlers3, attr) => {
-          let $ = attribute_to_event_handler(attr);
-          if ($.isOk()) {
-            let name2 = $[0][0];
-            let handler = $[0][1];
-            return insert(handlers3, key + "-" + name2, handler);
-          } else {
-            return handlers3;
-          }
-        }
+    let children = loop$children;
+    let index5 = loop$index;
+    let new_children = loop$new_children;
+    let keyed_children = loop$keyed_children;
+    if (children.hasLength(0)) {
+      return [reverse(new_children), keyed_children];
+    } else if (children.atLeastLength(1) && children.head instanceof Fragment && children.head.key === "") {
+      let node = children.head;
+      let children$1 = children.tail;
+      let child_key = key + "::" + to_string(index5);
+      let $ = set_fragment_key(
+        child_key,
+        node.children,
+        0,
+        empty_list,
+        empty2()
       );
-      return do_element_list_handlers(children2, handlers$1, key);
+      let node_children = $[0];
+      let node_keyed_children = $[1];
+      let _block;
+      let _record = node;
+      _block = new Fragment(
+        _record.kind,
+        _record.key,
+        _record.mapper,
+        node_children,
+        node_keyed_children,
+        _record.children_count
+      );
+      let new_node = _block;
+      let new_children$1 = prepend(new_node, new_children);
+      let index$1 = index5 + 1;
+      loop$key = key;
+      loop$children = children$1;
+      loop$index = index$1;
+      loop$new_children = new_children$1;
+      loop$keyed_children = keyed_children;
+    } else if (children.atLeastLength(1) && children.head.key !== "") {
+      let node = children.head;
+      let children$1 = children.tail;
+      let child_key = key + "::" + node.key;
+      let keyed_node = to_keyed(child_key, node);
+      let new_children$1 = prepend(keyed_node, new_children);
+      let keyed_children$1 = insert4(
+        keyed_children,
+        child_key,
+        keyed_node
+      );
+      let index$1 = index5 + 1;
+      loop$key = key;
+      loop$children = children$1;
+      loop$index = index$1;
+      loop$new_children = new_children$1;
+      loop$keyed_children = keyed_children$1;
+    } else {
+      let node = children.head;
+      let children$1 = children.tail;
+      let new_children$1 = prepend(node, new_children);
+      let index$1 = index5 + 1;
+      loop$key = key;
+      loop$children = children$1;
+      loop$index = index$1;
+      loop$new_children = new_children$1;
+      loop$keyed_children = keyed_children;
     }
   }
 }
-function handlers(element2) {
-  return do_handlers(element2, new_map(), "0");
+function to_keyed(key, node) {
+  if (node instanceof Element) {
+    let _record = node;
+    return new Element(
+      _record.kind,
+      key,
+      _record.mapper,
+      _record.namespace,
+      _record.tag,
+      _record.attributes,
+      _record.children,
+      _record.keyed_children,
+      _record.self_closing,
+      _record.void
+    );
+  } else if (node instanceof Text2) {
+    let _record = node;
+    return new Text2(_record.kind, key, _record.mapper, _record.content);
+  } else if (node instanceof UnsafeInnerHtml) {
+    let _record = node;
+    return new UnsafeInnerHtml(
+      _record.kind,
+      key,
+      _record.mapper,
+      _record.namespace,
+      _record.tag,
+      _record.attributes,
+      _record.inner_html
+    );
+  } else {
+    let children = node.children;
+    let $ = set_fragment_key(
+      key,
+      children,
+      0,
+      empty_list,
+      empty2()
+    );
+    let children$1 = $[0];
+    let keyed_children = $[1];
+    let _record = node;
+    return new Fragment(
+      _record.kind,
+      key,
+      _record.mapper,
+      children$1,
+      keyed_children,
+      _record.children_count
+    );
+  }
 }
 
-// build/dev/javascript/lustre/lustre/attribute.mjs
-function attribute(name2, value4) {
-  return new Attribute(name2, identity(value4), false);
+// build/dev/javascript/lustre/lustre/vdom/patch.mjs
+var Patch = class extends CustomType {
+  constructor(index5, removed, changes, children) {
+    super();
+    this.index = index5;
+    this.removed = removed;
+    this.changes = changes;
+    this.children = children;
+  }
+};
+var ReplaceText = class extends CustomType {
+  constructor(kind, content) {
+    super();
+    this.kind = kind;
+    this.content = content;
+  }
+};
+var ReplaceInnerHtml = class extends CustomType {
+  constructor(kind, inner_html) {
+    super();
+    this.kind = kind;
+    this.inner_html = inner_html;
+  }
+};
+var Update = class extends CustomType {
+  constructor(kind, added, removed) {
+    super();
+    this.kind = kind;
+    this.added = added;
+    this.removed = removed;
+  }
+};
+var Move = class extends CustomType {
+  constructor(kind, key, before, count) {
+    super();
+    this.kind = kind;
+    this.key = key;
+    this.before = before;
+    this.count = count;
+  }
+};
+var RemoveKey = class extends CustomType {
+  constructor(kind, key, count) {
+    super();
+    this.kind = kind;
+    this.key = key;
+    this.count = count;
+  }
+};
+var Replace = class extends CustomType {
+  constructor(kind, from2, count, with$) {
+    super();
+    this.kind = kind;
+    this.from = from2;
+    this.count = count;
+    this.with = with$;
+  }
+};
+var Insert = class extends CustomType {
+  constructor(kind, children, before) {
+    super();
+    this.kind = kind;
+    this.children = children;
+    this.before = before;
+  }
+};
+var Remove = class extends CustomType {
+  constructor(kind, from2, count) {
+    super();
+    this.kind = kind;
+    this.from = from2;
+    this.count = count;
+  }
+};
+function new$6(index5, removed, changes, children) {
+  return new Patch(index5, removed, changes, children);
 }
-function property(name2, value4) {
-  return new Attribute(name2, identity(value4), true);
+var replace_text_kind = 0;
+function replace_text(content) {
+  return new ReplaceText(replace_text_kind, content);
 }
-function on(name2, handler) {
-  return new Event("on" + name2, handler);
+var replace_inner_html_kind = 1;
+function replace_inner_html(inner_html) {
+  return new ReplaceInnerHtml(replace_inner_html_kind, inner_html);
 }
-function style(properties) {
-  return attribute(
-    "style",
-    fold2(
-      properties,
-      "",
-      (styles, _use1) => {
-        let name$1 = _use1[0];
-        let value$1 = _use1[1];
-        return styles + name$1 + ":" + value$1 + ";";
+var update_kind = 2;
+function update(added, removed) {
+  return new Update(update_kind, added, removed);
+}
+var move_kind = 3;
+function move(key, before, count) {
+  return new Move(move_kind, key, before, count);
+}
+var remove_key_kind = 4;
+function remove_key(key, count) {
+  return new RemoveKey(remove_key_kind, key, count);
+}
+var replace_kind = 5;
+function replace3(from2, count, with$) {
+  return new Replace(replace_kind, from2, count, with$);
+}
+var insert_kind = 6;
+function insert5(children, before) {
+  return new Insert(insert_kind, children, before);
+}
+var remove_kind = 7;
+function remove2(from2, count) {
+  return new Remove(remove_kind, from2, count);
+}
+
+// build/dev/javascript/lustre/lustre/vdom/diff.mjs
+var Diff = class extends CustomType {
+  constructor(patch, events) {
+    super();
+    this.patch = patch;
+    this.events = events;
+  }
+};
+var AttributeChange = class extends CustomType {
+  constructor(added, removed, events) {
+    super();
+    this.added = added;
+    this.removed = removed;
+    this.events = events;
+  }
+};
+function is_controlled(events, namespace, tag, path) {
+  if (tag === "input" && namespace === "") {
+    return has_dispatched_events(events, path);
+  } else if (tag === "select" && namespace === "") {
+    return has_dispatched_events(events, path);
+  } else if (tag === "textarea" && namespace === "") {
+    return has_dispatched_events(events, path);
+  } else {
+    return false;
+  }
+}
+function diff_attributes(loop$controlled, loop$path, loop$mapper, loop$events, loop$old, loop$new, loop$added, loop$removed) {
+  while (true) {
+    let controlled = loop$controlled;
+    let path = loop$path;
+    let mapper = loop$mapper;
+    let events = loop$events;
+    let old = loop$old;
+    let new$10 = loop$new;
+    let added = loop$added;
+    let removed = loop$removed;
+    if (old.hasLength(0) && new$10.hasLength(0)) {
+      return new AttributeChange(added, removed, events);
+    } else if (old.atLeastLength(1) && old.head instanceof Event2 && new$10.hasLength(0)) {
+      let prev = old.head;
+      let name2 = old.head.name;
+      let old$1 = old.tail;
+      let removed$1 = prepend(prev, removed);
+      let events$1 = remove_event(events, path, name2);
+      loop$controlled = controlled;
+      loop$path = path;
+      loop$mapper = mapper;
+      loop$events = events$1;
+      loop$old = old$1;
+      loop$new = new$10;
+      loop$added = added;
+      loop$removed = removed$1;
+    } else if (old.atLeastLength(1) && new$10.hasLength(0)) {
+      let prev = old.head;
+      let old$1 = old.tail;
+      let removed$1 = prepend(prev, removed);
+      loop$controlled = controlled;
+      loop$path = path;
+      loop$mapper = mapper;
+      loop$events = events;
+      loop$old = old$1;
+      loop$new = new$10;
+      loop$added = added;
+      loop$removed = removed$1;
+    } else if (old.hasLength(0) && new$10.atLeastLength(1) && new$10.head instanceof Event2) {
+      let next2 = new$10.head;
+      let name2 = new$10.head.name;
+      let handler = new$10.head.handler;
+      let new$1 = new$10.tail;
+      let added$1 = prepend(next2, added);
+      let events$1 = add_event(events, mapper, path, name2, handler);
+      loop$controlled = controlled;
+      loop$path = path;
+      loop$mapper = mapper;
+      loop$events = events$1;
+      loop$old = old;
+      loop$new = new$1;
+      loop$added = added$1;
+      loop$removed = removed;
+    } else if (old.hasLength(0) && new$10.atLeastLength(1)) {
+      let next2 = new$10.head;
+      let new$1 = new$10.tail;
+      let added$1 = prepend(next2, added);
+      loop$controlled = controlled;
+      loop$path = path;
+      loop$mapper = mapper;
+      loop$events = events;
+      loop$old = old;
+      loop$new = new$1;
+      loop$added = added$1;
+      loop$removed = removed;
+    } else {
+      let prev = old.head;
+      let remaining_old = old.tail;
+      let next2 = new$10.head;
+      let remaining_new = new$10.tail;
+      let $ = compare4(prev, next2);
+      if (prev instanceof Attribute && $ instanceof Eq && next2 instanceof Attribute) {
+        let _block;
+        let $1 = next2.name;
+        if ($1 === "value") {
+          _block = controlled || prev.value !== next2.value;
+        } else if ($1 === "checked") {
+          _block = controlled || prev.value !== next2.value;
+        } else if ($1 === "selected") {
+          _block = controlled || prev.value !== next2.value;
+        } else {
+          _block = prev.value !== next2.value;
+        }
+        let has_changes = _block;
+        let _block$1;
+        if (has_changes) {
+          _block$1 = prepend(next2, added);
+        } else {
+          _block$1 = added;
+        }
+        let added$1 = _block$1;
+        loop$controlled = controlled;
+        loop$path = path;
+        loop$mapper = mapper;
+        loop$events = events;
+        loop$old = remaining_old;
+        loop$new = remaining_new;
+        loop$added = added$1;
+        loop$removed = removed;
+      } else if (prev instanceof Property && $ instanceof Eq && next2 instanceof Property) {
+        let _block;
+        let $1 = next2.name;
+        if ($1 === "scrollLeft") {
+          _block = true;
+        } else if ($1 === "scrollRight") {
+          _block = true;
+        } else if ($1 === "value") {
+          _block = controlled || !isEqual(prev.value, next2.value);
+        } else if ($1 === "checked") {
+          _block = controlled || !isEqual(prev.value, next2.value);
+        } else if ($1 === "selected") {
+          _block = controlled || !isEqual(prev.value, next2.value);
+        } else {
+          _block = !isEqual(prev.value, next2.value);
+        }
+        let has_changes = _block;
+        let _block$1;
+        if (has_changes) {
+          _block$1 = prepend(next2, added);
+        } else {
+          _block$1 = added;
+        }
+        let added$1 = _block$1;
+        loop$controlled = controlled;
+        loop$path = path;
+        loop$mapper = mapper;
+        loop$events = events;
+        loop$old = remaining_old;
+        loop$new = remaining_new;
+        loop$added = added$1;
+        loop$removed = removed;
+      } else if (prev instanceof Event2 && $ instanceof Eq && next2 instanceof Event2) {
+        let name2 = next2.name;
+        let handler = next2.handler;
+        let has_changes = prev.prevent_default !== next2.prevent_default || prev.stop_propagation !== next2.stop_propagation || prev.immediate !== next2.immediate || !limit_equals(
+          prev.limit,
+          next2.limit
+        );
+        let _block;
+        if (has_changes) {
+          _block = prepend(next2, added);
+        } else {
+          _block = added;
+        }
+        let added$1 = _block;
+        let events$1 = add_event(events, mapper, path, name2, handler);
+        loop$controlled = controlled;
+        loop$path = path;
+        loop$mapper = mapper;
+        loop$events = events$1;
+        loop$old = remaining_old;
+        loop$new = remaining_new;
+        loop$added = added$1;
+        loop$removed = removed;
+      } else if (prev instanceof Event2 && $ instanceof Eq) {
+        let name2 = prev.name;
+        let added$1 = prepend(next2, added);
+        let removed$1 = prepend(prev, removed);
+        let events$1 = remove_event(events, path, name2);
+        loop$controlled = controlled;
+        loop$path = path;
+        loop$mapper = mapper;
+        loop$events = events$1;
+        loop$old = remaining_old;
+        loop$new = remaining_new;
+        loop$added = added$1;
+        loop$removed = removed$1;
+      } else if ($ instanceof Eq && next2 instanceof Event2) {
+        let name2 = next2.name;
+        let handler = next2.handler;
+        let added$1 = prepend(next2, added);
+        let removed$1 = prepend(prev, removed);
+        let events$1 = add_event(events, mapper, path, name2, handler);
+        loop$controlled = controlled;
+        loop$path = path;
+        loop$mapper = mapper;
+        loop$events = events$1;
+        loop$old = remaining_old;
+        loop$new = remaining_new;
+        loop$added = added$1;
+        loop$removed = removed$1;
+      } else if ($ instanceof Eq) {
+        let added$1 = prepend(next2, added);
+        let removed$1 = prepend(prev, removed);
+        loop$controlled = controlled;
+        loop$path = path;
+        loop$mapper = mapper;
+        loop$events = events;
+        loop$old = remaining_old;
+        loop$new = remaining_new;
+        loop$added = added$1;
+        loop$removed = removed$1;
+      } else if ($ instanceof Gt && next2 instanceof Event2) {
+        let name2 = next2.name;
+        let handler = next2.handler;
+        let added$1 = prepend(next2, added);
+        let events$1 = add_event(events, mapper, path, name2, handler);
+        loop$controlled = controlled;
+        loop$path = path;
+        loop$mapper = mapper;
+        loop$events = events$1;
+        loop$old = old;
+        loop$new = remaining_new;
+        loop$added = added$1;
+        loop$removed = removed;
+      } else if ($ instanceof Gt) {
+        let added$1 = prepend(next2, added);
+        loop$controlled = controlled;
+        loop$path = path;
+        loop$mapper = mapper;
+        loop$events = events;
+        loop$old = old;
+        loop$new = remaining_new;
+        loop$added = added$1;
+        loop$removed = removed;
+      } else if (prev instanceof Event2 && $ instanceof Lt) {
+        let name2 = prev.name;
+        let removed$1 = prepend(prev, removed);
+        let events$1 = remove_event(events, path, name2);
+        loop$controlled = controlled;
+        loop$path = path;
+        loop$mapper = mapper;
+        loop$events = events$1;
+        loop$old = remaining_old;
+        loop$new = new$10;
+        loop$added = added;
+        loop$removed = removed$1;
+      } else {
+        let removed$1 = prepend(prev, removed);
+        loop$controlled = controlled;
+        loop$path = path;
+        loop$mapper = mapper;
+        loop$events = events;
+        loop$old = remaining_old;
+        loop$new = new$10;
+        loop$added = added;
+        loop$removed = removed$1;
       }
-    )
+    }
+  }
+}
+function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved, loop$moved_offset, loop$removed, loop$node_index, loop$patch_index, loop$path, loop$changes, loop$children, loop$mapper, loop$events) {
+  while (true) {
+    let old = loop$old;
+    let old_keyed = loop$old_keyed;
+    let new$10 = loop$new;
+    let new_keyed = loop$new_keyed;
+    let moved = loop$moved;
+    let moved_offset = loop$moved_offset;
+    let removed = loop$removed;
+    let node_index = loop$node_index;
+    let patch_index = loop$patch_index;
+    let path = loop$path;
+    let changes = loop$changes;
+    let children = loop$children;
+    let mapper = loop$mapper;
+    let events = loop$events;
+    if (old.hasLength(0) && new$10.hasLength(0)) {
+      return new Diff(
+        new Patch(patch_index, removed, changes, children),
+        events
+      );
+    } else if (old.atLeastLength(1) && new$10.hasLength(0)) {
+      let prev = old.head;
+      let old$1 = old.tail;
+      let _block;
+      let $ = prev.key === "" || !contains2(moved, prev.key);
+      if ($) {
+        _block = removed + advance(prev);
+      } else {
+        _block = removed;
+      }
+      let removed$1 = _block;
+      let events$1 = remove_child(events, path, node_index, prev);
+      loop$old = old$1;
+      loop$old_keyed = old_keyed;
+      loop$new = new$10;
+      loop$new_keyed = new_keyed;
+      loop$moved = moved;
+      loop$moved_offset = moved_offset;
+      loop$removed = removed$1;
+      loop$node_index = node_index;
+      loop$patch_index = patch_index;
+      loop$path = path;
+      loop$changes = changes;
+      loop$children = children;
+      loop$mapper = mapper;
+      loop$events = events$1;
+    } else if (old.hasLength(0) && new$10.atLeastLength(1)) {
+      let events$1 = add_children(
+        events,
+        mapper,
+        path,
+        node_index,
+        new$10
+      );
+      let insert6 = insert5(new$10, node_index - moved_offset);
+      let changes$1 = prepend(insert6, changes);
+      return new Diff(
+        new Patch(patch_index, removed, changes$1, children),
+        events$1
+      );
+    } else if (old.atLeastLength(1) && new$10.atLeastLength(1) && old.head.key !== new$10.head.key) {
+      let prev = old.head;
+      let old_remaining = old.tail;
+      let next2 = new$10.head;
+      let new_remaining = new$10.tail;
+      let next_did_exist = get3(old_keyed, next2.key);
+      let prev_does_exist = get3(new_keyed, prev.key);
+      let prev_has_moved = contains2(moved, prev.key);
+      if (prev_does_exist.isOk() && next_did_exist.isOk() && prev_has_moved) {
+        loop$old = old_remaining;
+        loop$old_keyed = old_keyed;
+        loop$new = new$10;
+        loop$new_keyed = new_keyed;
+        loop$moved = moved;
+        loop$moved_offset = moved_offset - advance(prev);
+        loop$removed = removed;
+        loop$node_index = node_index;
+        loop$patch_index = patch_index;
+        loop$path = path;
+        loop$changes = changes;
+        loop$children = children;
+        loop$mapper = mapper;
+        loop$events = events;
+      } else if (prev_does_exist.isOk() && next_did_exist.isOk()) {
+        let match = next_did_exist[0];
+        let count = advance(next2);
+        let before = node_index - moved_offset;
+        let move2 = move(next2.key, before, count);
+        let changes$1 = prepend(move2, changes);
+        let moved$1 = insert2(moved, next2.key);
+        let moved_offset$1 = moved_offset + count;
+        loop$old = prepend(match, old);
+        loop$old_keyed = old_keyed;
+        loop$new = new$10;
+        loop$new_keyed = new_keyed;
+        loop$moved = moved$1;
+        loop$moved_offset = moved_offset$1;
+        loop$removed = removed;
+        loop$node_index = node_index;
+        loop$patch_index = patch_index;
+        loop$path = path;
+        loop$changes = changes$1;
+        loop$children = children;
+        loop$mapper = mapper;
+        loop$events = events;
+      } else if (!prev_does_exist.isOk() && next_did_exist.isOk()) {
+        let count = advance(prev);
+        let moved_offset$1 = moved_offset - count;
+        let events$1 = remove_child(events, path, node_index, prev);
+        let remove3 = remove_key(prev.key, count);
+        let changes$1 = prepend(remove3, changes);
+        loop$old = old_remaining;
+        loop$old_keyed = old_keyed;
+        loop$new = new$10;
+        loop$new_keyed = new_keyed;
+        loop$moved = moved;
+        loop$moved_offset = moved_offset$1;
+        loop$removed = removed;
+        loop$node_index = node_index;
+        loop$patch_index = patch_index;
+        loop$path = path;
+        loop$changes = changes$1;
+        loop$children = children;
+        loop$mapper = mapper;
+        loop$events = events$1;
+      } else if (prev_does_exist.isOk() && !next_did_exist.isOk()) {
+        let before = node_index - moved_offset;
+        let count = advance(next2);
+        let events$1 = add_child(events, mapper, path, node_index, next2);
+        let insert6 = insert5(toList([next2]), before);
+        let changes$1 = prepend(insert6, changes);
+        loop$old = old;
+        loop$old_keyed = old_keyed;
+        loop$new = new_remaining;
+        loop$new_keyed = new_keyed;
+        loop$moved = moved;
+        loop$moved_offset = moved_offset + count;
+        loop$removed = removed;
+        loop$node_index = node_index + count;
+        loop$patch_index = patch_index;
+        loop$path = path;
+        loop$changes = changes$1;
+        loop$children = children;
+        loop$mapper = mapper;
+        loop$events = events$1;
+      } else {
+        let prev_count = advance(prev);
+        let next_count = advance(next2);
+        let change = replace3(node_index - moved_offset, prev_count, next2);
+        let _block;
+        let _pipe = events;
+        let _pipe$1 = remove_child(_pipe, path, node_index, prev);
+        _block = add_child(_pipe$1, mapper, path, node_index, next2);
+        let events$1 = _block;
+        loop$old = old_remaining;
+        loop$old_keyed = old_keyed;
+        loop$new = new_remaining;
+        loop$new_keyed = new_keyed;
+        loop$moved = moved;
+        loop$moved_offset = moved_offset - prev_count + next_count;
+        loop$removed = removed;
+        loop$node_index = node_index + next_count;
+        loop$patch_index = patch_index;
+        loop$path = path;
+        loop$changes = prepend(change, changes);
+        loop$children = children;
+        loop$mapper = mapper;
+        loop$events = events$1;
+      }
+    } else if (old.atLeastLength(1) && old.head instanceof Fragment && new$10.atLeastLength(1) && new$10.head instanceof Fragment) {
+      let prev = old.head;
+      let old$1 = old.tail;
+      let next2 = new$10.head;
+      let new$1 = new$10.tail;
+      let node_index$1 = node_index + 1;
+      let prev_count = prev.children_count;
+      let next_count = next2.children_count;
+      let composed_mapper = compose_mapper(mapper, next2.mapper);
+      let child = do_diff(
+        prev.children,
+        prev.keyed_children,
+        next2.children,
+        next2.keyed_children,
+        empty_set(),
+        moved_offset,
+        0,
+        node_index$1,
+        -1,
+        path,
+        empty_list,
+        children,
+        composed_mapper,
+        events
+      );
+      let _block;
+      let $ = child.patch.removed > 0;
+      if ($) {
+        let remove_from = node_index$1 + next_count - moved_offset;
+        let patch = remove2(remove_from, child.patch.removed);
+        _block = append(child.patch.changes, prepend(patch, changes));
+      } else {
+        _block = append(child.patch.changes, changes);
+      }
+      let changes$1 = _block;
+      loop$old = old$1;
+      loop$old_keyed = old_keyed;
+      loop$new = new$1;
+      loop$new_keyed = new_keyed;
+      loop$moved = moved;
+      loop$moved_offset = moved_offset + next_count - prev_count;
+      loop$removed = removed;
+      loop$node_index = node_index$1 + next_count;
+      loop$patch_index = patch_index;
+      loop$path = path;
+      loop$changes = changes$1;
+      loop$children = child.patch.children;
+      loop$mapper = mapper;
+      loop$events = child.events;
+    } else if (old.atLeastLength(1) && old.head instanceof Element && new$10.atLeastLength(1) && new$10.head instanceof Element && (old.head.namespace === new$10.head.namespace && old.head.tag === new$10.head.tag)) {
+      let prev = old.head;
+      let old$1 = old.tail;
+      let next2 = new$10.head;
+      let new$1 = new$10.tail;
+      let composed_mapper = compose_mapper(mapper, next2.mapper);
+      let child_path = add2(path, node_index, next2.key);
+      let controlled = is_controlled(
+        events,
+        next2.namespace,
+        next2.tag,
+        child_path
+      );
+      let $ = diff_attributes(
+        controlled,
+        child_path,
+        composed_mapper,
+        events,
+        prev.attributes,
+        next2.attributes,
+        empty_list,
+        empty_list
+      );
+      let added_attrs = $.added;
+      let removed_attrs = $.removed;
+      let events$1 = $.events;
+      let _block;
+      if (added_attrs.hasLength(0) && removed_attrs.hasLength(0)) {
+        _block = empty_list;
+      } else {
+        _block = toList([update(added_attrs, removed_attrs)]);
+      }
+      let initial_child_changes = _block;
+      let child = do_diff(
+        prev.children,
+        prev.keyed_children,
+        next2.children,
+        next2.keyed_children,
+        empty_set(),
+        0,
+        0,
+        0,
+        node_index,
+        child_path,
+        initial_child_changes,
+        empty_list,
+        composed_mapper,
+        events$1
+      );
+      let _block$1;
+      let $1 = child.patch;
+      if ($1 instanceof Patch && $1.removed === 0 && $1.changes.hasLength(0) && $1.children.hasLength(0)) {
+        _block$1 = children;
+      } else {
+        _block$1 = prepend(child.patch, children);
+      }
+      let children$1 = _block$1;
+      loop$old = old$1;
+      loop$old_keyed = old_keyed;
+      loop$new = new$1;
+      loop$new_keyed = new_keyed;
+      loop$moved = moved;
+      loop$moved_offset = moved_offset;
+      loop$removed = removed;
+      loop$node_index = node_index + 1;
+      loop$patch_index = patch_index;
+      loop$path = path;
+      loop$changes = changes;
+      loop$children = children$1;
+      loop$mapper = mapper;
+      loop$events = child.events;
+    } else if (old.atLeastLength(1) && old.head instanceof Text2 && new$10.atLeastLength(1) && new$10.head instanceof Text2 && old.head.content === new$10.head.content) {
+      let prev = old.head;
+      let old$1 = old.tail;
+      let next2 = new$10.head;
+      let new$1 = new$10.tail;
+      loop$old = old$1;
+      loop$old_keyed = old_keyed;
+      loop$new = new$1;
+      loop$new_keyed = new_keyed;
+      loop$moved = moved;
+      loop$moved_offset = moved_offset;
+      loop$removed = removed;
+      loop$node_index = node_index + 1;
+      loop$patch_index = patch_index;
+      loop$path = path;
+      loop$changes = changes;
+      loop$children = children;
+      loop$mapper = mapper;
+      loop$events = events;
+    } else if (old.atLeastLength(1) && old.head instanceof Text2 && new$10.atLeastLength(1) && new$10.head instanceof Text2) {
+      let old$1 = old.tail;
+      let next2 = new$10.head;
+      let new$1 = new$10.tail;
+      let child = new$6(
+        node_index,
+        0,
+        toList([replace_text(next2.content)]),
+        empty_list
+      );
+      loop$old = old$1;
+      loop$old_keyed = old_keyed;
+      loop$new = new$1;
+      loop$new_keyed = new_keyed;
+      loop$moved = moved;
+      loop$moved_offset = moved_offset;
+      loop$removed = removed;
+      loop$node_index = node_index + 1;
+      loop$patch_index = patch_index;
+      loop$path = path;
+      loop$changes = changes;
+      loop$children = prepend(child, children);
+      loop$mapper = mapper;
+      loop$events = events;
+    } else if (old.atLeastLength(1) && old.head instanceof UnsafeInnerHtml && new$10.atLeastLength(1) && new$10.head instanceof UnsafeInnerHtml) {
+      let prev = old.head;
+      let old$1 = old.tail;
+      let next2 = new$10.head;
+      let new$1 = new$10.tail;
+      let composed_mapper = compose_mapper(mapper, next2.mapper);
+      let child_path = add2(path, node_index, next2.key);
+      let $ = diff_attributes(
+        false,
+        child_path,
+        composed_mapper,
+        events,
+        prev.attributes,
+        next2.attributes,
+        empty_list,
+        empty_list
+      );
+      let added_attrs = $.added;
+      let removed_attrs = $.removed;
+      let events$1 = $.events;
+      let _block;
+      if (added_attrs.hasLength(0) && removed_attrs.hasLength(0)) {
+        _block = empty_list;
+      } else {
+        _block = toList([update(added_attrs, removed_attrs)]);
+      }
+      let child_changes = _block;
+      let _block$1;
+      let $1 = prev.inner_html === next2.inner_html;
+      if ($1) {
+        _block$1 = child_changes;
+      } else {
+        _block$1 = prepend(
+          replace_inner_html(next2.inner_html),
+          child_changes
+        );
+      }
+      let child_changes$1 = _block$1;
+      let _block$2;
+      if (child_changes$1.hasLength(0)) {
+        _block$2 = children;
+      } else {
+        _block$2 = prepend(
+          new$6(node_index, 0, child_changes$1, toList([])),
+          children
+        );
+      }
+      let children$1 = _block$2;
+      loop$old = old$1;
+      loop$old_keyed = old_keyed;
+      loop$new = new$1;
+      loop$new_keyed = new_keyed;
+      loop$moved = moved;
+      loop$moved_offset = moved_offset;
+      loop$removed = removed;
+      loop$node_index = node_index + 1;
+      loop$patch_index = patch_index;
+      loop$path = path;
+      loop$changes = changes;
+      loop$children = children$1;
+      loop$mapper = mapper;
+      loop$events = events$1;
+    } else {
+      let prev = old.head;
+      let old_remaining = old.tail;
+      let next2 = new$10.head;
+      let new_remaining = new$10.tail;
+      let prev_count = advance(prev);
+      let next_count = advance(next2);
+      let change = replace3(node_index - moved_offset, prev_count, next2);
+      let _block;
+      let _pipe = events;
+      let _pipe$1 = remove_child(_pipe, path, node_index, prev);
+      _block = add_child(_pipe$1, mapper, path, node_index, next2);
+      let events$1 = _block;
+      loop$old = old_remaining;
+      loop$old_keyed = old_keyed;
+      loop$new = new_remaining;
+      loop$new_keyed = new_keyed;
+      loop$moved = moved;
+      loop$moved_offset = moved_offset - prev_count + next_count;
+      loop$removed = removed;
+      loop$node_index = node_index + next_count;
+      loop$patch_index = patch_index;
+      loop$path = path;
+      loop$changes = prepend(change, changes);
+      loop$children = children;
+      loop$mapper = mapper;
+      loop$events = events$1;
+    }
+  }
+}
+function diff2(events, old, new$10) {
+  return do_diff(
+    toList([old]),
+    empty2(),
+    toList([new$10]),
+    empty2(),
+    empty_set(),
+    0,
+    0,
+    0,
+    0,
+    root2,
+    empty_list,
+    empty_list,
+    identity3,
+    tick(events)
   );
 }
-function class$(name2) {
-  return attribute("class", name2);
+
+// build/dev/javascript/lustre/lustre/vdom/reconciler.ffi.mjs
+var Reconciler = class {
+  offset = 0;
+  #root = null;
+  #dispatch = () => {
+  };
+  #useServerEvents = false;
+  constructor(root3, dispatch, { useServerEvents = false } = {}) {
+    this.#root = root3;
+    this.#dispatch = dispatch;
+    this.#useServerEvents = useServerEvents;
+  }
+  mount(vdom) {
+    appendChild(this.#root, this.#createElement(vdom));
+  }
+  #stack = [];
+  push(patch) {
+    const offset = this.offset;
+    if (offset) {
+      iterate(patch.changes, (change) => {
+        switch (change.kind) {
+          case insert_kind:
+          case move_kind:
+            change.before = (change.before | 0) + offset;
+            break;
+          case remove_kind:
+          case replace_kind:
+            change.from = (change.from | 0) + offset;
+            break;
+        }
+      });
+      iterate(patch.children, (child) => {
+        child.index = (child.index | 0) + offset;
+      });
+    }
+    this.#stack.push({ node: this.#root, patch });
+    this.#reconcile();
+  }
+  // PATCHING ------------------------------------------------------------------
+  #reconcile() {
+    const self = this;
+    while (self.#stack.length) {
+      const { node, patch } = self.#stack.pop();
+      iterate(patch.changes, (change) => {
+        switch (change.kind) {
+          case insert_kind:
+            self.#insert(node, change.children, change.before);
+            break;
+          case move_kind:
+            self.#move(node, change.key, change.before, change.count);
+            break;
+          case remove_key_kind:
+            self.#removeKey(node, change.key, change.count);
+            break;
+          case remove_kind:
+            self.#remove(node, change.from, change.count);
+            break;
+          case replace_kind:
+            self.#replace(node, change.from, change.count, change.with);
+            break;
+          case replace_text_kind:
+            self.#replaceText(node, change.content);
+            break;
+          case replace_inner_html_kind:
+            self.#replaceInnerHtml(node, change.inner_html);
+            break;
+          case update_kind:
+            self.#update(node, change.added, change.removed);
+            break;
+        }
+      });
+      if (patch.removed) {
+        self.#remove(
+          node,
+          node.childNodes.length - patch.removed,
+          patch.removed
+        );
+      }
+      iterate(patch.children, (child) => {
+        self.#stack.push({ node: childAt(node, child.index), patch: child });
+      });
+    }
+  }
+  // CHANGES -------------------------------------------------------------------
+  #insert(node, children, before) {
+    const fragment3 = createDocumentFragment();
+    iterate(children, (child) => {
+      const el = this.#createElement(child);
+      addKeyedChild(node, el);
+      appendChild(fragment3, el);
+    });
+    insertBefore(node, fragment3, childAt(node, before));
+  }
+  #move(node, key, before, count) {
+    let el = getKeyedChild(node, key);
+    const beforeEl = childAt(node, before);
+    for (let i = 0; i < count && el !== null; ++i) {
+      const next2 = el.nextSibling;
+      if (SUPPORTS_MOVE_BEFORE) {
+        node.moveBefore(el, beforeEl);
+      } else {
+        insertBefore(node, el, beforeEl);
+      }
+      el = next2;
+    }
+  }
+  #removeKey(node, key, count) {
+    this.#removeFromChild(node, getKeyedChild(node, key), count);
+  }
+  #remove(node, from2, count) {
+    this.#removeFromChild(node, childAt(node, from2), count);
+  }
+  #removeFromChild(parent, child, count) {
+    while (count-- > 0 && child !== null) {
+      const next2 = child.nextSibling;
+      const key = child[meta].key;
+      if (key) {
+        parent[meta].keyedChildren.delete(key);
+      }
+      for (const [_, { timeout }] of child[meta].debouncers) {
+        clearTimeout(timeout);
+      }
+      parent.removeChild(child);
+      child = next2;
+    }
+  }
+  #replace(parent, from2, count, child) {
+    this.#remove(parent, from2, count);
+    const el = this.#createElement(child);
+    addKeyedChild(parent, el);
+    insertBefore(parent, el, childAt(parent, from2));
+  }
+  #replaceText(node, content) {
+    node.data = content ?? "";
+  }
+  #replaceInnerHtml(node, inner_html) {
+    node.innerHTML = inner_html ?? "";
+  }
+  #update(node, added, removed) {
+    iterate(removed, (attribute3) => {
+      const name2 = attribute3.name;
+      if (node[meta].handlers.has(name2)) {
+        node.removeEventListener(name2, handleEvent);
+        node[meta].handlers.delete(name2);
+        if (node[meta].throttles.has(name2)) {
+          node[meta].throttles.delete(name2);
+        }
+        if (node[meta].debouncers.has(name2)) {
+          clearTimeout(node[meta].debouncers.get(name2).timeout);
+          node[meta].debouncers.delete(name2);
+        }
+      } else {
+        node.removeAttribute(name2);
+        ATTRIBUTE_HOOKS[name2]?.removed?.(node, name2);
+      }
+    });
+    iterate(added, (attribute3) => {
+      this.#createAttribute(node, attribute3);
+    });
+  }
+  // CONSTRUCTORS --------------------------------------------------------------
+  #createElement(vnode) {
+    switch (vnode.kind) {
+      case element_kind: {
+        const node = createElement(vnode);
+        this.#createAttributes(node, vnode);
+        this.#insert(node, vnode.children, 0);
+        return node;
+      }
+      case text_kind: {
+        const node = createTextNode(vnode.content);
+        initialiseMetadata(node, vnode.key);
+        return node;
+      }
+      case fragment_kind: {
+        const node = createDocumentFragment();
+        const head = createTextNode();
+        initialiseMetadata(head, vnode.key);
+        appendChild(node, head);
+        iterate(vnode.children, (child) => {
+          appendChild(node, this.#createElement(child));
+        });
+        return node;
+      }
+      case unsafe_inner_html_kind: {
+        const node = createElement(vnode);
+        this.#createAttributes(node, vnode);
+        this.#replaceInnerHtml(node, vnode.inner_html);
+        return node;
+      }
+    }
+  }
+  #createAttributes(node, { attributes }) {
+    iterate(attributes, (attribute3) => this.#createAttribute(node, attribute3));
+  }
+  #createAttribute(node, attribute3) {
+    const nodeMeta = node[meta];
+    switch (attribute3.kind) {
+      case attribute_kind: {
+        const name2 = attribute3.name;
+        const value3 = attribute3.value ?? "";
+        if (value3 !== node.getAttribute(name2)) {
+          node.setAttribute(name2, value3);
+        }
+        ATTRIBUTE_HOOKS[name2]?.added?.(node, value3);
+        break;
+      }
+      case property_kind:
+        node[attribute3.name] = attribute3.value;
+        break;
+      case event_kind: {
+        if (!nodeMeta.handlers.has(attribute3.name)) {
+          node.addEventListener(attribute3.name, handleEvent, {
+            passive: !attribute3.prevent_default
+          });
+        }
+        const prevent = attribute3.prevent_default;
+        const stop = attribute3.stop_propagation;
+        const immediate2 = attribute3.immediate;
+        const include = Array.isArray(attribute3.include) ? attribute3.include : [];
+        if (attribute3.limit?.kind === throttle_kind) {
+          const throttle = nodeMeta.throttles.get(attribute3.name) ?? {
+            last: 0,
+            delay: attribute3.limit.delay
+          };
+          nodeMeta.throttles.set(attribute3.name, throttle);
+        }
+        if (attribute3.limit?.kind === debounce_kind) {
+          const debounce = nodeMeta.debouncers.get(attribute3.name) ?? {
+            timeout: null,
+            delay: attribute3.limit.delay
+          };
+          nodeMeta.debouncers.set(attribute3.name, debounce);
+        }
+        nodeMeta.handlers.set(attribute3.name, (event4) => {
+          if (prevent) event4.preventDefault();
+          if (stop) event4.stopPropagation();
+          const type = event4.type;
+          let path = "";
+          let pathNode = event4.currentTarget;
+          while (pathNode !== this.#root) {
+            const key = pathNode[meta].key;
+            const parent = pathNode.parentNode;
+            if (key) {
+              path = `${separator_key}${key}${path}`;
+            } else {
+              const siblings = parent.childNodes;
+              let index5 = [].indexOf.call(siblings, pathNode);
+              if (parent === this.#root) {
+                index5 -= this.offset;
+              }
+              path = `${separator_index}${index5}${path}`;
+            }
+            pathNode = parent;
+          }
+          path = path.slice(1);
+          const data = this.#useServerEvents ? createServerEvent(event4, include) : event4;
+          if (nodeMeta.throttles.has(type)) {
+            const throttle = nodeMeta.throttles.get(type);
+            const now = Date.now();
+            const last = throttle.last || 0;
+            if (now > last + throttle.delay) {
+              throttle.last = now;
+              this.#dispatch(data, path, type, immediate2);
+            } else {
+              event4.preventDefault();
+            }
+          } else if (nodeMeta.debouncers.has(type)) {
+            const debounce = nodeMeta.debouncers.get(type);
+            clearTimeout(debounce.timeout);
+            debounce.timeout = setTimeout(() => {
+              this.#dispatch(data, path, type, immediate2);
+            }, debounce.delay);
+          } else {
+            this.#dispatch(data, path, type, immediate2);
+          }
+        });
+        break;
+      }
+    }
+  }
+};
+var iterate = (list4, callback) => {
+  if (Array.isArray(list4)) {
+    for (let i = 0; i < list4.length; i++) {
+      callback(list4[i]);
+    }
+  } else if (list4) {
+    for (list4; list4.tail; list4 = list4.tail) {
+      callback(list4.head);
+    }
+  }
+};
+var appendChild = (node, child) => node.appendChild(child);
+var insertBefore = (parent, node, referenceNode) => parent.insertBefore(node, referenceNode ?? null);
+var createElement = ({ key, tag, namespace }) => {
+  const node = document2.createElementNS(namespace || NAMESPACE_HTML, tag);
+  initialiseMetadata(node, key);
+  return node;
+};
+var createTextNode = (text4) => document2.createTextNode(text4 ?? "");
+var createDocumentFragment = () => document2.createDocumentFragment();
+var childAt = (node, at) => node.childNodes[at | 0];
+var meta = Symbol("lustre");
+var initialiseMetadata = (node, key = "") => {
+  switch (node.nodeType) {
+    case ELEMENT_NODE:
+    case DOCUMENT_FRAGMENT_NODE:
+      node[meta] = {
+        key,
+        keyedChildren: /* @__PURE__ */ new Map(),
+        handlers: /* @__PURE__ */ new Map(),
+        throttles: /* @__PURE__ */ new Map(),
+        debouncers: /* @__PURE__ */ new Map()
+      };
+      break;
+    case TEXT_NODE:
+      node[meta] = { key, debouncers: /* @__PURE__ */ new Map() };
+      break;
+  }
+};
+var addKeyedChild = (node, child) => {
+  if (child.nodeType === DOCUMENT_FRAGMENT_NODE) {
+    for (child = child.firstChild; child; child = child.nextSibling) {
+      addKeyedChild(node, child);
+    }
+    return;
+  }
+  const key = child[meta].key;
+  if (key) {
+    node[meta].keyedChildren.set(key, new WeakRef(child));
+  }
+};
+var getKeyedChild = (node, key) => node[meta].keyedChildren.get(key).deref();
+var handleEvent = (event4) => {
+  const target = event4.currentTarget;
+  const handler = target[meta].handlers.get(event4.type);
+  if (event4.type === "submit") {
+    event4.detail ??= {};
+    event4.detail.formData = [...new FormData(event4.target).entries()];
+  }
+  handler(event4);
+};
+var createServerEvent = (event4, include = []) => {
+  const data = {};
+  if (event4.type === "input" || event4.type === "change") {
+    include.push("target.value");
+  }
+  if (event4.type === "submit") {
+    include.push("detail.formData");
+  }
+  for (const property3 of include) {
+    const path = property3.split(".");
+    for (let i = 0, input2 = event4, output = data; i < path.length; i++) {
+      if (i === path.length - 1) {
+        output[path[i]] = input2[path[i]];
+        break;
+      }
+      output = output[path[i]] ??= {};
+      input2 = input2[path[i]];
+    }
+  }
+  return data;
+};
+var syncedBooleanAttribute = (name2) => {
+  return {
+    added(node) {
+      node[name2] = true;
+    },
+    removed(node) {
+      node[name2] = false;
+    }
+  };
+};
+var syncedAttribute = (name2) => {
+  return {
+    added(node, value3) {
+      node[name2] = value3;
+    }
+  };
+};
+var ATTRIBUTE_HOOKS = {
+  checked: syncedBooleanAttribute("checked"),
+  selected: syncedBooleanAttribute("selected"),
+  value: syncedAttribute("value"),
+  autofocus: {
+    added(node) {
+      queueMicrotask(() => node.focus?.());
+    }
+  },
+  autoplay: {
+    added(node) {
+      try {
+        node.play?.();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+};
+
+// build/dev/javascript/lustre/lustre/vdom/virtualise.ffi.mjs
+var virtualise = (root3) => {
+  const vdom = virtualise_node(root3);
+  if (vdom === null || vdom.children instanceof Empty) {
+    const empty3 = empty_text_node();
+    initialiseMetadata(empty3);
+    root3.appendChild(empty3);
+    return none2();
+  } else if (vdom.children instanceof NonEmpty && vdom.children.tail instanceof Empty) {
+    return vdom.children.head;
+  } else {
+    const head = empty_text_node();
+    initialiseMetadata(head);
+    root3.insertBefore(head, root3.firstChild);
+    return fragment2(vdom.children);
+  }
+};
+var empty_text_node = () => {
+  return document2.createTextNode("");
+};
+var virtualise_node = (node) => {
+  switch (node.nodeType) {
+    case ELEMENT_NODE: {
+      const key = node.getAttribute("data-lustre-key");
+      initialiseMetadata(node, key);
+      if (key) {
+        node.removeAttribute("data-lustre-key");
+      }
+      const tag = node.localName;
+      const namespace = node.namespaceURI;
+      const isHtmlElement = !namespace || namespace === NAMESPACE_HTML;
+      if (isHtmlElement && input_elements.includes(tag)) {
+        virtualise_input_events(tag, node);
+      }
+      const attributes = virtualise_attributes(node);
+      const children = virtualise_child_nodes(node);
+      const vnode = isHtmlElement ? element2(tag, attributes, children) : namespaced(namespace, tag, attributes, children);
+      return key ? to_keyed(key, vnode) : vnode;
+    }
+    case TEXT_NODE:
+      initialiseMetadata(node);
+      return text2(node.data);
+    case DOCUMENT_FRAGMENT_NODE:
+      initialiseMetadata(node);
+      return node.childNodes.length > 0 ? fragment2(virtualise_child_nodes(node)) : null;
+    default:
+      return null;
+  }
+};
+var input_elements = ["input", "select", "textarea"];
+var virtualise_input_events = (tag, node) => {
+  const value3 = node.value;
+  const checked2 = node.checked;
+  if (tag === "input" && node.type === "checkbox" && !checked2) return;
+  if (tag === "input" && node.type === "radio" && !checked2) return;
+  if (node.type !== "checkbox" && node.type !== "radio" && !value3) return;
+  queueMicrotask(() => {
+    node.value = value3;
+    node.checked = checked2;
+    node.dispatchEvent(new Event("input", { bubbles: true }));
+    node.dispatchEvent(new Event("change", { bubbles: true }));
+    if (document2.activeElement !== node) {
+      node.dispatchEvent(new Event("blur", { bubbles: true }));
+    }
+  });
+};
+var virtualise_child_nodes = (node) => {
+  let children = empty_list;
+  let child = node.lastChild;
+  while (child) {
+    const vnode = virtualise_node(child);
+    const next2 = child.previousSibling;
+    if (vnode) {
+      children = new NonEmpty(vnode, children);
+    } else {
+      node.removeChild(child);
+    }
+    child = next2;
+  }
+  return children;
+};
+var virtualise_attributes = (node) => {
+  let index5 = node.attributes.length;
+  let attributes = empty_list;
+  while (index5-- > 0) {
+    attributes = new NonEmpty(
+      virtualise_attribute(node.attributes[index5]),
+      attributes
+    );
+  }
+  return attributes;
+};
+var virtualise_attribute = (attr) => {
+  const name2 = attr.localName;
+  const value3 = attr.value;
+  return attribute2(name2, value3);
+};
+
+// build/dev/javascript/lustre/lustre/runtime/client/runtime.ffi.mjs
+var is_browser = () => !!document2;
+var is_reference_equal = (a2, b) => a2 === b;
+var Runtime = class {
+  constructor(root3, [model, effects], view2, update3) {
+    this.root = root3;
+    this.#model = model;
+    this.#view = view2;
+    this.#update = update3;
+    this.#reconciler = new Reconciler(this.root, (event4, path, name2) => {
+      const [events, msg] = handle(this.#events, path, name2, event4);
+      this.#events = events;
+      if (msg.isOk()) {
+        this.dispatch(msg[0], false);
+      }
+    });
+    this.#vdom = virtualise(this.root);
+    this.#events = new$7();
+    this.#shouldFlush = true;
+    this.#tick(effects);
+  }
+  // PUBLIC API ----------------------------------------------------------------
+  root = null;
+  set offset(offset) {
+    this.#reconciler.offset = offset;
+  }
+  dispatch(msg, immediate2 = false) {
+    this.#shouldFlush ||= immediate2;
+    if (this.#shouldQueue) {
+      this.#queue.push(msg);
+    } else {
+      const [model, effects] = this.#update(this.#model, msg);
+      this.#model = model;
+      this.#tick(effects);
+    }
+  }
+  emit(event4, data) {
+    const target = this.root.host ?? this.root;
+    target.dispatchEvent(
+      new CustomEvent(event4, {
+        detail: data,
+        bubbles: true,
+        composed: true
+      })
+    );
+  }
+  // PRIVATE API ---------------------------------------------------------------
+  #model;
+  #view;
+  #update;
+  #vdom;
+  #events;
+  #reconciler;
+  #shouldQueue = false;
+  #queue = [];
+  #beforePaint = empty_list;
+  #afterPaint = empty_list;
+  #renderTimer = null;
+  #shouldFlush = false;
+  #actions = {
+    dispatch: (msg, immediate2) => this.dispatch(msg, immediate2),
+    emit: (event4, data) => this.emit(event4, data),
+    select: () => {
+    },
+    root: () => this.root
+  };
+  // A `#tick` is where we process effects and trigger any synchronous updates.
+  // Once a tick has been processed a render will be scheduled if none is already.
+  // p0
+  #tick(effects) {
+    this.#shouldQueue = true;
+    while (true) {
+      for (let list4 = effects.synchronous; list4.tail; list4 = list4.tail) {
+        list4.head(this.#actions);
+      }
+      this.#beforePaint = listAppend(this.#beforePaint, effects.before_paint);
+      this.#afterPaint = listAppend(this.#afterPaint, effects.after_paint);
+      if (!this.#queue.length) break;
+      [this.#model, effects] = this.#update(this.#model, this.#queue.shift());
+    }
+    this.#shouldQueue = false;
+    if (this.#shouldFlush) {
+      cancelAnimationFrame(this.#renderTimer);
+      this.#render();
+    } else if (!this.#renderTimer) {
+      this.#renderTimer = requestAnimationFrame(() => {
+        this.#render();
+      });
+    }
+  }
+  #render() {
+    this.#shouldFlush = false;
+    this.#renderTimer = null;
+    const next2 = this.#view(this.#model);
+    const { patch, events } = diff2(this.#events, this.#vdom, next2);
+    this.#events = events;
+    this.#vdom = next2;
+    this.#reconciler.push(patch);
+    if (this.#beforePaint instanceof NonEmpty) {
+      const effects = makeEffect(this.#beforePaint);
+      this.#beforePaint = empty_list;
+      queueMicrotask(() => {
+        this.#shouldFlush = true;
+        this.#tick(effects);
+      });
+    }
+    if (this.#afterPaint instanceof NonEmpty) {
+      const effects = makeEffect(this.#afterPaint);
+      this.#afterPaint = empty_list;
+      requestAnimationFrame(() => {
+        this.#shouldFlush = true;
+        this.#tick(effects);
+      });
+    }
+  }
+};
+function makeEffect(synchronous) {
+  return {
+    synchronous,
+    after_paint: empty_list,
+    before_paint: empty_list
+  };
 }
-function id(name2) {
-  return attribute("id", name2);
+function listAppend(a2, b) {
+  if (a2 instanceof Empty) {
+    return b;
+  } else if (b instanceof Empty) {
+    return a2;
+  } else {
+    return append(a2, b);
+  }
 }
-function role(name2) {
-  return attribute("role", name2);
+
+// build/dev/javascript/lustre/lustre/vdom/events.mjs
+var Events = class extends CustomType {
+  constructor(handlers, dispatched_paths, next_dispatched_paths) {
+    super();
+    this.handlers = handlers;
+    this.dispatched_paths = dispatched_paths;
+    this.next_dispatched_paths = next_dispatched_paths;
+  }
+};
+function new$7() {
+  return new Events(
+    empty2(),
+    empty_list,
+    empty_list
+  );
 }
-function type_(name2) {
-  return attribute("type", name2);
+function tick(events) {
+  return new Events(
+    events.handlers,
+    events.next_dispatched_paths,
+    empty_list
+  );
 }
-function value2(val) {
-  return attribute("value", val);
+function do_remove_event(handlers, path, name2) {
+  return remove(handlers, event2(path, name2));
 }
-function checked(is_checked) {
-  return property("checked", is_checked);
+function remove_event(events, path, name2) {
+  let handlers = do_remove_event(events.handlers, path, name2);
+  let _record = events;
+  return new Events(
+    handlers,
+    _record.dispatched_paths,
+    _record.next_dispatched_paths
+  );
 }
-function placeholder(text3) {
-  return attribute("placeholder", text3);
+function remove_attributes(handlers, path, attributes) {
+  return fold2(
+    attributes,
+    handlers,
+    (events, attribute3) => {
+      if (attribute3 instanceof Event2) {
+        let name2 = attribute3.name;
+        return do_remove_event(events, path, name2);
+      } else {
+        return events;
+      }
+    }
+  );
 }
-function name(name2) {
-  return attribute("name", name2);
+function handle(events, path, name2, event4) {
+  let next_dispatched_paths = prepend(path, events.next_dispatched_paths);
+  let _block;
+  let _record = events;
+  _block = new Events(
+    _record.handlers,
+    _record.dispatched_paths,
+    next_dispatched_paths
+  );
+  let events$1 = _block;
+  let $ = get3(
+    events$1.handlers,
+    path + separator_event + name2
+  );
+  if ($.isOk()) {
+    let handler = $[0];
+    return [events$1, run(event4, handler)];
+  } else {
+    return [events$1, new Error(toList([]))];
+  }
 }
-function for$(id2) {
-  return attribute("for", id2);
+function has_dispatched_events(events, path) {
+  return matches(path, events.dispatched_paths);
 }
-function href(uri) {
-  return attribute("href", uri);
+function do_add_event(handlers, mapper, path, name2, handler) {
+  return insert4(
+    handlers,
+    event2(path, name2),
+    map4(handler, identity3(mapper))
+  );
+}
+function add_event(events, mapper, path, name2, handler) {
+  let handlers = do_add_event(events.handlers, mapper, path, name2, handler);
+  let _record = events;
+  return new Events(
+    handlers,
+    _record.dispatched_paths,
+    _record.next_dispatched_paths
+  );
+}
+function add_attributes(handlers, mapper, path, attributes) {
+  return fold2(
+    attributes,
+    handlers,
+    (events, attribute3) => {
+      if (attribute3 instanceof Event2) {
+        let name2 = attribute3.name;
+        let handler = attribute3.handler;
+        return do_add_event(events, mapper, path, name2, handler);
+      } else {
+        return events;
+      }
+    }
+  );
+}
+function compose_mapper(mapper, child_mapper) {
+  let $ = is_reference_equal(mapper, identity3);
+  let $1 = is_reference_equal(child_mapper, identity3);
+  if ($1) {
+    return mapper;
+  } else if ($ && !$1) {
+    return child_mapper;
+  } else {
+    return (msg) => {
+      return mapper(child_mapper(msg));
+    };
+  }
+}
+function do_remove_children(loop$handlers, loop$path, loop$child_index, loop$children) {
+  while (true) {
+    let handlers = loop$handlers;
+    let path = loop$path;
+    let child_index = loop$child_index;
+    let children = loop$children;
+    if (children.hasLength(0)) {
+      return handlers;
+    } else {
+      let child = children.head;
+      let rest = children.tail;
+      let _pipe = handlers;
+      let _pipe$1 = do_remove_child(_pipe, path, child_index, child);
+      loop$handlers = _pipe$1;
+      loop$path = path;
+      loop$child_index = child_index + advance(child);
+      loop$children = rest;
+    }
+  }
+}
+function do_remove_child(handlers, parent, child_index, child) {
+  if (child instanceof Element) {
+    let attributes = child.attributes;
+    let children = child.children;
+    let path = add2(parent, child_index, child.key);
+    let _pipe = handlers;
+    let _pipe$1 = remove_attributes(_pipe, path, attributes);
+    return do_remove_children(_pipe$1, path, 0, children);
+  } else if (child instanceof Fragment) {
+    let children = child.children;
+    return do_remove_children(handlers, parent, child_index + 1, children);
+  } else if (child instanceof UnsafeInnerHtml) {
+    let attributes = child.attributes;
+    let path = add2(parent, child_index, child.key);
+    return remove_attributes(handlers, path, attributes);
+  } else {
+    return handlers;
+  }
+}
+function remove_child(events, parent, child_index, child) {
+  let handlers = do_remove_child(events.handlers, parent, child_index, child);
+  let _record = events;
+  return new Events(
+    handlers,
+    _record.dispatched_paths,
+    _record.next_dispatched_paths
+  );
+}
+function do_add_children(loop$handlers, loop$mapper, loop$path, loop$child_index, loop$children) {
+  while (true) {
+    let handlers = loop$handlers;
+    let mapper = loop$mapper;
+    let path = loop$path;
+    let child_index = loop$child_index;
+    let children = loop$children;
+    if (children.hasLength(0)) {
+      return handlers;
+    } else {
+      let child = children.head;
+      let rest = children.tail;
+      let _pipe = handlers;
+      let _pipe$1 = do_add_child(_pipe, mapper, path, child_index, child);
+      loop$handlers = _pipe$1;
+      loop$mapper = mapper;
+      loop$path = path;
+      loop$child_index = child_index + advance(child);
+      loop$children = rest;
+    }
+  }
+}
+function do_add_child(handlers, mapper, parent, child_index, child) {
+  if (child instanceof Element) {
+    let attributes = child.attributes;
+    let children = child.children;
+    let path = add2(parent, child_index, child.key);
+    let composed_mapper = compose_mapper(mapper, child.mapper);
+    let _pipe = handlers;
+    let _pipe$1 = add_attributes(_pipe, composed_mapper, path, attributes);
+    return do_add_children(_pipe$1, composed_mapper, path, 0, children);
+  } else if (child instanceof Fragment) {
+    let children = child.children;
+    let composed_mapper = compose_mapper(mapper, child.mapper);
+    let child_index$1 = child_index + 1;
+    return do_add_children(
+      handlers,
+      composed_mapper,
+      parent,
+      child_index$1,
+      children
+    );
+  } else if (child instanceof UnsafeInnerHtml) {
+    let attributes = child.attributes;
+    let path = add2(parent, child_index, child.key);
+    let composed_mapper = compose_mapper(mapper, child.mapper);
+    return add_attributes(handlers, composed_mapper, path, attributes);
+  } else {
+    return handlers;
+  }
+}
+function add_child(events, mapper, parent, index5, child) {
+  let handlers = do_add_child(events.handlers, mapper, parent, index5, child);
+  let _record = events;
+  return new Events(
+    handlers,
+    _record.dispatched_paths,
+    _record.next_dispatched_paths
+  );
+}
+function add_children(events, mapper, path, child_index, children) {
+  let handlers = do_add_children(
+    events.handlers,
+    mapper,
+    path,
+    child_index,
+    children
+  );
+  let _record = events;
+  return new Events(
+    handlers,
+    _record.dispatched_paths,
+    _record.next_dispatched_paths
+  );
 }
 
 // build/dev/javascript/lustre/lustre/element.mjs
-function element(tag, attrs, children2) {
-  if (tag === "area") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "base") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "br") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "col") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "embed") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "hr") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "img") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "input") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "link") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "meta") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "param") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "source") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "track") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else if (tag === "wbr") {
-    return new Element("", "", tag, attrs, toList([]), false, true);
-  } else {
-    return new Element("", "", tag, attrs, children2, false, false);
-  }
+function element2(tag, attributes, children) {
+  return element(
+    "",
+    identity3,
+    "",
+    tag,
+    attributes,
+    children,
+    empty2(),
+    false,
+    false
+  );
 }
-function text(content) {
-  return new Text2(content);
+function namespaced(namespace, tag, attributes, children) {
+  return element(
+    "",
+    identity3,
+    namespace,
+    tag,
+    attributes,
+    children,
+    empty2(),
+    false,
+    false
+  );
+}
+function text2(content) {
+  return text("", identity3, content);
 }
 function none2() {
-  return new Text2("");
+  return text("", identity3, "");
+}
+function count_fragment_children(loop$children, loop$count) {
+  while (true) {
+    let children = loop$children;
+    let count = loop$count;
+    if (children.hasLength(0)) {
+      return count;
+    } else if (children.atLeastLength(1) && children.head instanceof Fragment) {
+      let children_count = children.head.children_count;
+      let rest = children.tail;
+      loop$children = rest;
+      loop$count = count + children_count;
+    } else {
+      let rest = children.tail;
+      loop$children = rest;
+      loop$count = count + 1;
+    }
+  }
+}
+function fragment2(children) {
+  return fragment(
+    "",
+    identity3,
+    children,
+    empty2(),
+    count_fragment_children(children, 0)
+  );
 }
 
-// build/dev/javascript/lustre/lustre/internals/patch.mjs
-var Diff = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var Emit = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
-  }
-};
-var Init = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
-  }
-};
-function is_empty_element_diff(diff3) {
-  return isEqual(diff3.created, new_map()) && isEqual(
-    diff3.removed,
-    new$()
-  ) && isEqual(diff3.updated, new_map());
+// build/dev/javascript/lustre/lustre/element/html.mjs
+function text3(content) {
+  return text2(content);
+}
+function div(attrs, children) {
+  return element2("div", attrs, children);
+}
+function p(attrs, children) {
+  return element2("p", attrs, children);
+}
+function a(attrs, children) {
+  return element2("a", attrs, children);
+}
+function table(attrs, children) {
+  return element2("table", attrs, children);
+}
+function tbody(attrs, children) {
+  return element2("tbody", attrs, children);
+}
+function td(attrs, children) {
+  return element2("td", attrs, children);
+}
+function th(attrs, children) {
+  return element2("th", attrs, children);
+}
+function thead(attrs, children) {
+  return element2("thead", attrs, children);
+}
+function tr(attrs, children) {
+  return element2("tr", attrs, children);
+}
+function button(attrs, children) {
+  return element2("button", attrs, children);
+}
+function datalist(attrs, children) {
+  return element2("datalist", attrs, children);
+}
+function form(attrs, children) {
+  return element2("form", attrs, children);
+}
+function input(attrs) {
+  return element2("input", attrs, empty_list);
+}
+function label(attrs, children) {
+  return element2("label", attrs, children);
+}
+function option(attrs, label2) {
+  return element2("option", attrs, toList([text2(label2)]));
+}
+function select(attrs, children) {
+  return element2("select", attrs, children);
 }
 
-// build/dev/javascript/lustre/lustre/internals/runtime.mjs
-var Attrs = class extends CustomType {
-  constructor(x0) {
+// build/dev/javascript/lustre/lustre/runtime/server/runtime.mjs
+var EffectDispatchedMessage = class extends CustomType {
+  constructor(message) {
     super();
-    this[0] = x0;
+    this.message = message;
   }
 };
-var Batch = class extends CustomType {
-  constructor(x0, x1) {
+var EffectEmitEvent = class extends CustomType {
+  constructor(name2, data) {
     super();
-    this[0] = x0;
-    this[1] = x1;
+    this.name = name2;
+    this.data = data;
   }
 };
-var Debug = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var Dispatch = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var Emit2 = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
-  }
-};
-var Event2 = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
-  }
-};
-var Shutdown = class extends CustomType {
-};
-var Subscribe = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
-  }
-};
-var Unsubscribe = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var ForceModel = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
+var SystemRequestedShutdown = class extends CustomType {
 };
 
-// build/dev/javascript/lustre/vdom.ffi.mjs
-if (globalThis.customElements && !globalThis.customElements.get("lustre-fragment")) {
-  globalThis.customElements.define(
-    "lustre-fragment",
-    class LustreFragment extends HTMLElement {
-      constructor() {
-        super();
-      }
+// build/dev/javascript/lustre/lustre/component.mjs
+var Config2 = class extends CustomType {
+  constructor(open_shadow_root, adopt_styles, attributes, properties, is_form_associated, on_form_autofill, on_form_reset, on_form_restore) {
+    super();
+    this.open_shadow_root = open_shadow_root;
+    this.adopt_styles = adopt_styles;
+    this.attributes = attributes;
+    this.properties = properties;
+    this.is_form_associated = is_form_associated;
+    this.on_form_autofill = on_form_autofill;
+    this.on_form_reset = on_form_reset;
+    this.on_form_restore = on_form_restore;
+  }
+};
+function new$8(options) {
+  let init3 = new Config2(
+    false,
+    true,
+    empty_dict(),
+    empty_dict(),
+    false,
+    option_none,
+    option_none,
+    option_none
+  );
+  return fold2(
+    options,
+    init3,
+    (config, option2) => {
+      return option2.apply(config);
     }
   );
 }
-function morph(prev, next2, dispatch) {
-  let out;
-  let stack = [{ prev, next: next2, parent: prev.parentNode }];
-  while (stack.length) {
-    let { prev: prev2, next: next3, parent } = stack.pop();
-    while (next3.subtree !== void 0) next3 = next3.subtree();
-    if (next3.content !== void 0) {
-      if (!prev2) {
-        const created = document.createTextNode(next3.content);
-        parent.appendChild(created);
-        out ??= created;
-      } else if (prev2.nodeType === Node.TEXT_NODE) {
-        if (prev2.textContent !== next3.content) prev2.textContent = next3.content;
-        out ??= prev2;
-      } else {
-        const created = document.createTextNode(next3.content);
-        parent.replaceChild(created, prev2);
-        out ??= created;
-      }
-    } else if (next3.tag !== void 0) {
-      const created = createElementNode({
-        prev: prev2,
-        next: next3,
-        dispatch,
-        stack
-      });
-      if (!prev2) {
-        parent.appendChild(created);
-      } else if (prev2 !== created) {
-        parent.replaceChild(created, prev2);
-      }
-      out ??= created;
-    }
-  }
-  return out;
-}
-function createElementNode({ prev, next: next2, dispatch, stack }) {
-  const namespace = next2.namespace || "http://www.w3.org/1999/xhtml";
-  const canMorph = prev && prev.nodeType === Node.ELEMENT_NODE && prev.localName === next2.tag && prev.namespaceURI === (next2.namespace || "http://www.w3.org/1999/xhtml");
-  const el = canMorph ? prev : namespace ? document.createElementNS(namespace, next2.tag) : document.createElement(next2.tag);
-  let handlersForEl;
-  if (!registeredHandlers.has(el)) {
-    const emptyHandlers = /* @__PURE__ */ new Map();
-    registeredHandlers.set(el, emptyHandlers);
-    handlersForEl = emptyHandlers;
-  } else {
-    handlersForEl = registeredHandlers.get(el);
-  }
-  const prevHandlers = canMorph ? new Set(handlersForEl.keys()) : null;
-  const prevAttributes = canMorph ? new Set(Array.from(prev.attributes, (a2) => a2.name)) : null;
-  let className = null;
-  let style2 = null;
-  let innerHTML = null;
-  if (canMorph && next2.tag === "textarea") {
-    const innertText = next2.children[Symbol.iterator]().next().value?.content;
-    if (innertText !== void 0) el.value = innertText;
-  }
-  const delegated = [];
-  for (const attr of next2.attrs) {
-    const name2 = attr[0];
-    const value4 = attr[1];
-    if (attr.as_property) {
-      if (el[name2] !== value4) el[name2] = value4;
-      if (canMorph) prevAttributes.delete(name2);
-    } else if (name2.startsWith("on")) {
-      const eventName = name2.slice(2);
-      const callback = dispatch(value4, eventName === "input");
-      if (!handlersForEl.has(eventName)) {
-        el.addEventListener(eventName, lustreGenericEventHandler);
-      }
-      handlersForEl.set(eventName, callback);
-      if (canMorph) prevHandlers.delete(eventName);
-    } else if (name2.startsWith("data-lustre-on-")) {
-      const eventName = name2.slice(15);
-      const callback = dispatch(lustreServerEventHandler);
-      if (!handlersForEl.has(eventName)) {
-        el.addEventListener(eventName, lustreGenericEventHandler);
-      }
-      handlersForEl.set(eventName, callback);
-      el.setAttribute(name2, value4);
-      if (canMorph) {
-        prevHandlers.delete(eventName);
-        prevAttributes.delete(name2);
-      }
-    } else if (name2.startsWith("delegate:data-") || name2.startsWith("delegate:aria-")) {
-      el.setAttribute(name2, value4);
-      delegated.push([name2.slice(10), value4]);
-    } else if (name2 === "class") {
-      className = className === null ? value4 : className + " " + value4;
-    } else if (name2 === "style") {
-      style2 = style2 === null ? value4 : style2 + value4;
-    } else if (name2 === "dangerous-unescaped-html") {
-      innerHTML = value4;
-    } else {
-      if (el.getAttribute(name2) !== value4) el.setAttribute(name2, value4);
-      if (name2 === "value" || name2 === "selected") el[name2] = value4;
-      if (canMorph) prevAttributes.delete(name2);
-    }
-  }
-  if (className !== null) {
-    el.setAttribute("class", className);
-    if (canMorph) prevAttributes.delete("class");
-  }
-  if (style2 !== null) {
-    el.setAttribute("style", style2);
-    if (canMorph) prevAttributes.delete("style");
-  }
-  if (canMorph) {
-    for (const attr of prevAttributes) {
-      el.removeAttribute(attr);
-    }
-    for (const eventName of prevHandlers) {
-      handlersForEl.delete(eventName);
-      el.removeEventListener(eventName, lustreGenericEventHandler);
-    }
-  }
-  if (next2.tag === "slot") {
-    window.queueMicrotask(() => {
-      for (const child of el.assignedElements()) {
-        for (const [name2, value4] of delegated) {
-          if (!child.hasAttribute(name2)) {
-            child.setAttribute(name2, value4);
-          }
-        }
-      }
-    });
-  }
-  if (next2.key !== void 0 && next2.key !== "") {
-    el.setAttribute("data-lustre-key", next2.key);
-  } else if (innerHTML !== null) {
-    el.innerHTML = innerHTML;
-    return el;
-  }
-  let prevChild = el.firstChild;
-  let seenKeys = null;
-  let keyedChildren = null;
-  let incomingKeyedChildren = null;
-  let firstChild = children(next2).next().value;
-  if (canMorph && firstChild !== void 0 && // Explicit checks are more verbose but truthy checks force a bunch of comparisons
-  // we don't care about: it's never gonna be a number etc.
-  firstChild.key !== void 0 && firstChild.key !== "") {
-    seenKeys = /* @__PURE__ */ new Set();
-    keyedChildren = getKeyedChildren(prev);
-    incomingKeyedChildren = getKeyedChildren(next2);
-    for (const child of children(next2)) {
-      prevChild = diffKeyedChild(
-        prevChild,
-        child,
-        el,
-        stack,
-        incomingKeyedChildren,
-        keyedChildren,
-        seenKeys
-      );
-    }
-  } else {
-    for (const child of children(next2)) {
-      stack.unshift({ prev: prevChild, next: child, parent: el });
-      prevChild = prevChild?.nextSibling;
-    }
-  }
-  while (prevChild) {
-    const next3 = prevChild.nextSibling;
-    el.removeChild(prevChild);
-    prevChild = next3;
-  }
-  return el;
-}
-var registeredHandlers = /* @__PURE__ */ new WeakMap();
-function lustreGenericEventHandler(event2) {
-  const target = event2.currentTarget;
-  if (!registeredHandlers.has(target)) {
-    target.removeEventListener(event2.type, lustreGenericEventHandler);
-    return;
-  }
-  const handlersForEventTarget = registeredHandlers.get(target);
-  if (!handlersForEventTarget.has(event2.type)) {
-    target.removeEventListener(event2.type, lustreGenericEventHandler);
-    return;
-  }
-  handlersForEventTarget.get(event2.type)(event2);
-}
-function lustreServerEventHandler(event2) {
-  const el = event2.currentTarget;
-  const tag = el.getAttribute(`data-lustre-on-${event2.type}`);
-  const data = JSON.parse(el.getAttribute("data-lustre-data") || "{}");
-  const include = JSON.parse(el.getAttribute("data-lustre-include") || "[]");
-  switch (event2.type) {
-    case "input":
-    case "change":
-      include.push("target.value");
-      break;
-  }
-  return {
-    tag,
-    data: include.reduce(
-      (data2, property2) => {
-        const path = property2.split(".");
-        for (let i = 0, o = data2, e = event2; i < path.length; i++) {
-          if (i === path.length - 1) {
-            o[path[i]] = e[path[i]];
-          } else {
-            o[path[i]] ??= {};
-            e = e[path[i]];
-            o = o[path[i]];
-          }
-        }
-        return data2;
-      },
-      { data }
-    )
-  };
-}
-function getKeyedChildren(el) {
-  const keyedChildren = /* @__PURE__ */ new Map();
-  if (el) {
-    for (const child of children(el)) {
-      const key = child?.key || child?.getAttribute?.("data-lustre-key");
-      if (key) keyedChildren.set(key, child);
-    }
-  }
-  return keyedChildren;
-}
-function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keyedChildren, seenKeys) {
-  while (prevChild && !incomingKeyedChildren.has(prevChild.getAttribute("data-lustre-key"))) {
-    const nextChild = prevChild.nextSibling;
-    el.removeChild(prevChild);
-    prevChild = nextChild;
-  }
-  if (keyedChildren.size === 0) {
-    stack.unshift({ prev: prevChild, next: child, parent: el });
-    prevChild = prevChild?.nextSibling;
-    return prevChild;
-  }
-  if (seenKeys.has(child.key)) {
-    console.warn(`Duplicate key found in Lustre vnode: ${child.key}`);
-    stack.unshift({ prev: null, next: child, parent: el });
-    return prevChild;
-  }
-  seenKeys.add(child.key);
-  const keyedChild = keyedChildren.get(child.key);
-  if (!keyedChild && !prevChild) {
-    stack.unshift({ prev: null, next: child, parent: el });
-    return prevChild;
-  }
-  if (!keyedChild && prevChild !== null) {
-    const placeholder2 = document.createTextNode("");
-    el.insertBefore(placeholder2, prevChild);
-    stack.unshift({ prev: placeholder2, next: child, parent: el });
-    return prevChild;
-  }
-  if (!keyedChild || keyedChild === prevChild) {
-    stack.unshift({ prev: prevChild, next: child, parent: el });
-    prevChild = prevChild?.nextSibling;
-    return prevChild;
-  }
-  el.insertBefore(keyedChild, prevChild);
-  stack.unshift({ prev: keyedChild, next: child, parent: el });
-  return prevChild;
-}
-function* children(element2) {
-  for (const child of element2.children) {
-    yield* forceChild(child);
-  }
-}
-function* forceChild(element2) {
-  if (element2.subtree !== void 0) {
-    yield* forceChild(element2.subtree());
-  } else {
-    yield element2;
-  }
-}
 
-// build/dev/javascript/lustre/lustre.ffi.mjs
-var LustreClientApplication = class _LustreClientApplication {
-  /**
-   * @template Flags
-   *
-   * @param {object} app
-   * @param {(flags: Flags) => [Model, Lustre.Effect<Msg>]} app.init
-   * @param {(msg: Msg, model: Model) => [Model, Lustre.Effect<Msg>]} app.update
-   * @param {(model: Model) => Lustre.Element<Msg>} app.view
-   * @param {string | HTMLElement} selector
-   * @param {Flags} flags
-   *
-   * @returns {Gleam.Ok<(action: Lustre.Action<Lustre.Client, Msg>>) => void>}
-   */
-  static start({ init: init4, update: update2, view: view2 }, selector, flags) {
+// build/dev/javascript/lustre/lustre/runtime/client/spa.ffi.mjs
+var Spa = class _Spa {
+  static start({ init: init3, update: update3, view: view2 }, selector, flags) {
     if (!is_browser()) return new Error(new NotABrowser());
-    const root = selector instanceof HTMLElement ? selector : document.querySelector(selector);
-    if (!root) return new Error(new ElementNotFound(selector));
-    const app = new _LustreClientApplication(root, init4(flags), update2, view2);
-    return new Ok((action) => app.send(action));
+    const root3 = selector instanceof HTMLElement ? selector : document2.querySelector(selector);
+    if (!root3) return new Error(new ElementNotFound(selector));
+    return new Ok(new _Spa(root3, init3(flags), update3, view2));
   }
-  /**
-   * @param {Element} root
-   * @param {[Model, Lustre.Effect<Msg>]} init
-   * @param {(model: Model, msg: Msg) => [Model, Lustre.Effect<Msg>]} update
-   * @param {(model: Model) => Lustre.Element<Msg>} view
-   *
-   * @returns {LustreClientApplication}
-   */
-  constructor(root, [init4, effects], update2, view2) {
-    this.root = root;
-    this.#model = init4;
-    this.#update = update2;
-    this.#view = view2;
-    this.#tickScheduled = window.setTimeout(
-      () => this.#tick(effects.all.toArray(), true),
-      0
-    );
+  #runtime;
+  constructor(root3, [init3, effects], update3, view2) {
+    this.#runtime = new Runtime(root3, [init3, effects], view2, update3);
   }
-  /** @type {Element} */
-  root;
-  /**
-   * @param {Lustre.Action<Lustre.Client, Msg>} action
-   *
-   * @returns {void}
-   */
-  send(action) {
-    if (action instanceof Debug) {
-      if (action[0] instanceof ForceModel) {
-        this.#tickScheduled = window.clearTimeout(this.#tickScheduled);
-        this.#queue = [];
-        this.#model = action[0][0];
-        const vdom = this.#view(this.#model);
-        const dispatch = (handler, immediate = false) => (event2) => {
-          const result = handler(event2);
-          if (result instanceof Ok) {
-            this.send(new Dispatch(result[0], immediate));
-          }
-        };
-        const prev = this.root.firstChild ?? this.root.appendChild(document.createTextNode(""));
-        morph(prev, vdom, dispatch);
+  send(message) {
+    switch (message.constructor) {
+      case EffectDispatchedMessage: {
+        this.dispatch(message.message, false);
+        break;
       }
-    } else if (action instanceof Dispatch) {
-      const msg = action[0];
-      const immediate = action[1] ?? false;
-      this.#queue.push(msg);
-      if (immediate) {
-        this.#tickScheduled = window.clearTimeout(this.#tickScheduled);
-        this.#tick();
-      } else if (!this.#tickScheduled) {
-        this.#tickScheduled = window.setTimeout(() => this.#tick());
+      case EffectEmitEvent: {
+        this.emit(message.name, message.data);
+        break;
       }
-    } else if (action instanceof Emit2) {
-      const event2 = action[0];
-      const data = action[1];
-      this.root.dispatchEvent(
-        new CustomEvent(event2, {
-          detail: data,
-          bubbles: true,
-          composed: true
-        })
-      );
-    } else if (action instanceof Shutdown) {
-      this.#tickScheduled = window.clearTimeout(this.#tickScheduled);
-      this.#model = null;
-      this.#update = null;
-      this.#view = null;
-      this.#queue = null;
-      while (this.root.firstChild) {
-        this.root.firstChild.remove();
-      }
+      case SystemRequestedShutdown:
+        break;
     }
   }
-  /** @type {Model} */
-  #model;
-  /** @type {(model: Model, msg: Msg) => [Model, Lustre.Effect<Msg>]} */
-  #update;
-  /** @type {(model: Model) => Lustre.Element<Msg>} */
-  #view;
-  /** @type {Array<Msg>} */
-  #queue = [];
-  /** @type {number | undefined} */
-  #tickScheduled;
-  /**
-   * @param {Lustre.Effect<Msg>[]} effects
-   */
-  #tick(effects = []) {
-    this.#tickScheduled = void 0;
-    this.#flush(effects);
-    const vdom = this.#view(this.#model);
-    const dispatch = (handler, immediate = false) => (event2) => {
-      const result = handler(event2);
-      if (result instanceof Ok) {
-        this.send(new Dispatch(result[0], immediate));
-      }
-    };
-    const prev = this.root.firstChild ?? this.root.appendChild(document.createTextNode(""));
-    morph(prev, vdom, dispatch);
+  dispatch(msg, immediate2) {
+    this.#runtime.dispatch(msg, immediate2);
   }
-  #flush(effects = []) {
-    while (this.#queue.length > 0) {
-      const msg = this.#queue.shift();
-      const [next2, effect] = this.#update(this.#model, msg);
-      effects = effects.concat(effect.all.toArray());
-      this.#model = next2;
-    }
-    while (effects.length > 0) {
-      const effect = effects.shift();
-      const dispatch = (msg) => this.send(new Dispatch(msg));
-      const emit2 = (event2, data) => this.root.dispatchEvent(
-        new CustomEvent(event2, {
-          detail: data,
-          bubbles: true,
-          composed: true
-        })
-      );
-      const select2 = () => {
-      };
-      const root = this.root;
-      effect({ dispatch, emit: emit2, select: select2, root });
-    }
-    if (this.#queue.length > 0) {
-      this.#flush(effects);
-    }
+  emit(event4, data) {
+    this.#runtime.emit(event4, data);
   }
 };
-var start = LustreClientApplication.start;
-var LustreServerApplication = class _LustreServerApplication {
-  static start({ init: init4, update: update2, view: view2, on_attribute_change }, flags) {
-    const app = new _LustreServerApplication(
-      init4(flags),
-      update2,
-      view2,
-      on_attribute_change
-    );
-    return new Ok((action) => app.send(action));
-  }
-  constructor([model, effects], update2, view2, on_attribute_change) {
-    this.#model = model;
-    this.#update = update2;
-    this.#view = view2;
-    this.#html = view2(model);
-    this.#onAttributeChange = on_attribute_change;
-    this.#renderers = /* @__PURE__ */ new Map();
-    this.#handlers = handlers(this.#html);
-    this.#tick(effects.all.toArray());
-  }
-  send(action) {
-    if (action instanceof Attrs) {
-      for (const attr of action[0]) {
-        const decoder = this.#onAttributeChange.get(attr[0]);
-        if (!decoder) continue;
-        const msg = decoder(attr[1]);
-        if (msg instanceof Error) continue;
-        this.#queue.push(msg);
-      }
-      this.#tick();
-    } else if (action instanceof Batch) {
-      this.#queue = this.#queue.concat(action[0].toArray());
-      this.#tick(action[1].all.toArray());
-    } else if (action instanceof Debug) {
-    } else if (action instanceof Dispatch) {
-      this.#queue.push(action[0]);
-      this.#tick();
-    } else if (action instanceof Emit2) {
-      const event2 = new Emit(action[0], action[1]);
-      for (const [_, renderer] of this.#renderers) {
-        renderer(event2);
-      }
-    } else if (action instanceof Event2) {
-      const handler = this.#handlers.get(action[0]);
-      if (!handler) return;
-      const msg = handler(action[1]);
-      if (msg instanceof Error) return;
-      this.#queue.push(msg[0]);
-      this.#tick();
-    } else if (action instanceof Subscribe) {
-      const attrs = keys(this.#onAttributeChange);
-      const patch = new Init(attrs, this.#html);
-      this.#renderers = this.#renderers.set(action[0], action[1]);
-      action[1](patch);
-    } else if (action instanceof Unsubscribe) {
-      this.#renderers = this.#renderers.delete(action[0]);
-    }
-  }
-  #model;
-  #update;
-  #queue;
-  #view;
-  #html;
-  #renderers;
-  #handlers;
-  #onAttributeChange;
-  #tick(effects = []) {
-    this.#flush(effects);
-    const vdom = this.#view(this.#model);
-    const diff3 = elements(this.#html, vdom);
-    if (!is_empty_element_diff(diff3)) {
-      const patch = new Diff(diff3);
-      for (const [_, renderer] of this.#renderers) {
-        renderer(patch);
-      }
-    }
-    this.#html = vdom;
-    this.#handlers = diff3.handlers;
-  }
-  #flush(effects = []) {
-    while (this.#queue.length > 0) {
-      const msg = this.#queue.shift();
-      const [next2, effect] = this.#update(this.#model, msg);
-      effects = effects.concat(effect.all.toArray());
-      this.#model = next2;
-    }
-    while (effects.length > 0) {
-      const effect = effects.shift();
-      const dispatch = (msg) => this.send(new Dispatch(msg));
-      const emit2 = (event2, data) => this.root.dispatchEvent(
-        new CustomEvent(event2, {
-          detail: data,
-          bubbles: true,
-          composed: true
-        })
-      );
-      const select2 = () => {
-      };
-      const root = null;
-      effect({ dispatch, emit: emit2, select: select2, root });
-    }
-    if (this.#queue.length > 0) {
-      this.#flush(effects);
-    }
-  }
-};
-var start_server_application = LustreServerApplication.start;
-var is_browser = () => globalThis.window && window.document;
+var start = Spa.start;
 
 // build/dev/javascript/lustre/lustre.mjs
 var App = class extends CustomType {
-  constructor(init4, update2, view2, on_attribute_change) {
+  constructor(init3, update3, view2, config) {
     super();
-    this.init = init4;
-    this.update = update2;
+    this.init = init3;
+    this.update = update3;
     this.view = view2;
-    this.on_attribute_change = on_attribute_change;
+    this.config = config;
   }
 };
 var ElementNotFound = class extends CustomType {
@@ -7264,22 +8736,22 @@ var ElementNotFound = class extends CustomType {
 };
 var NotABrowser = class extends CustomType {
 };
-function application(init4, update2, view2) {
-  return new App(init4, update2, view2, new None());
+function application(init3, update3, view2) {
+  return new App(init3, update3, view2, new$8(empty_list));
 }
-function start2(app, selector, flags) {
+function start3(app, selector, start_args) {
   return guard(
     !is_browser(),
     new Error(new NotABrowser()),
     () => {
-      return start(app, selector, flags);
+      return start(app, selector, start_args);
     }
   );
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
 var Uri = class extends CustomType {
-  constructor(scheme, userinfo, host, port, path, query, fragment) {
+  constructor(scheme, userinfo, host, port, path, query, fragment3) {
     super();
     this.scheme = scheme;
     this.userinfo = userinfo;
@@ -7287,7 +8759,7 @@ var Uri = class extends CustomType {
     this.port = port;
     this.path = path;
     this.query = query;
-    this.fragment = fragment;
+    this.fragment = fragment3;
   }
 };
 function remove_dot_segments_loop(loop$input, loop$accumulator) {
@@ -7328,12 +8800,12 @@ function remove_dot_segments(input2) {
 function path_segments(path) {
   return remove_dot_segments(split2(path, "/"));
 }
-function to_string3(uri) {
+function to_string5(uri) {
   let _block;
   let $ = uri.fragment;
   if ($ instanceof Some) {
-    let fragment = $[0];
-    _block = toList(["#", fragment]);
+    let fragment3 = $[0];
+    _block = toList(["#", fragment3]);
   } else {
     _block = toList([]);
   }
@@ -7410,8 +8882,8 @@ var defaults = {
 };
 var initial_location = globalThis?.window?.location?.href;
 var do_init = (dispatch, options = defaults) => {
-  document.addEventListener("click", (event2) => {
-    const a2 = find_anchor(event2.target);
+  document.addEventListener("click", (event4) => {
+    const a2 = find_anchor(event4.target);
     if (!a2) return;
     try {
       const url = new URL(a2.href);
@@ -7419,7 +8891,7 @@ var do_init = (dispatch, options = defaults) => {
       const is_external = url.host !== window.location.host;
       if (!options.handle_external_links && is_external) return;
       if (!options.handle_internal_links && !is_external) return;
-      event2.preventDefault();
+      event4.preventDefault();
       if (!is_external) {
         window.history.pushState({}, "", a2.href);
         window.requestAnimationFrame(() => {
@@ -7480,7 +8952,7 @@ var uri_from_url = (url) => {
 };
 
 // build/dev/javascript/modem/modem.mjs
-function init2(handler) {
+function init(handler) {
   return from(
     (dispatch) => {
       return guard(
@@ -7517,7 +8989,7 @@ var Connect = class extends CustomType {
 };
 var Options2 = class extends CustomType {
 };
-var Patch = class extends CustomType {
+var Patch2 = class extends CustomType {
 };
 var Http = class extends CustomType {
 };
@@ -7525,23 +8997,23 @@ var Https = class extends CustomType {
 };
 function method_to_string(method) {
   if (method instanceof Connect) {
-    return "connect";
+    return "CONNECT";
   } else if (method instanceof Delete) {
-    return "delete";
+    return "DELETE";
   } else if (method instanceof Get) {
-    return "get";
+    return "GET";
   } else if (method instanceof Head) {
-    return "head";
+    return "HEAD";
   } else if (method instanceof Options2) {
-    return "options";
-  } else if (method instanceof Patch) {
-    return "patch";
+    return "OPTIONS";
+  } else if (method instanceof Patch2) {
+    return "PATCH";
   } else if (method instanceof Post) {
-    return "post";
+    return "POST";
   } else if (method instanceof Put) {
-    return "put";
+    return "PUT";
   } else if (method instanceof Trace) {
-    return "trace";
+    return "TRACE";
   } else {
     let s = method[0];
     return s;
@@ -7580,8 +9052,8 @@ function to_uri(request) {
     new None()
   );
 }
-function set_header(request, key, value4) {
-  let headers = key_set(request.headers, lowercase(key), value4);
+function set_header(request, key, value3) {
+  let headers = key_set(request.headers, lowercase(key), value3);
   let _record = request;
   return new Request(
     _record.method,
@@ -7617,7 +9089,7 @@ function set_method(req, method) {
     _record.query
   );
 }
-function new$4() {
+function new$9() {
   return new Request(
     new Get(),
     toList([]),
@@ -7697,22 +9169,22 @@ var PromiseLayer = class _PromiseLayer {
   constructor(promise) {
     this.promise = promise;
   }
-  static wrap(value4) {
-    return value4 instanceof Promise ? new _PromiseLayer(value4) : value4;
+  static wrap(value3) {
+    return value3 instanceof Promise ? new _PromiseLayer(value3) : value3;
   }
-  static unwrap(value4) {
-    return value4 instanceof _PromiseLayer ? value4.promise : value4;
+  static unwrap(value3) {
+    return value3 instanceof _PromiseLayer ? value3.promise : value3;
   }
 };
-function resolve(value4) {
-  return Promise.resolve(PromiseLayer.wrap(value4));
+function resolve(value3) {
+  return Promise.resolve(PromiseLayer.wrap(value3));
 }
 function then_await(promise, fn) {
-  return promise.then((value4) => fn(PromiseLayer.unwrap(value4)));
+  return promise.then((value3) => fn(PromiseLayer.unwrap(value3)));
 }
 function map_promise(promise, fn) {
   return promise.then(
-    (value4) => PromiseLayer.wrap(fn(PromiseLayer.unwrap(value4)))
+    (value3) => PromiseLayer.wrap(fn(PromiseLayer.unwrap(value3)))
   );
 }
 function rescue(promise, fn) {
@@ -7746,7 +9218,7 @@ function try_await(promise, callback) {
   );
 }
 
-// build/dev/javascript/gleam_fetch/ffi.mjs
+// build/dev/javascript/gleam_fetch/gleam_fetch_ffi.mjs
 async function raw_send(request) {
   try {
     return new Ok(await fetch(request));
@@ -7761,14 +9233,18 @@ function from_fetch_response(response) {
     response
   );
 }
-function to_fetch_request(request) {
-  let url = to_string3(to_uri(request));
+function request_common(request) {
+  let url = to_string5(to_uri(request));
   let method = method_to_string(request.method).toUpperCase();
   let options = {
     headers: make_headers(request.headers),
     method
   };
-  if (method !== "GET" && method !== "HEAD") options.body = request.body;
+  return [url, options];
+}
+function to_fetch_request(request) {
+  let [url, options] = request_common(request);
+  if (options.method !== "GET" && options.method !== "HEAD") options.body = request.body;
   return new globalThis.Request(url, options);
 }
 function make_headers(headersList) {
@@ -7795,7 +9271,7 @@ var NetworkError = class extends CustomType {
 };
 var UnableToReadBody = class extends CustomType {
 };
-function send(request) {
+function send2(request) {
   let _pipe = request;
   let _pipe$1 = to_fetch_request(_pipe);
   let _pipe$2 = raw_send(_pipe$1);
@@ -7840,7 +9316,7 @@ var ExpectTextResponse = class extends CustomType {
   }
 };
 function do_send(req, expect, dispatch) {
-  let _pipe = send(req);
+  let _pipe = send2(req);
   let _pipe$1 = try_await(_pipe, read_text_body);
   let _pipe$2 = map_promise(
     _pipe$1,
@@ -7862,7 +9338,7 @@ function do_send(req, expect, dispatch) {
   tap(_pipe$3, dispatch);
   return void 0;
 }
-function send2(req, expect) {
+function send3(req, expect) {
   return from((_capture) => {
     return do_send(req, expect, _capture);
   });
@@ -7895,8 +9371,8 @@ function expect_json(decoder, to_msg) {
         (body) => {
           let $ = parse(body, decoder);
           if ($.isOk()) {
-            let json = $[0];
-            return new Ok(json);
+            let json2 = $[0];
+            return new Ok(json2);
           } else {
             let json_error = $[0];
             return new Error(new JsonError(json_error));
@@ -8238,7 +9714,7 @@ var UserSubmittedImportForm = class extends CustomType {
     this[0] = x0;
   }
 };
-var Model2 = class extends CustomType {
+var Model = class extends CustomType {
   constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit_form, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input, import_form) {
     super();
     this.login_form = login_form;
@@ -8375,9 +9851,9 @@ var Result2 = class _Result extends CustomType2 {
   }
 };
 var Ok2 = class extends Result2 {
-  constructor(value4) {
+  constructor(value3) {
     super();
-    this[0] = value4;
+    this[0] = value3;
   }
   // @internal
   isOk() {
@@ -8397,11 +9873,11 @@ var Error2 = class extends Result2 {
 
 // build/dev/javascript/budget_fe/budget_fe/internals/app.ffi.mjs
 function read_localstorage(key) {
-  const value4 = window.localStorage.getItem(key);
-  return value4 ? new Ok2(value4) : new Error2(void 0);
+  const value3 = window.localStorage.getItem(key);
+  return value3 ? new Ok2(value3) : new Error2(void 0);
 }
-function write_localstorage(key, value4) {
-  window.localStorage.setItem(key, value4);
+function write_localstorage(key, value3) {
+  window.localStorage.setItem(key, value3);
 }
 
 // build/dev/javascript/budget_fe/budget_fe/internals/effects.mjs
@@ -8419,9 +9895,9 @@ function on_route_change(uri) {
   let route = uri_to_route(uri);
   return new OnRouteChange(route);
 }
-function write_localstorage2(key, value4) {
+function write_localstorage2(key, value3) {
   return from((_) => {
-    return write_localstorage(key, value4);
+    return write_localstorage(key, value3);
   });
 }
 var is_prod = false;
@@ -8434,12 +9910,12 @@ function request_with_auth() {
   let _block$1;
   let $ = is_prod;
   if ($) {
-    let _pipe$12 = new$4();
+    let _pipe$12 = new$9();
     let _pipe$22 = set_host(_pipe$12, "budget-be.fly.dev");
     let _pipe$32 = set_port(_pipe$22, 443);
     _block$1 = set_scheme(_pipe$32, new Https());
   } else {
-    let _pipe$12 = new$4();
+    let _pipe$12 = new$9();
     let _pipe$22 = set_host(_pipe$12, "127.0.0.1");
     let _pipe$32 = set_port(_pipe$22, 8080);
     _block$1 = set_scheme(_pipe$32, new Http());
@@ -8451,22 +9927,22 @@ function request_with_auth() {
   let _pipe$4 = set_header(_pipe$3, "Accept", "application/json");
   return set_header(_pipe$4, "Authorization", "Bearer " + jwt);
 }
-function make_request(method, path, json, decoder, to_msg) {
+function make_request(method, path, json2, decoder, to_msg) {
   let _block;
   let _pipe = request_with_auth();
   let _pipe$1 = set_method(_pipe, method);
   _block = set_path(_pipe$1, path);
   let req = _block;
   let _block$1;
-  if (json instanceof Some) {
-    let json$1 = json[0];
+  if (json2 instanceof Some) {
+    let json$1 = json2[0];
     let _pipe$2 = req;
     _block$1 = set_body(_pipe$2, json$1);
   } else {
     _block$1 = req;
   }
   let req_with_body = _block$1;
-  return send2(
+  return send3(
     req_with_body,
     expect_json(decoder, to_msg)
   );
@@ -8482,11 +9958,11 @@ function load_user_eff() {
     }
   );
 }
-function make_post(path, json, decoder, to_msg) {
+function make_post(path, json2, decoder, to_msg) {
   return make_request(
     new Post(),
     path,
-    new Some(json),
+    new Some(json2),
     decoder,
     to_msg
   );
@@ -8519,8 +9995,8 @@ function add_category(name2, group_id) {
     to_string2(
       object2(
         toList([
-          ["name", string4(name2)],
-          ["group_id", string4(group_id)]
+          ["name", string3(name2)],
+          ["group_id", string3(group_id)]
         ])
       )
     ),
@@ -8533,7 +10009,7 @@ function add_category(name2, group_id) {
 function get_allocations() {
   let path = "allocations";
   let decoder = list2(allocation_decoder());
-  return send2(
+  return send3(
     (() => {
       let _pipe = request_with_auth();
       return set_path(_pipe, path);
@@ -8549,7 +10025,7 @@ function get_allocations() {
 function get_categories() {
   let path = "categories";
   let decoder = list2(category_decoder());
-  return send2(
+  return send3(
     (() => {
       let _pipe = request_with_auth();
       return set_path(_pipe, path);
@@ -8565,7 +10041,7 @@ function get_categories() {
 function get_transactions() {
   let path = "transactions";
   let decoder = list2(transaction_decoder());
-  return send2(
+  return send3(
     (() => {
       let _pipe = request_with_auth();
       return set_path(_pipe, path);
@@ -8581,7 +10057,7 @@ function get_transactions() {
 function get_category_groups() {
   let path = "category/groups";
   let decoder = list2(category_group_decoder());
-  return send2(
+  return send3(
     (() => {
       let _pipe = request_with_auth();
       return set_path(_pipe, path);
@@ -8597,7 +10073,7 @@ function get_category_groups() {
 function add_new_group_eff(name2) {
   return make_post(
     "category/group/add",
-    to_string2(object2(toList([["name", string4(name2)]]))),
+    to_string2(object2(toList([["name", string3(name2)]]))),
     id_decoder(),
     (var0) => {
       return new AddCategoryGroupResult(var0);
@@ -8785,7 +10261,7 @@ function login_eff(login, pass) {
     "login",
     to_string2(
       object2(
-        toList([["login", string4(login)], ["pass", string4(pass)]])
+        toList([["login", string3(login)], ["pass", string3(pass)]])
       )
     ),
     user_with_token_decoder(),
@@ -8797,7 +10273,7 @@ function login_eff(login, pass) {
 function get_category_suggestions() {
   let path = "category/suggestions";
   let decoder = category_suggestions_decoder();
-  return send2(
+  return send3(
     (() => {
       let _pipe = request_with_auth();
       return set_path(_pipe, path);
@@ -8810,11 +10286,11 @@ function get_category_suggestions() {
     )
   );
 }
-function echo(value4, file, line) {
+function echo(value3, file, line) {
   const grey = "\x1B[90m";
   const reset_color = "\x1B[39m";
   const file_line = `${file}:${line}`;
-  const string_value = echo$inspect(value4);
+  const string_value = echo$inspect(value3);
   if (globalThis.process?.stderr?.write) {
     const string5 = `${grey}${file_line}${reset_color}
 ${string_value}
@@ -8830,7 +10306,7 @@ ${string_value}
 ${string_value}`;
     globalThis.console.log(string5);
   }
-  return value4;
+  return value3;
 }
 function echo$inspectString(str) {
   let new_str = '"';
@@ -8851,25 +10327,25 @@ function echo$inspectString(str) {
   new_str += '"';
   return new_str;
 }
-function echo$inspectDict(map8) {
+function echo$inspectDict(map7) {
   let body = "dict.from_list([";
-  let first3 = true;
+  let first2 = true;
   let key_value_pairs = [];
-  map8.forEach((value4, key) => {
-    key_value_pairs.push([key, value4]);
+  map7.forEach((value3, key) => {
+    key_value_pairs.push([key, value3]);
   });
   key_value_pairs.sort();
-  key_value_pairs.forEach(([key, value4]) => {
-    if (!first3) body = body + ", ";
-    body = body + "#(" + echo$inspect(key) + ", " + echo$inspect(value4) + ")";
-    first3 = false;
+  key_value_pairs.forEach(([key, value3]) => {
+    if (!first2) body = body + ", ";
+    body = body + "#(" + echo$inspect(key) + ", " + echo$inspect(value3) + ")";
+    first2 = false;
   });
   return body + "])";
 }
 function echo$inspectCustomType(record) {
   const props = globalThis.Object.keys(record).map((label2) => {
-    const value4 = echo$inspect(record[label2]);
-    return isNaN(parseInt(label2)) ? `${label2}: ${value4}` : value4;
+    const value3 = echo$inspect(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value3}` : value3;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
@@ -8939,105 +10415,133 @@ function echo$inspectBitArray(bitArray) {
     return `<<${Array.from(alignedBytes.rawBuffer).join(", ")}>>`;
   }
 }
-function echo$isDict(value4) {
+function echo$isDict(value3) {
   try {
-    return value4 instanceof Dict;
+    return value3 instanceof Dict;
   } catch {
     return false;
   }
 }
 
-// build/dev/javascript/lustre/lustre/element/html.mjs
-function text2(content) {
-  return text(content);
-}
-function div(attrs, children2) {
-  return element("div", attrs, children2);
-}
-function p(attrs, children2) {
-  return element("p", attrs, children2);
-}
-function a(attrs, children2) {
-  return element("a", attrs, children2);
-}
-function table(attrs, children2) {
-  return element("table", attrs, children2);
-}
-function tbody(attrs, children2) {
-  return element("tbody", attrs, children2);
-}
-function td(attrs, children2) {
-  return element("td", attrs, children2);
-}
-function th(attrs, children2) {
-  return element("th", attrs, children2);
-}
-function thead(attrs, children2) {
-  return element("thead", attrs, children2);
-}
-function tr(attrs, children2) {
-  return element("tr", attrs, children2);
-}
-function button(attrs, children2) {
-  return element("button", attrs, children2);
-}
-function datalist(attrs, children2) {
-  return element("datalist", attrs, children2);
-}
-function form(attrs, children2) {
-  return element("form", attrs, children2);
-}
-function input(attrs) {
-  return element("input", attrs, toList([]));
-}
-function label(attrs, children2) {
-  return element("label", attrs, children2);
-}
-function option(attrs, label2) {
-  return element("option", attrs, toList([text(label2)]));
-}
-function select(attrs, children2) {
-  return element("select", attrs, children2);
-}
-
 // build/dev/javascript/lustre/lustre/event.mjs
-function on2(name2, handler) {
-  return on(name2, handler);
+function is_immediate_event(name2) {
+  if (name2 === "input") {
+    return true;
+  } else if (name2 === "change") {
+    return true;
+  } else if (name2 === "focus") {
+    return true;
+  } else if (name2 === "focusin") {
+    return true;
+  } else if (name2 === "focusout") {
+    return true;
+  } else if (name2 === "blur") {
+    return true;
+  } else if (name2 === "select") {
+    return true;
+  } else {
+    return false;
+  }
+}
+function on(name2, handler) {
+  return event(
+    name2,
+    handler,
+    empty_list,
+    false,
+    false,
+    is_immediate_event(name2),
+    new NoLimit(0)
+  );
+}
+function prevent_default(event4) {
+  if (event4 instanceof Event2) {
+    let _record = event4;
+    return new Event2(
+      _record.kind,
+      _record.name,
+      _record.handler,
+      _record.include,
+      true,
+      _record.stop_propagation,
+      _record.immediate,
+      _record.limit
+    );
+  } else {
+    return event4;
+  }
 }
 function on_click(msg) {
-  return on2("click", (_) => {
-    return new Ok(msg);
-  });
-}
-function value3(event2) {
-  let _pipe = event2;
-  return field("target", field("value", string))(
-    _pipe
-  );
+  return on("click", success(msg));
 }
 function on_input(msg) {
-  return on2(
+  return on(
     "input",
-    (event2) => {
-      let _pipe = value3(event2);
-      return map3(_pipe, msg);
-    }
-  );
-}
-function checked2(event2) {
-  let _pipe = event2;
-  return field("target", field("checked", bool))(
-    _pipe
+    subfield(
+      toList(["target", "value"]),
+      string2,
+      (value3) => {
+        return success(msg(value3));
+      }
+    )
   );
 }
 function on_check(msg) {
-  return on2(
+  return on(
     "change",
-    (event2) => {
-      let _pipe = checked2(event2);
-      return map3(_pipe, msg);
+    subfield(
+      toList(["target", "checked"]),
+      bool,
+      (checked2) => {
+        return success(msg(checked2));
+      }
+    )
+  );
+}
+function formdata_decoder() {
+  let string_value_decoder = field(
+    0,
+    string2,
+    (key) => {
+      return field(
+        1,
+        one_of(
+          map4(string2, (var0) => {
+            return new Ok(var0);
+          }),
+          toList([success(new Error(void 0))])
+        ),
+        (value3) => {
+          let _pipe2 = value3;
+          let _pipe$12 = map3(
+            _pipe2,
+            (_capture) => {
+              return new$(key, _capture);
+            }
+          );
+          return success(_pipe$12);
+        }
+      );
     }
   );
+  let _pipe = string_value_decoder;
+  let _pipe$1 = list2(_pipe);
+  return map4(_pipe$1, values2);
+}
+function on_submit(msg) {
+  let _pipe = on(
+    "submit",
+    subfield(
+      toList(["detail", "formData"]),
+      formdata_decoder(),
+      (formdata) => {
+        let _pipe2 = formdata;
+        let _pipe$1 = msg(_pipe2);
+        return success(_pipe$1);
+      }
+    )
+  );
+  return prevent_default(_pipe);
 }
 
 // build/dev/javascript/budget_fe/budget_fe/internals/view.mjs
@@ -9045,7 +10549,7 @@ function auth_screen(form2) {
   return div(
     toList([class$("mt-3 rounded-3 p-2")]),
     toList([
-      text2("Log in:"),
+      text3("Log in:"),
       input(
         toList([
           on_input(
@@ -9059,7 +10563,7 @@ function auth_screen(form2) {
           placeholder("Login"),
           class$("form-control"),
           type_("text"),
-          style(toList([["width", "120px"]])),
+          styles(toList([["width", "120px"]])),
           value2(
             (() => {
               let _pipe = form2.login;
@@ -9081,7 +10585,7 @@ function auth_screen(form2) {
           placeholder("Password"),
           class$("form-control"),
           type_("password"),
-          style(toList([["width", "120px"]])),
+          styles(toList([["width", "120px"]])),
           value2(
             (() => {
               let _pipe = form2.pass;
@@ -9095,7 +10599,7 @@ function auth_screen(form2) {
           class$("mt-1"),
           on_click(new LoginSubmit())
         ]),
-        toList([text("Login")])
+        toList([text2("Login")])
       )
     ])
   );
@@ -9116,48 +10620,48 @@ function section_buttons(route) {
   return div(
     toList([
       class$("btn-group "),
-      style(toList([["height", "fit-content"]]))
+      styles(toList([["height", "fit-content"]]))
     ]),
     toList([
       a(
         toList([
-          attribute("aria-current", "page"),
+          attribute2("aria-current", "page"),
           class$("btn btn-primary " + cat_active),
           href("/")
         ]),
-        toList([text2("Budget")])
+        toList([text3("Budget")])
       ),
       a(
         toList([
           class$("btn btn-primary " + transactions_active),
           href("/transactions")
         ]),
-        toList([text2("Transactions")])
+        toList([text3("Transactions")])
       ),
       a(
         toList([
           class$("btn btn-primary " + import_active),
           href("/import")
         ]),
-        toList([text2("Import")])
+        toList([text3("Import")])
       )
     ])
   );
 }
-function row2(class$2, style2, fun) {
+function row2(class$2, style, fun) {
   return div(
     toList([
       class$("d-flex flex-row " + class$2),
-      style(style2)
+      styles(style)
     ]),
     fun()
   );
 }
-function column2(class$2, style2, fun) {
+function column2(class$2, style, fun) {
   return div(
     toList([
       class$("d-flex flex-column  p-1" + class$2),
-      style(style2)
+      styles(style)
     ]),
     fun()
   );
@@ -9247,10 +10751,10 @@ function cycle_bounds(c, cycle_end_day) {
 }
 function current_cycle_bounds(model) {
   let $ = cycle_bounds(model.cycle, model.cycle_end_day);
-  let start3 = $[0];
+  let start4 = $[0];
   let end = $[1];
   return (() => {
-    let _pipe = start3;
+    let _pipe = start4;
     return to_date_string(_pipe);
   })() + " - " + (() => {
     let _pipe = end;
@@ -9266,10 +10770,10 @@ function cycle_display(model) {
         button(
           toList([
             class$("btn btn-secondary mt-2 me-2"),
-            style(toList([["height", "fit-content"]])),
+            styles(toList([["height", "fit-content"]])),
             on_click(new CycleShift(new ShiftLeft()))
           ]),
-          toList([text("<")])
+          toList([text2("<")])
         ),
         column(
           () => {
@@ -9277,12 +10781,12 @@ function cycle_display(model) {
               div(
                 toList([
                   class$("text-center fs-4"),
-                  style(
+                  styles(
                     toList([["justify-content", "center"], ["width", "170px"]])
                   )
                 ]),
                 toList([
-                  text(
+                  text2(
                     (() => {
                       let _pipe = model.cycle;
                       return cycle_to_text(_pipe);
@@ -9293,9 +10797,9 @@ function cycle_display(model) {
               div(
                 toList([
                   class$("text-start fs-6"),
-                  style(toList([["width", "200px"]]))
+                  styles(toList([["width", "200px"]]))
                 ]),
-                toList([text(current_cycle_bounds(model))])
+                toList([text2(current_cycle_bounds(model))])
               )
             ]);
           }
@@ -9303,10 +10807,10 @@ function cycle_display(model) {
         button(
           toList([
             class$("btn btn-secondary mt-2 "),
-            style(toList([["height", "fit-content"]])),
+            styles(toList([["height", "fit-content"]])),
             on_click(new CycleShift(new ShiftRight()))
           ]),
-          toList([text(">")])
+          toList([text2(">")])
         )
       ]);
     }
@@ -9314,12 +10818,12 @@ function cycle_display(model) {
 }
 function current_cycle_transactions(model) {
   let $ = cycle_bounds(model.cycle, model.cycle_end_day);
-  let start3 = $[0];
+  let start4 = $[0];
   let end = $[1];
   return filter(
     model.transactions,
     (t) => {
-      return is_between(t.date, start3, end);
+      return is_between(t.date, start4, end);
     }
   );
 }
@@ -9346,10 +10850,10 @@ function target_switcher_ui(et) {
   }
   let $ = _block;
   let monthly = $[0];
-  let custom3 = $[1];
+  let custom2 = $[1];
   return div(
     toList([
-      attribute("aria-label", "Basic example"),
+      attribute2("aria-label", "Basic example"),
       role("group"),
       class$("btn-group mt-1")
     ]),
@@ -9360,15 +10864,15 @@ function target_switcher_ui(et) {
           class$("btn btn-primary" + monthly),
           type_("button")
         ]),
-        toList([text2("Monthly")])
+        toList([text3("Monthly")])
       ),
       button(
         toList([
           on_click(new EditTargetCadence(false)),
-          class$("btn btn-primary" + custom3),
+          class$("btn btn-primary" + custom2),
           type_("button")
         ]),
-        toList([text2("Custom")])
+        toList([text3("Custom")])
       )
     ])
   );
@@ -9455,7 +10959,7 @@ function ready_to_assign(model) {
   return div(
     toList([
       class$(" text-black rounded-3 p-2"),
-      style(
+      styles(
         toList([
           ["width", "200px"],
           ["height", "fit-content"],
@@ -9467,7 +10971,7 @@ function ready_to_assign(model) {
       div(
         toList([class$("text-center fs-3 fw-bold")]),
         toList([
-          text(
+          text2(
             ready_to_assign_money(
               current_cycle_transactions(model),
               model.allocations,
@@ -9479,7 +10983,7 @@ function ready_to_assign(model) {
       ),
       div(
         toList([class$("text-center")]),
-        toList([text("Ready to Assign")])
+        toList([text2("Ready to Assign")])
       )
     ])
   );
@@ -9502,7 +11006,7 @@ function check_box(label2, is_checked, msg) {
           for$("flexCheckDefault"),
           class$("form-check-label")
         ]),
-        toList([text2(label2)])
+        toList([text3(label2)])
       )
     ])
   );
@@ -9517,7 +11021,7 @@ function view_input(form2, type_2, name2, label2) {
           for$(name2),
           class$("text-xs font-bold text-slate-600")
         ]),
-        toList([text2(label2), text2(": ")])
+        toList([text3(label2), text3(": ")])
       ),
       input(
         toList([
@@ -9534,7 +11038,7 @@ function view_input(form2, type_2, name2, label2) {
           let error_message = state[0];
           return p(
             toList([class$("mt-0.5 text-xs text-red-500")]),
-            toList([text2(error_message)])
+            toList([text3(error_message)])
           );
         }
       })()
@@ -9544,13 +11048,18 @@ function view_input(form2, type_2, name2, label2) {
 function import_transactions(model) {
   return form(
     toList([
-      class$("p-8 w-full border rounded-2xl shadow-lg space-y-4")
+      class$("p-8 w-full border rounded-2xl shadow-lg space-y-4"),
+      on_submit(
+        (var0) => {
+          return new UserSubmittedImportForm(var0);
+        }
+      )
     ]),
     toList([
       view_input(model.import_form.form, "file", "file", "Upload file"),
       div(
         toList([class$("flex justify-end")]),
-        toList([button(toList([]), toList([text2("Import")]))])
+        toList([button(toList([]), toList([text3("Import")]))])
       )
     ])
   );
@@ -9558,7 +11067,7 @@ function import_transactions(model) {
 function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
   let $ = selected_id === t.id;
   if (!$) {
-    return text2("");
+    return text3("");
   } else {
     return div(
       toList([class$("mt-1")]),
@@ -9567,14 +11076,14 @@ function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
           if (is_edit) {
             return button(
               toList([on_click(new UpdateTransaction())]),
-              toList([text("Save")])
+              toList([text2("Save")])
             );
           } else {
             return button(
               toList([
                 on_click(new EditTransaction(t, category_name))
               ]),
-              toList([text("Edit")])
+              toList([text2("Edit")])
             );
           }
         })(),
@@ -9583,7 +11092,7 @@ function manage_transaction_buttons(t, selected_id, category_name, is_edit) {
             class$("ms-1"),
             on_click(new DeleteTransaction(t.id))
           ]),
-          toList([text("Delete")])
+          toList([text2("Delete")])
         )
       ])
     );
@@ -9607,7 +11116,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               value2(tef.date),
               class$("form-control"),
               type_("date"),
-              style(toList([["width", "140px"]]))
+              styles(toList([["width", "140px"]]))
             ])
           )
         ])
@@ -9626,8 +11135,8 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               value2(tef.payee),
               class$("form-control"),
               type_("text"),
-              style(toList([["width", "160px"]])),
-              attribute("list", "payees_list")
+              styles(toList([["width", "160px"]])),
+              attribute2("list", "payees_list")
             ])
           ),
           datalist(
@@ -9661,8 +11170,8 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               value2(tef.category_name),
               class$("form-control"),
               type_("text"),
-              style(toList([["width", "160px"]])),
-              attribute("list", "categories_list")
+              styles(toList([["width", "160px"]])),
+              attribute2("list", "categories_list")
             ])
           ),
           datalist(
@@ -9696,7 +11205,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               value2(tef.amount),
               class$("form-control"),
               type_("text"),
-              style(toList([["width", "160px"]]))
+              styles(toList([["width", "160px"]]))
             ])
           ),
           check_box(
@@ -9758,14 +11267,14 @@ function transaction_list_item_html(t, model) {
       toList([
         td(
           toList([]),
-          toList([text2(to_date_string(t.date))])
+          toList([text3(to_date_string(t.date))])
         ),
-        td(toList([]), toList([text2(t.payee)])),
-        td(toList([]), toList([text2(category_name)])),
+        td(toList([]), toList([text3(t.payee)])),
+        td(toList([]), toList([text3(category_name)])),
         td(
           toList([]),
           toList([
-            text2(
+            text3(
               (() => {
                 let _pipe$3 = t.value;
                 return money_to_string(_pipe$3);
@@ -9815,7 +11324,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               id("addTransactionPayeeId"),
               class$("form-control"),
               type_("text"),
-              attribute("list", "payees_list"),
+              attribute2("list", "payees_list"),
               value2(transaction_edit_form.payee)
             ])
           ),
@@ -9887,7 +11396,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               id("addTransactionAmountId"),
               class$("form-control"),
               type_("text"),
-              style(toList([["width", "120px"]])),
+              styles(toList([["width", "120px"]])),
               value2(transaction_edit_form.amount)
             ])
           ),
@@ -9903,7 +11412,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               class$("ms-1"),
               on_click(new AddTransaction())
             ]),
-            toList([text("Add")])
+            toList([text2("Add")])
           )
         ])
       )
@@ -9930,10 +11439,10 @@ function budget_transactions(model) {
               tr(
                 toList([]),
                 toList([
-                  th(toList([]), toList([text2("Date")])),
-                  th(toList([]), toList([text2("Payee")])),
-                  th(toList([]), toList([text2("Category")])),
-                  th(toList([]), toList([text2("Amount")]))
+                  th(toList([]), toList([text3("Date")])),
+                  th(toList([]), toList([text3("Payee")])),
+                  th(toList([]), toList([text3("Category")])),
+                  th(toList([]), toList([text3("Amount")]))
                 ])
               )
             ])
@@ -10005,7 +11514,7 @@ function category_details_allocate_needed_ui(cat, allocation, model) {
   );
   let $ = add_diff.value < 0;
   if (!$) {
-    return text2("");
+    return text3("");
   } else {
     return div(
       toList([class$("mt-3")]),
@@ -10017,7 +11526,7 @@ function category_details_allocate_needed_ui(cat, allocation, model) {
             )
           ]),
           toList([
-            text(
+            text2(
               "Allocate needed " + (() => {
                 let _pipe = add_diff;
                 return money_to_string_no_sign(_pipe);
@@ -10035,7 +11544,7 @@ function category_details_cover_overspent_ui(cat, model, allocation) {
   let balance = money_sum(assigned, activity);
   let $ = balance.value < 0;
   if (!$) {
-    return text2("");
+    return text3("");
   } else {
     return div(
       toList([class$("mt-3")]),
@@ -10056,7 +11565,7 @@ function category_details_cover_overspent_ui(cat, model, allocation) {
             )
           ]),
           toList([
-            text(
+            text2(
               "Cover overspent " + (() => {
                 let _pipe = balance;
                 return money_to_string_no_sign(_pipe);
@@ -10068,15 +11577,15 @@ function category_details_cover_overspent_ui(cat, model, allocation) {
     );
   }
 }
-function div_context(text3, color) {
+function div_context(text4, color) {
   return div(
     toList([
       class$("ms-2 p-1"),
-      style(
+      styles(
         toList([["background-color", color], ["width", "fit-content"]])
       )
     ]),
-    toList([text2(text3)])
+    toList([text3(text4)])
   );
 }
 function category_balance(cat, model) {
@@ -10104,7 +11613,7 @@ function category_balance(cat, model) {
   let _block$1;
   let $1 = add_alloc_diff.value < 0;
   if (!$1) {
-    _block$1 = text2("");
+    _block$1 = text3("");
   } else {
     _block$1 = div_context(
       " Add more " + (() => {
@@ -10160,7 +11669,7 @@ function category_list_item_ui(categories, model, group) {
           class$(active_class)
         ]),
         toList([
-          td(toList([]), toList([text2(c.name)])),
+          td(toList([]), toList([text3(c.name)])),
           td(toList([]), toList([category_balance(c, model)]))
         ])
       );
@@ -10179,7 +11688,7 @@ function group_ui(group, model) {
   let is_current_group_active_add_ui = _block;
   let _block$1;
   if (!is_current_group_active_add_ui) {
-    _block$1 = text2("");
+    _block$1 = text3("");
   } else {
     _block$1 = tr(
       toList([]),
@@ -10208,7 +11717,7 @@ function group_ui(group, model) {
           toList([
             button(
               toList([on_click(new AddCategory(group.id))]),
-              toList([text("Add")])
+              toList([text2("Add")])
             )
           ])
         )
@@ -10230,7 +11739,7 @@ function group_ui(group, model) {
         class$("ms-1"),
         on_click(new ShowAddCategoryUI(group.id))
       ]),
-      toList([text(btn_label)])
+      toList([text2(btn_label)])
     );
   }
   let add_btn = _block$2;
@@ -10249,18 +11758,18 @@ function group_ui(group, model) {
         class$("ms-1"),
         on_click(new CollapseGroup(group))
       ]),
-      toList([text(btn_label)])
+      toList([text2(btn_label)])
     );
   }
   let collapse_ui = _block$3;
   let group_ui$1 = tr(
     toList([
-      style(toList([["background-color", "rgb(199, 208, 201)"]]))
+      styles(toList([["background-color", "rgb(199, 208, 201)"]]))
     ]),
     toList([
       td(
         toList([]),
-        toList([text2(group.name), add_btn, collapse_ui])
+        toList([text3(group.name), add_btn, collapse_ui])
       ),
       td(toList([]), toList([]))
     ])
@@ -10291,9 +11800,9 @@ function budget_categories(model) {
   } else {
     _block = "w-75";
   }
-  let size = _block;
+  let size2 = _block;
   return table(
-    toList([class$(size + " table table-sm table-hover")]),
+    toList([class$(size2 + " table table-sm table-hover")]),
     toList([
       thead(
         toList([]),
@@ -10304,7 +11813,7 @@ function budget_categories(model) {
               th(
                 toList([]),
                 toList([
-                  text2("Categories groups"),
+                  text3("Categories groups"),
                   (() => {
                     let _block$1;
                     let $1 = model.show_add_category_group_ui;
@@ -10319,12 +11828,12 @@ function budget_categories(model) {
                         class$("ms-2"),
                         on_click(new ShowAddCategoryGroupUI())
                       ]),
-                      toList([text(btn_label)])
+                      toList([text2(btn_label)])
                     );
                   })()
                 ])
               ),
-              th(toList([]), toList([text2("Balance")]))
+              th(toList([]), toList([text3("Balance")]))
             ])
           )
         ])
@@ -10367,7 +11876,7 @@ function budget_categories(model) {
                     toList([
                       button(
                         toList([on_click(new CreateCategoryGroup())]),
-                        toList([text("Create group")])
+                        toList([text2("Create group")])
                       )
                     ])
                   )
@@ -10382,13 +11891,13 @@ function budget_categories(model) {
     ])
   );
 }
-function month_to_string(value4) {
+function month_to_string(value3) {
   return (() => {
-    let _pipe = value4.month;
+    let _pipe = value3.month;
     let _pipe$1 = to_string(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })() + "." + (() => {
-    let _pipe = value4.year;
+    let _pipe = value3.year;
     let _pipe$1 = to_string(_pipe);
     return pad_start(_pipe$1, 2, "0");
   })();
@@ -10416,7 +11925,7 @@ function category_details_name_ui(category, sc) {
   return div(
     toList([
       class$("rounded-3 p-2 mt-3"),
-      style(
+      styles(
         toList([
           ["height", "fit-content"],
           ["background-color", edit_name_side_panel_color]
@@ -10434,7 +11943,7 @@ function category_details_name_ui(category, sc) {
           placeholder("category name"),
           class$("form-control"),
           type_("text"),
-          style(toList([["width", "200px"]])),
+          styles(toList([["width", "200px"]])),
           value2(sc.input_name),
           class$("mb-2")
         ])
@@ -10444,11 +11953,11 @@ function category_details_name_ui(category, sc) {
           class$("me-3"),
           on_click(new UpdateCategoryName(category))
         ]),
-        toList([text("Update")])
+        toList([text2("Update")])
       ),
       button(
         toList([on_click(new DeleteCategory())]),
-        toList([text("Delete")])
+        toList([text2("Delete")])
       )
     ])
   );
@@ -10457,12 +11966,12 @@ function category_details_change_group_ui(cat, model) {
   return div(
     toList([
       class$("mt-3 rounded-3 p-2"),
-      style(
+      styles(
         toList([["background-color", edit_name_side_panel_color]])
       )
     ]),
     toList([
-      text2("Change group"),
+      text3("Change group"),
       input(
         toList([
           on_input(
@@ -10473,8 +11982,8 @@ function category_details_change_group_ui(cat, model) {
           placeholder("group"),
           class$("form-control"),
           type_("text"),
-          style(toList([["width", "160px"]])),
-          attribute("list", "group_list")
+          styles(toList([["width", "160px"]])),
+          attribute2("list", "group_list")
         ])
       ),
       datalist(
@@ -10497,7 +12006,7 @@ function category_details_change_group_ui(cat, model) {
           class$("mt-1"),
           on_click(new ChangeGroupForCategory(cat))
         ]),
-        toList([text("Change group")])
+        toList([text2("Change group")])
       )
     ])
   );
@@ -10507,10 +12016,10 @@ function category_details_allocation_ui(sc, allocation) {
   return div(
     toList([
       class$("mt-3 rounded-3 p-2"),
-      style(toList([["background-color", side_panel_color]]))
+      styles(toList([["background-color", side_panel_color]]))
     ]),
     toList([
-      text2("Allocated: "),
+      text3("Allocated: "),
       input(
         toList([
           on_input(
@@ -10521,7 +12030,7 @@ function category_details_allocation_ui(sc, allocation) {
           placeholder("amount"),
           class$("form-control"),
           type_("text"),
-          style(toList([["width", "120px"]])),
+          styles(toList([["width", "120px"]])),
           value2(sc.allocation)
         ])
       ),
@@ -10530,7 +12039,7 @@ function category_details_allocation_ui(sc, allocation) {
           class$("mt-1"),
           on_click(new SaveAllocation(allocation))
         ]),
-        toList([text("Save")])
+        toList([text2("Save")])
       )
     ])
   );
@@ -10539,7 +12048,7 @@ function category_details_target_ui(cat, target_edit_option) {
   return div(
     toList([
       class$("mt-3 rounded-3 p-2 col mt-3"),
-      style(toList([["background-color", side_panel_color]]))
+      styles(toList([["background-color", side_panel_color]]))
     ]),
     (() => {
       if (target_edit_option instanceof Some) {
@@ -10548,17 +12057,17 @@ function category_details_target_ui(cat, target_edit_option) {
           div(
             toList([]),
             toList([
-              text2("Target"),
+              text3("Target"),
               button(
                 toList([
                   class$("ms-3 me-1"),
                   on_click(new SaveTarget(cat))
                 ]),
-                toList([text("Save")])
+                toList([text2("Save")])
               ),
               button(
                 toList([on_click(new DeleteTarget(cat))]),
-                toList([text("Delete")])
+                toList([text2("Delete")])
               )
             ])
           ),
@@ -10574,7 +12083,7 @@ function category_details_target_ui(cat, target_edit_option) {
               return div(
                 toList([class$("mt-1")]),
                 toList([
-                  text2("Amount needed for date: "),
+                  text3("Amount needed for date: "),
                   input(
                     toList([
                       on_input(
@@ -10585,7 +12094,7 @@ function category_details_target_ui(cat, target_edit_option) {
                       placeholder("amount"),
                       class$("form-control"),
                       type_("text"),
-                      style(toList([["width", "120px"]])),
+                      styles(toList([["width", "120px"]])),
                       value2(target_edit.target_amount)
                     ])
                   ),
@@ -10608,7 +12117,7 @@ function category_details_target_ui(cat, target_edit_option) {
               return div(
                 toList([class$("mt-1")]),
                 toList([
-                  text2("Amount monthly: "),
+                  text3("Amount monthly: "),
                   input(
                     toList([
                       on_input(
@@ -10619,7 +12128,7 @@ function category_details_target_ui(cat, target_edit_option) {
                       placeholder("amount"),
                       class$("form-control"),
                       type_("text"),
-                      style(toList([["width", "120px"]])),
+                      styles(toList([["width", "120px"]])),
                       value2(target_edit.target_amount)
                     ])
                   )
@@ -10633,19 +12142,19 @@ function category_details_target_ui(cat, target_edit_option) {
           div(
             toList([]),
             toList([
-              text2("Target"),
+              text3("Target"),
               button(
                 toList([
                   class$("ms-3"),
                   on_click(new StartEditTarget(cat))
                 ]),
-                toList([text("Edit")])
+                toList([text2("Edit")])
               )
             ])
           ),
           div(
             toList([class$("mt-2")]),
-            toList([text2(target_string(cat))])
+            toList([text3(target_string(cat))])
           )
         ]);
       }
@@ -10657,7 +12166,7 @@ function category_activity_ui(cat, model) {
   return div(
     toList([
       class$("mt-3 rounded-3 p-2"),
-      style(
+      styles(
         toList([["background-color", activity_side_panel_color]])
       )
     ]),
@@ -10665,11 +12174,11 @@ function category_activity_ui(cat, model) {
       div(
         toList([class$("col")]),
         toList([
-          div(toList([]), toList([text2("Activity")])),
+          div(toList([]), toList([text3("Activity")])),
           div(
             toList([]),
             toList([
-              text2(
+              text3(
                 (() => {
                   let _pipe = category_activity(
                     cat,
@@ -10713,7 +12222,7 @@ function category_details_ui(model) {
       category_cycle_allocation(model.allocations, model.cycle, c)
     );
   } else {
-    return text2("");
+    return text3("");
   }
 }
 function view(model) {
@@ -10730,23 +12239,23 @@ function view(model) {
               div(
                 toList([
                   class$("d-flex flex-row  justify-content-center"),
-                  style(toList([["width", "100%"]]))
+                  styles(toList([["width", "100%"]]))
                 ]),
                 toList([ready_to_assign(model)])
               ),
               div(
                 toList([
                   class$("d-flex align-items-center fs-5"),
-                  style(toList([]))
+                  styles(toList([]))
                 ]),
                 toList([
                   (() => {
                     let $ = model.current_user;
                     if ($ instanceof None) {
-                      return text2("");
+                      return text3("");
                     } else {
                       let user = $[0];
-                      return text2(user.name);
+                      return text3(user.name);
                     }
                   })()
                 ])
@@ -10785,9 +12294,9 @@ function view(model) {
 }
 
 // build/dev/javascript/budget_fe/budget_fe.mjs
-function init3(_) {
+function init2(_) {
   return [
-    new Model2(
+    new Model(
       new LoginForm(new None(), new None(), false),
       new None(),
       calculate_current_cycle(),
@@ -10809,10 +12318,10 @@ function init3(_) {
       false,
       "",
       "",
-      new ImportForm(new$2())
+      new ImportForm(new$3())
     ),
     batch(
-      toList([init2(on_route_change), load_user_eff()])
+      toList([init(on_route_change), load_user_eff()])
     )
   ];
 }
@@ -10889,14 +12398,14 @@ function find_alloc_by_cat_id(cat_id, cycle, allocations) {
     }
   );
 }
-function update(model, msg) {
+function update2(model, msg) {
   debug(msg);
   if (msg instanceof OnRouteChange) {
     let route = msg.route;
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -10927,7 +12436,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           new LoginForm(new None(), new None(), true),
           _record.current_user,
           _record.cycle,
@@ -10985,7 +12494,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           (() => {
             let _record$1 = model.login_form;
             return new LoginForm(login, pass, _record$1.is_loading);
@@ -11029,7 +12538,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           new Some(user),
           cycle,
@@ -11074,7 +12583,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11108,7 +12617,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11150,7 +12659,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11184,7 +12693,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11248,7 +12757,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11293,7 +12802,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11325,7 +12834,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11356,7 +12865,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11396,7 +12905,7 @@ function update(model, msg) {
       return [
         (() => {
           let _record = model;
-          return new Model2(
+          return new Model(
             _record.login_form,
             _record.current_user,
             _record.cycle,
@@ -11444,7 +12953,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11493,7 +13002,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11534,7 +13043,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11579,7 +13088,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11623,7 +13132,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11664,7 +13173,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11705,7 +13214,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11752,7 +13261,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11784,7 +13293,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11816,7 +13325,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11862,7 +13371,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11908,7 +13417,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -11965,7 +13474,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12004,7 +13513,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12037,7 +13546,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12092,7 +13601,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12140,7 +13649,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12188,7 +13697,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12236,7 +13745,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12284,7 +13793,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12331,7 +13840,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12379,7 +13888,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12419,7 +13928,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12470,7 +13979,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12545,7 +14054,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12597,7 +14106,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           new_cycle,
@@ -12629,7 +14138,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12661,7 +14170,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12702,7 +14211,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12734,7 +14243,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12767,7 +14276,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12801,7 +14310,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12864,7 +14373,7 @@ function update(model, msg) {
       return [
         (() => {
           let _record = model;
-          return new Model2(
+          return new Model(
             _record.login_form,
             _record.current_user,
             _record.cycle,
@@ -12908,7 +14417,7 @@ function update(model, msg) {
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -12935,42 +14444,12 @@ function update(model, msg) {
       })(),
       none()
     ];
-  } else if (msg instanceof UserSubmittedImportForm) {
-    return [
-      (() => {
-        let _record = model;
-        return new Model2(
-          _record.login_form,
-          _record.current_user,
-          _record.cycle,
-          _record.route,
-          _record.cycle_end_day,
-          _record.show_all_transactions,
-          _record.categories_groups,
-          _record.categories,
-          _record.transactions,
-          _record.allocations,
-          _record.selected_category,
-          _record.show_add_category_ui,
-          _record.user_category_name_input,
-          _record.transaction_add_input,
-          _record.target_edit_form,
-          _record.selected_transaction,
-          _record.transaction_edit_form,
-          _record.suggestions,
-          _record.show_add_category_group_ui,
-          _record.new_category_group_name,
-          _record.category_group_change_input,
-          _record.import_form
-        );
-      })(),
-      none()
-    ];
   } else {
+    let fields = msg[0];
     return [
       (() => {
         let _record = model;
-        return new Model2(
+        return new Model(
           _record.login_form,
           _record.current_user,
           _record.cycle,
@@ -13000,8 +14479,8 @@ function update(model, msg) {
   }
 }
 function main() {
-  let app = application(init3, update, view);
-  let $ = start2(app, "#app", void 0);
+  let app = application(init2, update2, view);
+  let $ = start3(app, "#app", void 0);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
