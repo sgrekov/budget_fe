@@ -89,7 +89,7 @@ pub fn add_transaction_eff(
     Transaction(
       id: uuid.guidv4(),
       date: transaction_form.date
-        |> budget_shared.from_date_string
+        |> budget_shared.string_to_date
         |> result.unwrap(d.today()),
       payee: transaction_form.payee,
       category_id: cat.id,
@@ -156,6 +156,29 @@ pub fn get_allocations() -> effect.Effect(Msg) {
     request_with_auth() |> request.set_path(path),
     lustre_http.expect_json(decoder, msg.Allocations),
   )
+}
+
+pub fn import_csv(content: String) -> effect.Effect(Msg) {
+  send_csv_request(
+    content,
+    decode.list(m.import_transaction_decoder()),
+    msg.ImportTransactionResult,
+  )
+}
+
+fn send_csv_request(
+  body: String,
+  decoder: decode.Decoder(a),
+  to_msg: fn(Result(a, lustre_http.HttpError)) -> Msg,
+) -> effect.Effect(Msg) {
+  let req =
+    request_with_auth()
+    |> request.set_method(http.Post)
+    |> request.set_path("import/csv")
+    |> request.set_header("Content-Type", "text/csv")
+    |> request.set_body(body)
+
+  lustre_http.send(req, lustre_http.expect_json(decoder, to_msg))
 }
 
 pub fn get_categories() -> effect.Effect(Msg) {

@@ -50,7 +50,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       new_category_group_name: "",
       category_group_change_input: "",
       login_form: msg.LoginForm(None, None, False),
-      import_form: msg.ImportForm(form.new()),
+      imported_transactions: [],
     ),
     effect.batch([
       modem.init(eff.on_route_change),
@@ -508,10 +508,6 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       model,
       eff.save_allocation_eff(alloc, amount_needed, cat.id, model.cycle),
     )
-    // msg.CoverOverspent(cat, balance) -> #(model, case balance.value < 0 {
-    //   False -> effect.none()
-    //   True -> eff.save_allocation_eff(option.None, balance, cat.id, model.cycle)
-    // })
     msg.ShowAddCategoryGroupUI -> #(
       Model(
         ..model,
@@ -564,7 +560,20 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, category_group_change_input: group_name),
       effect.none(),
     )
-    msg.UserSubmittedImportForm(fields) -> #(Model(..model), effect.none())
+    msg.UserUpdatedFile -> #(model, v.get_file_content())
+    msg.SystemReadFile(content) -> {
+      // io.debug("SystemReadFile " <> content)
+      #(model, eff.import_csv(content))
+    }
+    msg.ImportTransactionResult(Ok(import_transactions)) -> {
+      #(
+        Model(..model, imported_transactions: import_transactions),
+        effect.none(),
+      )
+    }
+    msg.ImportTransactionResult(Error(_)) -> {
+      #(model, effect.none())
+    }
   }
 }
 
@@ -581,8 +590,7 @@ fn transaction_form_to_transaction(
   tef: msg.TransactionEditForm,
   categories: List(Category),
 ) -> Option(Transaction) {
-  let date_option =
-    tef.date |> date_utils.from_date_string |> option.from_result
+  let date_option = tef.date |> date_utils.string_to_date |> option.from_result
 
   let sign = case tef.is_inflow {
     True -> 1

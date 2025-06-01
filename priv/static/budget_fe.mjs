@@ -738,11 +738,6 @@ function fold(dict3, initial, fun) {
   return fold_loop(map_to_list(dict3), initial, fun);
 }
 
-// build/dev/javascript/gleam_stdlib/gleam/pair.mjs
-function new$(first2, second) {
-  return [first2, second];
-}
-
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
 var Continue = class extends CustomType {
   constructor(x0) {
@@ -1396,11 +1391,6 @@ function unwrap2(result, default$) {
   } else {
     return default$;
   }
-}
-function values2(results) {
-  return filter_map(results, (r) => {
-    return r;
-  });
 }
 
 // build/dev/javascript/gleam_stdlib/dict.mjs
@@ -2139,6 +2129,53 @@ function float_to_string(float2) {
 function int_to_base_string(int5, base) {
   return int5.toString(base).toUpperCase();
 }
+var int_base_patterns = {
+  2: /[^0-1]/,
+  3: /[^0-2]/,
+  4: /[^0-3]/,
+  5: /[^0-4]/,
+  6: /[^0-5]/,
+  7: /[^0-6]/,
+  8: /[^0-7]/,
+  9: /[^0-8]/,
+  10: /[^0-9]/,
+  11: /[^0-9a]/,
+  12: /[^0-9a-b]/,
+  13: /[^0-9a-c]/,
+  14: /[^0-9a-d]/,
+  15: /[^0-9a-e]/,
+  16: /[^0-9a-f]/,
+  17: /[^0-9a-g]/,
+  18: /[^0-9a-h]/,
+  19: /[^0-9a-i]/,
+  20: /[^0-9a-j]/,
+  21: /[^0-9a-k]/,
+  22: /[^0-9a-l]/,
+  23: /[^0-9a-m]/,
+  24: /[^0-9a-n]/,
+  25: /[^0-9a-o]/,
+  26: /[^0-9a-p]/,
+  27: /[^0-9a-q]/,
+  28: /[^0-9a-r]/,
+  29: /[^0-9a-s]/,
+  30: /[^0-9a-t]/,
+  31: /[^0-9a-u]/,
+  32: /[^0-9a-v]/,
+  33: /[^0-9a-w]/,
+  34: /[^0-9a-x]/,
+  35: /[^0-9a-y]/,
+  36: /[^0-9a-z]/
+};
+function int_from_base_string(string5, base) {
+  if (int_base_patterns[base].test(string5.replace(/^-/, "").toLowerCase())) {
+    return new Error(Nil);
+  }
+  const result = parseInt(string5, base);
+  if (isNaN(result)) {
+    return new Error(Nil);
+  }
+  return new Ok(result);
+}
 function string_replace(string5, target, substitute) {
   if (typeof string5.replaceAll !== "undefined") {
     return string5.replaceAll(target, substitute);
@@ -2442,6 +2479,14 @@ function absolute_value(x) {
     return x * -1;
   }
 }
+function base_parse(string5, base) {
+  let $ = base >= 2 && base <= 36;
+  if ($) {
+    return int_from_base_string(string5, base);
+  } else {
+    return new Error(void 0);
+  }
+}
 function to_base16(x) {
   return int_to_base_string(x, 16);
 }
@@ -2553,6 +2598,31 @@ function repeat_loop(loop$string, loop$times, loop$acc) {
 }
 function repeat(string5, times) {
   return repeat_loop(string5, times, "");
+}
+function join_loop(loop$strings, loop$separator, loop$accumulator) {
+  while (true) {
+    let strings = loop$strings;
+    let separator = loop$separator;
+    let accumulator = loop$accumulator;
+    if (strings.hasLength(0)) {
+      return accumulator;
+    } else {
+      let string5 = strings.head;
+      let strings$1 = strings.tail;
+      loop$strings = strings$1;
+      loop$separator = separator;
+      loop$accumulator = accumulator + separator + string5;
+    }
+  }
+}
+function join(strings, separator) {
+  if (strings.hasLength(0)) {
+    return "";
+  } else {
+    let first$1 = strings.head;
+    let rest = strings.tail;
+    return join_loop(rest, separator, first$1);
+  }
 }
 function padding(size2, pad_string) {
   let pad_string_length = string_length(pad_string);
@@ -3127,45 +3197,6 @@ function debug(term) {
   return term;
 }
 
-// build/dev/javascript/gleam_regexp/gleam_regexp_ffi.mjs
-function check(regex, string5) {
-  regex.lastIndex = 0;
-  return regex.test(string5);
-}
-function compile(pattern, options) {
-  try {
-    let flags = "gu";
-    if (options.case_insensitive) flags += "i";
-    if (options.multi_line) flags += "m";
-    return new Ok(new RegExp(pattern, flags));
-  } catch (error) {
-    const number = (error.columnNumber || 0) | 0;
-    return new Error(new CompileError(error.message, number));
-  }
-}
-
-// build/dev/javascript/gleam_regexp/gleam/regexp.mjs
-var CompileError = class extends CustomType {
-  constructor(error, byte_index) {
-    super();
-    this.error = error;
-    this.byte_index = byte_index;
-  }
-};
-var Options = class extends CustomType {
-  constructor(case_insensitive, multi_line) {
-    super();
-    this.case_insensitive = case_insensitive;
-    this.multi_line = multi_line;
-  }
-};
-function compile2(pattern, options) {
-  return compile(pattern, options);
-}
-function check2(regexp, string5) {
-  return check(regexp, string5);
-}
-
 // build/dev/javascript/gleam_stdlib/gleam/set.mjs
 var Set2 = class extends CustomType {
   constructor(dict3) {
@@ -3173,7 +3204,7 @@ var Set2 = class extends CustomType {
     this.dict = dict3;
   }
 };
-function new$2() {
+function new$() {
   return new Set2(new_map());
 }
 function contains2(set2, member) {
@@ -3510,8 +3541,8 @@ var Append = class extends CustomType {
     this[1] = x1;
   }
 };
-function runwrap(state, parser3) {
-  let parse4 = parser3[0];
+function runwrap(state, parser2) {
+  let parse4 = parser2[0];
   return parse4(state);
 }
 function next(state) {
@@ -3540,30 +3571,15 @@ function return$(value3) {
 function succeed(value3) {
   return return$(value3);
 }
-function backtrackable(parser3) {
-  return new Parser(
-    (state) => {
-      let $ = runwrap(state, parser3);
-      if ($ instanceof Cont) {
-        let a2 = $[1];
-        let state$1 = $[2];
-        return new Cont(new CanBacktrack(false), a2, state$1);
-      } else {
-        let bag = $[1];
-        return new Fail(new CanBacktrack(false), bag);
-      }
-    }
-  );
-}
 function should_commit(a2, b) {
   let a$1 = a2[0];
   let b$1 = b[0];
   return new CanBacktrack(a$1 || b$1);
 }
-function do$(parser3, f) {
+function do$(parser2, f) {
   return new Parser(
     (state) => {
-      let $ = runwrap(state, parser3);
+      let $ = runwrap(state, parser2);
       if ($ instanceof Cont) {
         let to_a = $[0];
         let a2 = $[1];
@@ -3587,11 +3603,11 @@ function do$(parser3, f) {
     }
   );
 }
-function then$3(parser3, f) {
-  return do$(parser3, f);
+function then$3(parser2, f) {
+  return do$(parser2, f);
 }
-function map5(parser3, f) {
-  return do$(parser3, (a2) => {
+function map5(parser2, f) {
+  return do$(parser2, (a2) => {
     return return$(f(a2));
   });
 }
@@ -3620,23 +3636,6 @@ function take_while(predicate) {
       }
     }
   );
-}
-function take_exactly(parser3, count) {
-  if (count === 0) {
-    return return$(toList([]));
-  } else {
-    return do$(
-      parser3,
-      (x) => {
-        return do$(
-          take_exactly(parser3, count - 1),
-          (xs) => {
-            return return$(prepend(x, xs));
-          }
-        );
-      }
-    );
-  }
 }
 function bag_from_state(state, problem) {
   return new Cons(new Empty2(), new DeadEnd(state.pos, problem, state.ctx));
@@ -3743,14 +3742,14 @@ function to_deadends(loop$bag, loop$acc) {
     }
   }
 }
-function run3(src, parser3) {
+function run3(src, parser2) {
   let init3 = new State2(
     fromList(src),
     0,
     new Span(1, 1, 1, 1),
     toList([])
   );
-  let $ = runwrap(init3, parser3);
+  let $ = runwrap(init3, parser2);
   if ($ instanceof Cont) {
     let a2 = $[1];
     return new Ok(a2);
@@ -3792,78 +3791,6 @@ function one_of2(parsers) {
         }
       );
     }
-  );
-}
-function optional2(parser3) {
-  return one_of2(
-    toList([
-      map5(parser3, (var0) => {
-        return new Some(var0);
-      }),
-      return$(new None())
-    ])
-  );
-}
-
-// build/dev/javascript/rada/rada/date/parse.mjs
-var Digit = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-var WeekToken = class extends CustomType {
-};
-var Dash = class extends CustomType {
-};
-var TimeToken = class extends CustomType {
-};
-var Other = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
-function lexer() {
-  let options = new Options(false, true);
-  let $ = compile2("^[0-9]+$", options);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "rada/date/parse",
-      14,
-      "lexer",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let digits_regex = $[0];
-  let is_digits = (str) => {
-    return check2(digits_regex, str);
-  };
-  return simple(
-    toList([
-      custom(
-        (mode, lexeme, _) => {
-          if (lexeme === "") {
-            return new Drop(mode);
-          } else if (lexeme === "W") {
-            return new Keep(new WeekToken(), mode);
-          } else if (lexeme === "T") {
-            return new Keep(new TimeToken(), mode);
-          } else if (lexeme === "-") {
-            return new Keep(new Dash(), mode);
-          } else {
-            let $1 = is_digits(lexeme);
-            if ($1) {
-              return new Keep(new Digit(lexeme), mode);
-            } else {
-              return new Keep(new Other(lexeme), mode);
-            }
-          }
-        }
-      )
-    ])
   );
 }
 
@@ -4244,26 +4171,6 @@ var Language = class extends CustomType {
     this.day_with_suffix = day_with_suffix;
   }
 };
-var MonthAndDay = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
-  }
-};
-var WeekAndWeekday = class extends CustomType {
-  constructor(x0, x1) {
-    super();
-    this[0] = x0;
-    this[1] = x1;
-  }
-};
-var OrdinalDay = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
 var Years = class extends CustomType {
 };
 var Months = class extends CustomType {
@@ -4326,201 +4233,6 @@ function weekday_to_name(weekday2) {
   } else {
     return "Sunday";
   }
-}
-function parse_digit() {
-  return take_if(
-    "Expecting digit",
-    (token3) => {
-      if (token3 instanceof Digit) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-  );
-}
-function int_4() {
-  return do$(
-    optional2(token2(new Dash())),
-    (negative) => {
-      let _block;
-      let _pipe = negative;
-      let _pipe$1 = map(_pipe, (_) => {
-        return "-";
-      });
-      _block = unwrap(_pipe$1, "");
-      let negative$1 = _block;
-      return do$(
-        (() => {
-          let _pipe$2 = parse_digit();
-          return take_exactly(_pipe$2, 4);
-        })(),
-        (tokens) => {
-          let _block$1;
-          let _pipe$2 = map2(
-            tokens,
-            (token3) => {
-              if (!(token3 instanceof Digit)) {
-                throw makeError(
-                  "let_assert",
-                  "rada/date",
-                  1090,
-                  "",
-                  "Pattern match failed, no pattern matched the value.",
-                  { value: token3 }
-                );
-              }
-              let str2 = token3[0];
-              return str2;
-            }
-          );
-          _block$1 = concat2(_pipe$2);
-          let str = _block$1;
-          let $ = parse_int(negative$1 + str);
-          if (!$.isOk()) {
-            throw makeError(
-              "let_assert",
-              "rada/date",
-              1095,
-              "",
-              "Pattern match failed, no pattern matched the value.",
-              { value: $ }
-            );
-          }
-          let int5 = $[0];
-          return return$(int5);
-        }
-      );
-    }
-  );
-}
-function int_3() {
-  return do$(
-    (() => {
-      let _pipe = parse_digit();
-      return take_exactly(_pipe, 3);
-    })(),
-    (tokens) => {
-      let _block;
-      let _pipe = map2(
-        tokens,
-        (token3) => {
-          if (!(token3 instanceof Digit)) {
-            throw makeError(
-              "let_assert",
-              "rada/date",
-              1108,
-              "",
-              "Pattern match failed, no pattern matched the value.",
-              { value: token3 }
-            );
-          }
-          let str2 = token3[0];
-          return str2;
-        }
-      );
-      _block = concat2(_pipe);
-      let str = _block;
-      let $ = parse_int(str);
-      if (!$.isOk()) {
-        throw makeError(
-          "let_assert",
-          "rada/date",
-          1113,
-          "",
-          "Pattern match failed, no pattern matched the value.",
-          { value: $ }
-        );
-      }
-      let int5 = $[0];
-      return return$(int5);
-    }
-  );
-}
-function parse_ordinal_day() {
-  return do$(
-    int_3(),
-    (day2) => {
-      return return$(new OrdinalDay(day2));
-    }
-  );
-}
-function int_2() {
-  return do$(
-    (() => {
-      let _pipe = parse_digit();
-      return take_exactly(_pipe, 2);
-    })(),
-    (tokens) => {
-      let _block;
-      let _pipe = map2(
-        tokens,
-        (token3) => {
-          if (!(token3 instanceof Digit)) {
-            throw makeError(
-              "let_assert",
-              "rada/date",
-              1126,
-              "",
-              "Pattern match failed, no pattern matched the value.",
-              { value: token3 }
-            );
-          }
-          let str2 = token3[0];
-          return str2;
-        }
-      );
-      _block = concat2(_pipe);
-      let str = _block;
-      let $ = parse_int(str);
-      if (!$.isOk()) {
-        throw makeError(
-          "let_assert",
-          "rada/date",
-          1131,
-          "",
-          "Pattern match failed, no pattern matched the value.",
-          { value: $ }
-        );
-      }
-      let int5 = $[0];
-      return return$(int5);
-    }
-  );
-}
-function int_1() {
-  return do$(
-    (() => {
-      let _pipe = parse_digit();
-      return take_exactly(_pipe, 1);
-    })(),
-    (tokens) => {
-      if (!tokens.hasLength(1) || !(tokens.head instanceof Digit)) {
-        throw makeError(
-          "let_assert",
-          "rada/date",
-          1142,
-          "",
-          "Pattern match failed, no pattern matched the value.",
-          { value: tokens }
-        );
-      }
-      let str = tokens.head[0];
-      let $ = parse_int(str);
-      if (!$.isOk()) {
-        throw makeError(
-          "let_assert",
-          "rada/date",
-          1144,
-          "",
-          "Pattern match failed, no pattern matched the value.",
-          { value: $ }
-        );
-      }
-      let int5 = $[0];
-      return return$(int5);
-    }
-  );
 }
 function compare3(date1, date2) {
   let rd_1 = date1[0];
@@ -4639,9 +4351,6 @@ function days_before_year(year1) {
   );
   return 365 * year$1 + leap_years;
 }
-function first_of_year(year2) {
-  return new RD(days_before_year(year2) + 1);
-}
 function modulo_unwrap(dividend, divisor) {
   let remainder = remainderInt(dividend, divisor);
   let $ = remainder > 0 && divisor < 0 || remainder < 0 && divisor > 0;
@@ -4670,10 +4379,6 @@ function weekday_number(date) {
 function days_before_week_year(year2) {
   let jan4 = days_before_year(year2) + 4;
   return jan4 - weekday_number(new RD(jan4));
-}
-function is_53_week_year(year2) {
-  let wdn_jan1 = weekday_number(first_of_year(year2));
-  return wdn_jan1 === 4 || wdn_jan1 === 3 && is_leap_year(year2);
 }
 function weekday(date) {
   let _pipe = date;
@@ -5084,65 +4789,6 @@ function diff(unit, date1, date2) {
 function is_between_int(value3, lower, upper) {
   return lower <= value3 && value3 <= upper;
 }
-function from_ordinal_parts(year2, ordinal) {
-  let _block;
-  let $ = is_leap_year(year2);
-  if ($) {
-    _block = 366;
-  } else {
-    _block = 365;
-  }
-  let days_in_year = _block;
-  let $1 = !is_between_int(ordinal, 1, days_in_year);
-  if ($1) {
-    return new Error(
-      "Invalid ordinal date: " + ("ordinal-day " + to_string(ordinal) + " is out of range") + (" (1 to " + to_string(
-        days_in_year
-      ) + ")") + (" for " + to_string(year2)) + ("; received (year " + to_string(
-        year2
-      ) + ", ordinal-day " + to_string(ordinal) + ")")
-    );
-  } else {
-    return new Ok(new RD(days_before_year(year2) + ordinal));
-  }
-}
-function from_week_parts(week_year2, week_number2, weekday_number2) {
-  let _block;
-  let $ = is_53_week_year(week_year2);
-  if ($) {
-    _block = 53;
-  } else {
-    _block = 52;
-  }
-  let weeks_in_year = _block;
-  let $1 = is_between_int(week_number2, 1, weeks_in_year);
-  let $2 = is_between_int(weekday_number2, 1, 7);
-  if (!$1) {
-    return new Error(
-      "Invalid week date: " + ("week " + to_string(week_number2) + " is out of range") + (" (1 to " + to_string(
-        weeks_in_year
-      ) + ")") + (" for " + to_string(week_year2)) + ("; received (year " + to_string(
-        week_year2
-      ) + ", week " + to_string(week_number2) + ", weekday " + to_string(
-        weekday_number2
-      ) + ")")
-    );
-  } else if ($1 && !$2) {
-    return new Error(
-      "Invalid week date: " + ("weekday " + to_string(weekday_number2) + " is out of range") + " (1 to 7)" + ("; received (year " + to_string(
-        week_year2
-      ) + ", week " + to_string(week_number2) + ", weekday " + to_string(
-        weekday_number2
-      ) + ")")
-    );
-  } else {
-    return new Ok(
-      new RD(
-        days_before_week_year(week_year2) + (week_number2 - 1) * 7 + weekday_number2
-      )
-    );
-  }
-}
 function is_between(value3, lower, upper) {
   let value_rd = value3[0];
   let lower_rd = lower[0];
@@ -5155,95 +4801,6 @@ function bool_to_int(value3) {
   } else {
     return 0;
   }
-}
-function parse_month_and_day(extended) {
-  return do$(
-    int_2(),
-    (month2) => {
-      let dash_count = bool_to_int(extended);
-      return do$(
-        one_of2(
-          toList([
-            (() => {
-              let _pipe = take_exactly(
-                token2(new Dash()),
-                dash_count
-              );
-              return then$3(_pipe, (_) => {
-                return int_2();
-              });
-            })(),
-            (() => {
-              let _pipe = eof();
-              return then$3(_pipe, (_) => {
-                return succeed(1);
-              });
-            })()
-          ])
-        ),
-        (day2) => {
-          return return$(new MonthAndDay(month2, day2));
-        }
-      );
-    }
-  );
-}
-function parse_week_and_weekday(extended) {
-  return do$(
-    token2(new WeekToken()),
-    (_) => {
-      return do$(
-        int_2(),
-        (week) => {
-          let dash_count = bool_to_int(extended);
-          return do$(
-            one_of2(
-              toList([
-                (() => {
-                  let _pipe = take_exactly(
-                    token2(new Dash()),
-                    dash_count
-                  );
-                  return then$3(_pipe, (_2) => {
-                    return int_1();
-                  });
-                })(),
-                succeed(1)
-              ])
-            ),
-            (day2) => {
-              return return$(new WeekAndWeekday(week, day2));
-            }
-          );
-        }
-      );
-    }
-  );
-}
-function parse_day_of_year() {
-  return one_of2(
-    toList([
-      (() => {
-        let _pipe = token2(new Dash());
-        return then$3(
-          _pipe,
-          (_) => {
-            return one_of2(
-              toList([
-                backtrackable(parse_ordinal_day()),
-                parse_month_and_day(true),
-                parse_week_and_weekday(true)
-              ])
-            );
-          }
-        );
-      })(),
-      backtrackable(parse_month_and_day(false)),
-      parse_ordinal_day(),
-      parse_week_and_weekday(false),
-      succeed(new OrdinalDay(1))
-    ])
-  );
 }
 function days_before_month(year2, month2) {
   let leap_days = bool_to_int(is_leap_year(year2));
@@ -5282,137 +4839,6 @@ function from_calendar_date(year2, month2, day2) {
     )
   );
 }
-function from_calendar_parts(year2, month_number2, day2) {
-  let $ = is_between_int(month_number2, 1, 12);
-  let $1 = is_between_int(
-    day2,
-    1,
-    days_in_month(year2, number_to_month(month_number2))
-  );
-  if (!$) {
-    return new Error(
-      "Invalid date: " + ("month " + to_string(month_number2) + " is out of range") + " (1 to 12)" + ("; received (year " + to_string(
-        year2
-      ) + ", month " + to_string(month_number2) + ", day " + to_string(
-        day2
-      ) + ")")
-    );
-  } else if ($ && !$1) {
-    return new Error(
-      "Invalid date: " + ("day " + to_string(day2) + " is out of range") + (" (1 to " + to_string(
-        days_in_month(year2, number_to_month(month_number2))
-      ) + ")") + (" for " + (() => {
-        let _pipe = month_number2;
-        let _pipe$1 = number_to_month(_pipe);
-        return month_to_name(_pipe$1);
-      })()) + (() => {
-        let $2 = month_number2 === 2 && day2 === 29;
-        if ($2) {
-          return " (" + to_string(year2) + " is not a leap year)";
-        } else {
-          return "";
-        }
-      })() + ("; received (year " + to_string(year2) + ", month " + to_string(
-        month_number2
-      ) + ", day " + to_string(day2) + ")")
-    );
-  } else {
-    return new Ok(
-      new RD(
-        days_before_year(year2) + days_before_month(
-          year2,
-          number_to_month(month_number2)
-        ) + day2
-      )
-    );
-  }
-}
-function from_year_and_day_of_year(year2, day_of_year) {
-  if (day_of_year instanceof MonthAndDay) {
-    let month_number$1 = day_of_year[0];
-    let day$1 = day_of_year[1];
-    return from_calendar_parts(year2, month_number$1, day$1);
-  } else if (day_of_year instanceof WeekAndWeekday) {
-    let week_number$1 = day_of_year[0];
-    let weekday_number$1 = day_of_year[1];
-    return from_week_parts(year2, week_number$1, weekday_number$1);
-  } else {
-    let ordinal_day$1 = day_of_year[0];
-    return from_ordinal_parts(year2, ordinal_day$1);
-  }
-}
-function parser2() {
-  return do$(
-    int_4(),
-    (year2) => {
-      return do$(
-        parse_day_of_year(),
-        (day_of_year) => {
-          return return$(from_year_and_day_of_year(year2, day_of_year));
-        }
-      );
-    }
-  );
-}
-function from_iso_string(str) {
-  let $ = run2(str, lexer());
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "rada/date",
-      949,
-      "from_iso_string",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let tokens = $[0];
-  let result = run3(
-    tokens,
-    (() => {
-      let _pipe = parser2();
-      return then$3(
-        _pipe,
-        (val) => {
-          return one_of2(
-            toList([
-              (() => {
-                let _pipe$1 = eof();
-                return then$3(
-                  _pipe$1,
-                  (_) => {
-                    return succeed(val);
-                  }
-                );
-              })(),
-              (() => {
-                let _pipe$1 = token2(new TimeToken());
-                return then$3(
-                  _pipe$1,
-                  (_) => {
-                    return succeed(
-                      new Error("Expected a date only, not a date and time")
-                    );
-                  }
-                );
-              })(),
-              succeed(new Error("Expected a date only"))
-            ])
-          );
-        }
-      );
-    })()
-  );
-  if (result.isOk() && result[0].isOk()) {
-    let value3 = result[0][0];
-    return new Ok(value3);
-  } else if (result.isOk() && !result[0].isOk()) {
-    let err = result[0][0];
-    return new Error(err);
-  } else {
-    return new Error("Expected a date in ISO 8601 format");
-  }
-}
 function today() {
   let $ = get_year_month_day();
   let year$1 = $[0];
@@ -5422,6 +4848,17 @@ function today() {
 }
 
 // build/dev/javascript/budget_shared/budget_shared.mjs
+var ImportTransaction = class extends CustomType {
+  constructor(id2, date, payee, transaction_type, value3, reference) {
+    super();
+    this.id = id2;
+    this.date = date;
+    this.payee = payee;
+    this.transaction_type = transaction_type;
+    this.value = value3;
+    this.reference = reference;
+  }
+};
 var User = class extends CustomType {
   constructor(id2, name2) {
     super();
@@ -5717,6 +5154,54 @@ function money_decoder() {
     }
   );
   return money_decoder$1;
+}
+function import_transaction_decoder() {
+  return field(
+    "id",
+    string2,
+    (id2) => {
+      return field(
+        "date",
+        int2,
+        (date) => {
+          return field(
+            "payee",
+            string2,
+            (payee) => {
+              return field(
+                "transaction_type",
+                string2,
+                (transaction_type) => {
+                  return field(
+                    "value",
+                    money_decoder(),
+                    (value3) => {
+                      return field(
+                        "reference",
+                        string2,
+                        (reference) => {
+                          return success(
+                            new ImportTransaction(
+                              id2,
+                              from_rata_die(date),
+                              payee,
+                              transaction_type,
+                              value3,
+                              reference
+                            )
+                          );
+                        }
+                      );
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
+    }
+  );
 }
 function target_decoder() {
   let monthly_decoder = field(
@@ -6039,9 +5524,6 @@ function to_date_string(value3) {
 function to_date_string_input(value3) {
   return format(value3, "yyyy-MM-dd");
 }
-function from_date_string(date_str) {
-  return from_iso_string(date_str);
-}
 function month_to_name2(month2) {
   if (month2 instanceof Jan) {
     return "January";
@@ -6125,6 +5607,55 @@ function month_by_number(month2) {
     return new Jan();
   }
 }
+function list_to_date(list4) {
+  if (list4.hasLength(3)) {
+    let year2 = list4.head;
+    let month2 = list4.tail.head;
+    let day2 = list4.tail.tail.head;
+    let _pipe = base_parse(year2, 10);
+    let _pipe$1 = map_error(_pipe, (_) => {
+      return "Invalid year";
+    });
+    return try$(
+      _pipe$1,
+      (y) => {
+        let _pipe$2 = base_parse(month2, 10);
+        let _pipe$3 = map_error(
+          _pipe$2,
+          (_) => {
+            return "Invalid month";
+          }
+        );
+        return try$(
+          _pipe$3,
+          (m_int) => {
+            let month22 = month_by_number(m_int);
+            let _pipe$4 = base_parse(day2, 10);
+            let _pipe$5 = map_error(
+              _pipe$4,
+              (_) => {
+                return "Invalid day";
+              }
+            );
+            return map3(
+              _pipe$5,
+              (d) => {
+                return from_calendar_date(y, month22, d);
+              }
+            );
+          }
+        );
+      }
+    );
+  } else {
+    return new Error("Invalid date format");
+  }
+}
+function string_to_date(date) {
+  let _pipe = date;
+  let _pipe$1 = split2(_pipe, "-");
+  return list_to_date(_pipe$1);
+}
 function date_to_month(d) {
   return new MonthInYear(
     (() => {
@@ -6138,7 +5669,7 @@ function date_to_month(d) {
   );
 }
 function date_string_to_month(date_str) {
-  let _pipe = from_date_string(date_str);
+  let _pipe = string_to_date(date_str);
   let _pipe$1 = map3(_pipe, (d) => {
     return date_to_month(d);
   });
@@ -6153,37 +5684,6 @@ function month_in_year_to_str(month_in_year) {
   return format(date2, "yyyy-MM-dd");
 }
 
-// build/dev/javascript/formal/formal/form.mjs
-var Form = class extends CustomType {
-  constructor(values3, errors) {
-    super();
-    this.values = values3;
-    this.errors = errors;
-  }
-};
-function new$3() {
-  return new Form(new_map(), new_map());
-}
-function value(form2, name2) {
-  let $ = map_get(form2.values, name2);
-  if ($.isOk() && $[0].atLeastLength(1)) {
-    let value$1 = $[0].head;
-    return value$1;
-  } else {
-    return "";
-  }
-}
-function field_state(form2, name2) {
-  let $ = map_get(form2.errors, name2);
-  if ($.isOk()) {
-    let e = $[0];
-    return new Error(e);
-  } else {
-    let e = $[0];
-    return new Ok(e);
-  }
-}
-
 // build/dev/javascript/gleam_stdlib/gleam/function.mjs
 function identity3(x) {
   return x;
@@ -6194,7 +5694,7 @@ var EMPTY_DICT = /* @__PURE__ */ Dict.new();
 function empty_dict() {
   return EMPTY_DICT;
 }
-var EMPTY_SET = /* @__PURE__ */ new$2();
+var EMPTY_SET = /* @__PURE__ */ new$();
 function empty_set() {
   return EMPTY_SET;
 }
@@ -6241,13 +5741,13 @@ var Property = class extends CustomType {
   }
 };
 var Event2 = class extends CustomType {
-  constructor(kind, name2, handler, include, prevent_default2, stop_propagation, immediate2, limit) {
+  constructor(kind, name2, handler, include, prevent_default, stop_propagation, immediate2, limit) {
     super();
     this.kind = kind;
     this.name = name2;
     this.handler = handler;
     this.include = include;
-    this.prevent_default = prevent_default2;
+    this.prevent_default = prevent_default;
     this.stop_propagation = stop_propagation;
     this.immediate = immediate2;
     this.limit = limit;
@@ -6342,13 +5842,13 @@ function property(name2, value3) {
   return new Property(property_kind, name2, value3);
 }
 var event_kind = 2;
-function event(name2, handler, include, prevent_default2, stop_propagation, immediate2, limit) {
+function event(name2, handler, include, prevent_default, stop_propagation, immediate2, limit) {
   return new Event2(
     event_kind,
     name2,
     handler,
     include,
-    prevent_default2,
+    prevent_default,
     stop_propagation,
     immediate2,
     limit
@@ -6406,14 +5906,14 @@ function styles(properties) {
 function href(url) {
   return attribute2("href", url);
 }
+function accept(values3) {
+  return attribute2("accept", join(values3, ","));
+}
 function checked(is_checked) {
   return boolean_attribute("checked", is_checked);
 }
 function for$(id2) {
   return attribute2("for", id2);
-}
-function name(element_name) {
-  return attribute2("name", element_name);
 }
 function placeholder(text4) {
   return attribute2("placeholder", text4);
@@ -6421,7 +5921,7 @@ function placeholder(text4) {
 function type_(control_type) {
   return attribute2("type", control_type);
 }
-function value2(control_value) {
+function value(control_value) {
   return attribute2("value", control_value);
 }
 function role(name2) {
@@ -6897,7 +6397,7 @@ var Remove = class extends CustomType {
     this.count = count;
   }
 };
-function new$6(index5, removed, changes, children) {
+function new$4(index5, removed, changes, children) {
   return new Patch(index5, removed, changes, children);
 }
 var replace_text_kind = 0;
@@ -6967,12 +6467,12 @@ function diff_attributes(loop$controlled, loop$path, loop$mapper, loop$events, l
     let mapper = loop$mapper;
     let events = loop$events;
     let old = loop$old;
-    let new$10 = loop$new;
+    let new$9 = loop$new;
     let added = loop$added;
     let removed = loop$removed;
-    if (old.hasLength(0) && new$10.hasLength(0)) {
+    if (old.hasLength(0) && new$9.hasLength(0)) {
       return new AttributeChange(added, removed, events);
-    } else if (old.atLeastLength(1) && old.head instanceof Event2 && new$10.hasLength(0)) {
+    } else if (old.atLeastLength(1) && old.head instanceof Event2 && new$9.hasLength(0)) {
       let prev = old.head;
       let name2 = old.head.name;
       let old$1 = old.tail;
@@ -6983,10 +6483,10 @@ function diff_attributes(loop$controlled, loop$path, loop$mapper, loop$events, l
       loop$mapper = mapper;
       loop$events = events$1;
       loop$old = old$1;
-      loop$new = new$10;
+      loop$new = new$9;
       loop$added = added;
       loop$removed = removed$1;
-    } else if (old.atLeastLength(1) && new$10.hasLength(0)) {
+    } else if (old.atLeastLength(1) && new$9.hasLength(0)) {
       let prev = old.head;
       let old$1 = old.tail;
       let removed$1 = prepend(prev, removed);
@@ -6995,14 +6495,14 @@ function diff_attributes(loop$controlled, loop$path, loop$mapper, loop$events, l
       loop$mapper = mapper;
       loop$events = events;
       loop$old = old$1;
-      loop$new = new$10;
+      loop$new = new$9;
       loop$added = added;
       loop$removed = removed$1;
-    } else if (old.hasLength(0) && new$10.atLeastLength(1) && new$10.head instanceof Event2) {
-      let next2 = new$10.head;
-      let name2 = new$10.head.name;
-      let handler = new$10.head.handler;
-      let new$1 = new$10.tail;
+    } else if (old.hasLength(0) && new$9.atLeastLength(1) && new$9.head instanceof Event2) {
+      let next2 = new$9.head;
+      let name2 = new$9.head.name;
+      let handler = new$9.head.handler;
+      let new$1 = new$9.tail;
       let added$1 = prepend(next2, added);
       let events$1 = add_event(events, mapper, path, name2, handler);
       loop$controlled = controlled;
@@ -7013,9 +6513,9 @@ function diff_attributes(loop$controlled, loop$path, loop$mapper, loop$events, l
       loop$new = new$1;
       loop$added = added$1;
       loop$removed = removed;
-    } else if (old.hasLength(0) && new$10.atLeastLength(1)) {
-      let next2 = new$10.head;
-      let new$1 = new$10.tail;
+    } else if (old.hasLength(0) && new$9.atLeastLength(1)) {
+      let next2 = new$9.head;
+      let new$1 = new$9.tail;
       let added$1 = prepend(next2, added);
       loop$controlled = controlled;
       loop$path = path;
@@ -7028,8 +6528,8 @@ function diff_attributes(loop$controlled, loop$path, loop$mapper, loop$events, l
     } else {
       let prev = old.head;
       let remaining_old = old.tail;
-      let next2 = new$10.head;
-      let remaining_new = new$10.tail;
+      let next2 = new$9.head;
+      let remaining_new = new$9.tail;
       let $ = compare4(prev, next2);
       if (prev instanceof Attribute && $ instanceof Eq && next2 instanceof Attribute) {
         let _block;
@@ -7184,7 +6684,7 @@ function diff_attributes(loop$controlled, loop$path, loop$mapper, loop$events, l
         loop$mapper = mapper;
         loop$events = events$1;
         loop$old = remaining_old;
-        loop$new = new$10;
+        loop$new = new$9;
         loop$added = added;
         loop$removed = removed$1;
       } else {
@@ -7194,7 +6694,7 @@ function diff_attributes(loop$controlled, loop$path, loop$mapper, loop$events, l
         loop$mapper = mapper;
         loop$events = events;
         loop$old = remaining_old;
-        loop$new = new$10;
+        loop$new = new$9;
         loop$added = added;
         loop$removed = removed$1;
       }
@@ -7205,7 +6705,7 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
   while (true) {
     let old = loop$old;
     let old_keyed = loop$old_keyed;
-    let new$10 = loop$new;
+    let new$9 = loop$new;
     let new_keyed = loop$new_keyed;
     let moved = loop$moved;
     let moved_offset = loop$moved_offset;
@@ -7217,12 +6717,12 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
     let children = loop$children;
     let mapper = loop$mapper;
     let events = loop$events;
-    if (old.hasLength(0) && new$10.hasLength(0)) {
+    if (old.hasLength(0) && new$9.hasLength(0)) {
       return new Diff(
         new Patch(patch_index, removed, changes, children),
         events
       );
-    } else if (old.atLeastLength(1) && new$10.hasLength(0)) {
+    } else if (old.atLeastLength(1) && new$9.hasLength(0)) {
       let prev = old.head;
       let old$1 = old.tail;
       let _block;
@@ -7236,7 +6736,7 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
       let events$1 = remove_child(events, path, node_index, prev);
       loop$old = old$1;
       loop$old_keyed = old_keyed;
-      loop$new = new$10;
+      loop$new = new$9;
       loop$new_keyed = new_keyed;
       loop$moved = moved;
       loop$moved_offset = moved_offset;
@@ -7248,32 +6748,32 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
       loop$children = children;
       loop$mapper = mapper;
       loop$events = events$1;
-    } else if (old.hasLength(0) && new$10.atLeastLength(1)) {
+    } else if (old.hasLength(0) && new$9.atLeastLength(1)) {
       let events$1 = add_children(
         events,
         mapper,
         path,
         node_index,
-        new$10
+        new$9
       );
-      let insert6 = insert5(new$10, node_index - moved_offset);
+      let insert6 = insert5(new$9, node_index - moved_offset);
       let changes$1 = prepend(insert6, changes);
       return new Diff(
         new Patch(patch_index, removed, changes$1, children),
         events$1
       );
-    } else if (old.atLeastLength(1) && new$10.atLeastLength(1) && old.head.key !== new$10.head.key) {
+    } else if (old.atLeastLength(1) && new$9.atLeastLength(1) && old.head.key !== new$9.head.key) {
       let prev = old.head;
       let old_remaining = old.tail;
-      let next2 = new$10.head;
-      let new_remaining = new$10.tail;
+      let next2 = new$9.head;
+      let new_remaining = new$9.tail;
       let next_did_exist = get3(old_keyed, next2.key);
       let prev_does_exist = get3(new_keyed, prev.key);
       let prev_has_moved = contains2(moved, prev.key);
       if (prev_does_exist.isOk() && next_did_exist.isOk() && prev_has_moved) {
         loop$old = old_remaining;
         loop$old_keyed = old_keyed;
-        loop$new = new$10;
+        loop$new = new$9;
         loop$new_keyed = new_keyed;
         loop$moved = moved;
         loop$moved_offset = moved_offset - advance(prev);
@@ -7295,7 +6795,7 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
         let moved_offset$1 = moved_offset + count;
         loop$old = prepend(match, old);
         loop$old_keyed = old_keyed;
-        loop$new = new$10;
+        loop$new = new$9;
         loop$new_keyed = new_keyed;
         loop$moved = moved$1;
         loop$moved_offset = moved_offset$1;
@@ -7315,7 +6815,7 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
         let changes$1 = prepend(remove3, changes);
         loop$old = old_remaining;
         loop$old_keyed = old_keyed;
-        loop$new = new$10;
+        loop$new = new$9;
         loop$new_keyed = new_keyed;
         loop$moved = moved;
         loop$moved_offset = moved_offset$1;
@@ -7371,11 +6871,11 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
         loop$mapper = mapper;
         loop$events = events$1;
       }
-    } else if (old.atLeastLength(1) && old.head instanceof Fragment && new$10.atLeastLength(1) && new$10.head instanceof Fragment) {
+    } else if (old.atLeastLength(1) && old.head instanceof Fragment && new$9.atLeastLength(1) && new$9.head instanceof Fragment) {
       let prev = old.head;
       let old$1 = old.tail;
-      let next2 = new$10.head;
-      let new$1 = new$10.tail;
+      let next2 = new$9.head;
+      let new$1 = new$9.tail;
       let node_index$1 = node_index + 1;
       let prev_count = prev.children_count;
       let next_count = next2.children_count;
@@ -7420,11 +6920,11 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
       loop$children = child.patch.children;
       loop$mapper = mapper;
       loop$events = child.events;
-    } else if (old.atLeastLength(1) && old.head instanceof Element && new$10.atLeastLength(1) && new$10.head instanceof Element && (old.head.namespace === new$10.head.namespace && old.head.tag === new$10.head.tag)) {
+    } else if (old.atLeastLength(1) && old.head instanceof Element && new$9.atLeastLength(1) && new$9.head instanceof Element && (old.head.namespace === new$9.head.namespace && old.head.tag === new$9.head.tag)) {
       let prev = old.head;
       let old$1 = old.tail;
-      let next2 = new$10.head;
-      let new$1 = new$10.tail;
+      let next2 = new$9.head;
+      let new$1 = new$9.tail;
       let composed_mapper = compose_mapper(mapper, next2.mapper);
       let child_path = add2(path, node_index, next2.key);
       let controlled = is_controlled(
@@ -7491,11 +6991,11 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
       loop$children = children$1;
       loop$mapper = mapper;
       loop$events = child.events;
-    } else if (old.atLeastLength(1) && old.head instanceof Text2 && new$10.atLeastLength(1) && new$10.head instanceof Text2 && old.head.content === new$10.head.content) {
+    } else if (old.atLeastLength(1) && old.head instanceof Text2 && new$9.atLeastLength(1) && new$9.head instanceof Text2 && old.head.content === new$9.head.content) {
       let prev = old.head;
       let old$1 = old.tail;
-      let next2 = new$10.head;
-      let new$1 = new$10.tail;
+      let next2 = new$9.head;
+      let new$1 = new$9.tail;
       loop$old = old$1;
       loop$old_keyed = old_keyed;
       loop$new = new$1;
@@ -7510,11 +7010,11 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
       loop$children = children;
       loop$mapper = mapper;
       loop$events = events;
-    } else if (old.atLeastLength(1) && old.head instanceof Text2 && new$10.atLeastLength(1) && new$10.head instanceof Text2) {
+    } else if (old.atLeastLength(1) && old.head instanceof Text2 && new$9.atLeastLength(1) && new$9.head instanceof Text2) {
       let old$1 = old.tail;
-      let next2 = new$10.head;
-      let new$1 = new$10.tail;
-      let child = new$6(
+      let next2 = new$9.head;
+      let new$1 = new$9.tail;
+      let child = new$4(
         node_index,
         0,
         toList([replace_text(next2.content)]),
@@ -7534,11 +7034,11 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
       loop$children = prepend(child, children);
       loop$mapper = mapper;
       loop$events = events;
-    } else if (old.atLeastLength(1) && old.head instanceof UnsafeInnerHtml && new$10.atLeastLength(1) && new$10.head instanceof UnsafeInnerHtml) {
+    } else if (old.atLeastLength(1) && old.head instanceof UnsafeInnerHtml && new$9.atLeastLength(1) && new$9.head instanceof UnsafeInnerHtml) {
       let prev = old.head;
       let old$1 = old.tail;
-      let next2 = new$10.head;
-      let new$1 = new$10.tail;
+      let next2 = new$9.head;
+      let new$1 = new$9.tail;
       let composed_mapper = compose_mapper(mapper, next2.mapper);
       let child_path = add2(path, node_index, next2.key);
       let $ = diff_attributes(
@@ -7577,7 +7077,7 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
         _block$2 = children;
       } else {
         _block$2 = prepend(
-          new$6(node_index, 0, child_changes$1, toList([])),
+          new$4(node_index, 0, child_changes$1, toList([])),
           children
         );
       }
@@ -7599,8 +7099,8 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
     } else {
       let prev = old.head;
       let old_remaining = old.tail;
-      let next2 = new$10.head;
-      let new_remaining = new$10.tail;
+      let next2 = new$9.head;
+      let new_remaining = new$9.tail;
       let prev_count = advance(prev);
       let next_count = advance(next2);
       let change = replace3(node_index - moved_offset, prev_count, next2);
@@ -7626,11 +7126,11 @@ function do_diff(loop$old, loop$old_keyed, loop$new, loop$new_keyed, loop$moved,
     }
   }
 }
-function diff2(events, old, new$10) {
+function diff2(events, old, new$9) {
   return do_diff(
     toList([old]),
     empty2(),
-    toList([new$10]),
+    toList([new$9]),
     empty2(),
     empty_set(),
     0,
@@ -8161,7 +7661,7 @@ var Runtime = class {
       }
     });
     this.#vdom = virtualise(this.root);
-    this.#events = new$7();
+    this.#events = new$5();
     this.#shouldFlush = true;
     this.#tick(effects);
   }
@@ -8286,7 +7786,7 @@ var Events = class extends CustomType {
     this.next_dispatched_paths = next_dispatched_paths;
   }
 };
-function new$7() {
+function new$5() {
   return new Events(
     empty2(),
     empty_list,
@@ -8586,9 +8086,6 @@ function text3(content) {
 function div(attrs, children) {
   return element2("div", attrs, children);
 }
-function p(attrs, children) {
-  return element2("p", attrs, children);
-}
 function a(attrs, children) {
   return element2("a", attrs, children);
 }
@@ -8615,9 +8112,6 @@ function button(attrs, children) {
 }
 function datalist(attrs, children) {
   return element2("datalist", attrs, children);
-}
-function form(attrs, children) {
-  return element2("form", attrs, children);
 }
 function input(attrs) {
   return element2("input", attrs, empty_list);
@@ -8663,7 +8157,7 @@ var Config2 = class extends CustomType {
     this.on_form_restore = on_form_restore;
   }
 };
-function new$8(options) {
+function new$6(options) {
   let init3 = new Config2(
     false,
     true,
@@ -8737,7 +8231,7 @@ var ElementNotFound = class extends CustomType {
 var NotABrowser = class extends CustomType {
 };
 function application(init3, update3, view2) {
-  return new App(init3, update3, view2, new$8(empty_list));
+  return new App(init3, update3, view2, new$6(empty_list));
 }
 function start3(app, selector, start_args) {
   return guard(
@@ -9089,7 +8583,7 @@ function set_method(req, method) {
     _record.query
   );
 }
-function new$9() {
+function new$7() {
   return new Request(
     new Get(),
     toList([]),
@@ -9708,14 +9202,22 @@ var CollapseGroup = class extends CustomType {
     this.group = group;
   }
 };
-var UserSubmittedImportForm = class extends CustomType {
+var UserUpdatedFile = class extends CustomType {
+};
+var SystemReadFile = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
   }
 };
+var ImportTransactionResult = class extends CustomType {
+  constructor(t) {
+    super();
+    this.t = t;
+  }
+};
 var Model = class extends CustomType {
-  constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit_form, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input, import_form) {
+  constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit_form, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input, imported_transactions) {
     super();
     this.login_form = login_form;
     this.current_user = current_user;
@@ -9738,7 +9240,7 @@ var Model = class extends CustomType {
     this.show_add_category_group_ui = show_add_category_group_ui;
     this.new_category_group_name = new_category_group_name;
     this.category_group_change_input = category_group_change_input;
-    this.import_form = import_form;
+    this.imported_transactions = imported_transactions;
   }
 };
 var SelectedCategory = class extends CustomType {
@@ -9765,12 +9267,6 @@ var LoginForm = class extends CustomType {
     this.login = login;
     this.pass = pass;
     this.is_loading = is_loading;
-  }
-};
-var ImportForm = class extends CustomType {
-  constructor(form2) {
-    super();
-    this.form = form2;
   }
 };
 var ShiftLeft = class extends CustomType {
@@ -9879,6 +9375,15 @@ function read_localstorage(key) {
 function write_localstorage(key, value3) {
   window.localStorage.setItem(key, value3);
 }
+function get_file_content(callback) {
+  const file = document.getElementById("file-input").files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const fileContent = e.target.result;
+    callback(fileContent);
+  };
+  reader.readAsText(file);
+}
 
 // build/dev/javascript/budget_fe/budget_fe/internals/effects.mjs
 function uri_to_route(uri) {
@@ -9910,12 +9415,12 @@ function request_with_auth() {
   let _block$1;
   let $ = is_prod;
   if ($) {
-    let _pipe$12 = new$9();
+    let _pipe$12 = new$7();
     let _pipe$22 = set_host(_pipe$12, "budget-be.fly.dev");
     let _pipe$32 = set_port(_pipe$22, 443);
     _block$1 = set_scheme(_pipe$32, new Https());
   } else {
-    let _pipe$12 = new$9();
+    let _pipe$12 = new$7();
     let _pipe$22 = set_host(_pipe$12, "127.0.0.1");
     let _pipe$32 = set_port(_pipe$22, 8080);
     _block$1 = set_scheme(_pipe$32, new Http());
@@ -9972,7 +9477,7 @@ function add_transaction_eff(transaction_form, amount, cat) {
     guidv4(),
     (() => {
       let _pipe = transaction_form.date;
-      let _pipe$1 = from_date_string(_pipe);
+      let _pipe$1 = string_to_date(_pipe);
       return unwrap2(_pipe$1, today());
     })(),
     transaction_form.payee,
@@ -10020,6 +9525,25 @@ function get_allocations() {
         return new Allocations(var0);
       }
     )
+  );
+}
+function send_csv_request(body, decoder, to_msg) {
+  let _block;
+  let _pipe = request_with_auth();
+  let _pipe$1 = set_method(_pipe, new Post());
+  let _pipe$2 = set_path(_pipe$1, "import/csv");
+  let _pipe$3 = set_header(_pipe$2, "Content-Type", "text/csv");
+  _block = set_body(_pipe$3, body);
+  let req = _block;
+  return send3(req, expect_json(decoder, to_msg));
+}
+function import_csv(content) {
+  return send_csv_request(
+    content,
+    list2(import_transaction_decoder()),
+    (var0) => {
+      return new ImportTransactionResult(var0);
+    }
   );
 }
 function get_categories() {
@@ -10454,29 +9978,24 @@ function on(name2, handler) {
     new NoLimit(0)
   );
 }
-function prevent_default(event4) {
-  if (event4 instanceof Event2) {
-    let _record = event4;
-    return new Event2(
-      _record.kind,
-      _record.name,
-      _record.handler,
-      _record.include,
-      true,
-      _record.stop_propagation,
-      _record.immediate,
-      _record.limit
-    );
-  } else {
-    return event4;
-  }
-}
 function on_click(msg) {
   return on("click", success(msg));
 }
 function on_input(msg) {
   return on(
     "input",
+    subfield(
+      toList(["target", "value"]),
+      string2,
+      (value3) => {
+        return success(msg(value3));
+      }
+    )
+  );
+}
+function on_change(msg) {
+  return on(
+    "change",
     subfield(
       toList(["target", "value"]),
       string2,
@@ -10498,54 +10017,9 @@ function on_check(msg) {
     )
   );
 }
-function formdata_decoder() {
-  let string_value_decoder = field(
-    0,
-    string2,
-    (key) => {
-      return field(
-        1,
-        one_of(
-          map4(string2, (var0) => {
-            return new Ok(var0);
-          }),
-          toList([success(new Error(void 0))])
-        ),
-        (value3) => {
-          let _pipe2 = value3;
-          let _pipe$12 = map3(
-            _pipe2,
-            (_capture) => {
-              return new$(key, _capture);
-            }
-          );
-          return success(_pipe$12);
-        }
-      );
-    }
-  );
-  let _pipe = string_value_decoder;
-  let _pipe$1 = list2(_pipe);
-  return map4(_pipe$1, values2);
-}
-function on_submit(msg) {
-  let _pipe = on(
-    "submit",
-    subfield(
-      toList(["detail", "formData"]),
-      formdata_decoder(),
-      (formdata) => {
-        let _pipe2 = formdata;
-        let _pipe$1 = msg(_pipe2);
-        return success(_pipe$1);
-      }
-    )
-  );
-  return prevent_default(_pipe);
-}
 
 // build/dev/javascript/budget_fe/budget_fe/internals/view.mjs
-function auth_screen(form2) {
+function auth_screen(form) {
   return div(
     toList([class$("mt-3 rounded-3 p-2")]),
     toList([
@@ -10564,9 +10038,9 @@ function auth_screen(form2) {
           class$("form-control"),
           type_("text"),
           styles(toList([["width", "120px"]])),
-          value2(
+          value(
             (() => {
-              let _pipe = form2.login;
+              let _pipe = form.login;
               return unwrap(_pipe, "");
             })()
           )
@@ -10586,9 +10060,9 @@ function auth_screen(form2) {
           class$("form-control"),
           type_("password"),
           styles(toList([["width", "120px"]])),
-          value2(
+          value(
             (() => {
-              let _pipe = form2.pass;
+              let _pipe = form.pass;
               return unwrap(_pipe, "");
             })()
           )
@@ -11011,55 +10485,88 @@ function check_box(label2, is_checked, msg) {
     ])
   );
 }
-function view_input(form2, type_2, name2, label2) {
-  let state = field_state(form2, name2);
-  return div(
+function get_file_content2() {
+  return from(
+    (dispatch) => {
+      let file_read_callback = (file_content) => {
+        let _pipe = file_content;
+        let _pipe$1 = new SystemReadFile(_pipe);
+        return dispatch(_pipe$1);
+      };
+      return get_file_content(file_read_callback);
+    }
+  );
+}
+function imported_transaction_list_item_html(it, model) {
+  return tr(
     toList([]),
     toList([
-      label(
-        toList([
-          for$(name2),
-          class$("text-xs font-bold text-slate-600")
-        ]),
-        toList([text3(label2), text3(": ")])
+      td(
+        toList([]),
+        toList([text3(to_date_string(it.date))])
       ),
-      input(
+      td(toList([]), toList([text3(it.payee)])),
+      td(toList([]), toList([text3(it.transaction_type)])),
+      td(toList([]), toList([text3(it.reference)])),
+      td(
+        toList([]),
         toList([
-          type_(type_2),
-          id(name2),
-          name(name2),
-          value2(value(form2, name2))
+          text3(
+            (() => {
+              let _pipe = it.value;
+              return money_to_string(_pipe);
+            })()
+          )
         ])
-      ),
-      (() => {
-        if (state.isOk()) {
-          return none2();
-        } else {
-          let error_message = state[0];
-          return p(
-            toList([class$("mt-0.5 text-xs text-red-500")]),
-            toList([text3(error_message)])
-          );
-        }
-      })()
+      )
     ])
   );
 }
 function import_transactions(model) {
-  return form(
+  return div(
+    toList([]),
     toList([
-      class$("p-8 w-full border rounded-2xl shadow-lg space-y-4"),
-      on_submit(
-        (var0) => {
-          return new UserSubmittedImportForm(var0);
-        }
-      )
-    ]),
-    toList([
-      view_input(model.import_form.form, "file", "file", "Upload file"),
-      div(
-        toList([class$("flex justify-end")]),
-        toList([button(toList([]), toList([text3("Import")]))])
+      input(
+        toList([
+          type_("file"),
+          accept(toList([".xml", ".csv"])),
+          id("file-input"),
+          on_change((str) => {
+            return new UserUpdatedFile();
+          })
+        ])
+      ),
+      table(
+        toList([class$("table table-sm table-hover")]),
+        toList([
+          thead(
+            toList([]),
+            toList([
+              tr(
+                toList([]),
+                toList([
+                  th(toList([]), toList([text3("Date")])),
+                  th(toList([]), toList([text3("Partner Name")])),
+                  th(toList([]), toList([text3("Type")])),
+                  th(toList([]), toList([text3("Reference")])),
+                  th(toList([]), toList([text3("Amount (EUR)")]))
+                ])
+              )
+            ])
+          ),
+          tbody(
+            toList([]),
+            (() => {
+              let _pipe = model.imported_transactions;
+              return map2(
+                _pipe,
+                (_capture) => {
+                  return imported_transaction_list_item_html(_capture, model);
+                }
+              );
+            })()
+          )
+        ])
       )
     ])
   );
@@ -11113,7 +10620,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
                 }
               ),
               placeholder("date"),
-              value2(tef.date),
+              value(tef.date),
               class$("form-control"),
               type_("date"),
               styles(toList([["width", "140px"]]))
@@ -11132,7 +10639,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
                 }
               ),
               placeholder("payee"),
-              value2(tef.payee),
+              value(tef.payee),
               class$("form-control"),
               type_("text"),
               styles(toList([["width", "160px"]])),
@@ -11149,7 +10656,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               return map2(
                 _pipe$1,
                 (p2) => {
-                  return option(toList([value2(p2)]), "");
+                  return option(toList([value(p2)]), "");
                 }
               );
             })()
@@ -11167,7 +10674,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
                 }
               ),
               placeholder("category"),
-              value2(tef.category_name),
+              value(tef.category_name),
               class$("form-control"),
               type_("text"),
               styles(toList([["width", "160px"]])),
@@ -11184,7 +10691,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
               return map2(
                 _pipe$1,
                 (p2) => {
-                  return option(toList([value2(p2)]), "");
+                  return option(toList([value(p2)]), "");
                 }
               );
             })()
@@ -11202,7 +10709,7 @@ function transaction_edit_ui(transaction, category_name, active_class, tef, mode
                 }
               ),
               placeholder("amount"),
-              value2(tef.amount),
+              value(tef.amount),
               class$("form-control"),
               type_("text"),
               styles(toList([["width", "160px"]]))
@@ -11305,7 +10812,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               id("addTransactionDateId"),
               class$("form-control"),
               type_("date"),
-              value2(transaction_edit_form.date)
+              value(transaction_edit_form.date)
             ])
           )
         ])
@@ -11325,7 +10832,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               class$("form-control"),
               type_("text"),
               attribute2("list", "payees_list"),
-              value2(transaction_edit_form.payee)
+              value(transaction_edit_form.payee)
             ])
           ),
           datalist(
@@ -11339,7 +10846,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               return map2(
                 _pipe$2,
                 (p2) => {
-                  return option(toList([value2(p2)]), "");
+                  return option(toList([value(p2)]), "");
                 }
               );
             })()
@@ -11357,7 +10864,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
                 }
               ),
               class$("form-select"),
-              value2(
+              value(
                 (() => {
                   let _pipe = transaction_edit_form.category;
                   let _pipe$1 = map(_pipe, (c) => {
@@ -11375,7 +10882,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               return map2(
                 _pipe$1,
                 (p2) => {
-                  return option(toList([value2(p2)]), p2);
+                  return option(toList([value(p2)]), p2);
                 }
               );
             })()
@@ -11397,7 +10904,7 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               class$("form-control"),
               type_("text"),
               styles(toList([["width", "120px"]])),
-              value2(transaction_edit_form.amount)
+              value(transaction_edit_form.amount)
             ])
           ),
           check_box(
@@ -11707,7 +11214,7 @@ function group_ui(group, model) {
                 id("exampleFormControlInput1"),
                 class$("form-control"),
                 type_("text"),
-                value2(model.user_category_name_input)
+                value(model.user_category_name_input)
               ])
             )
           ])
@@ -11944,7 +11451,7 @@ function category_details_name_ui(category, sc) {
           class$("form-control"),
           type_("text"),
           styles(toList([["width", "200px"]])),
-          value2(sc.input_name),
+          value(sc.input_name),
           class$("mb-2")
         ])
       ),
@@ -11996,7 +11503,7 @@ function category_details_change_group_ui(cat, model) {
           return map2(
             _pipe$1,
             (p2) => {
-              return option(toList([value2(p2)]), "");
+              return option(toList([value(p2)]), "");
             }
           );
         })()
@@ -12031,7 +11538,7 @@ function category_details_allocation_ui(sc, allocation) {
           class$("form-control"),
           type_("text"),
           styles(toList([["width", "120px"]])),
-          value2(sc.allocation)
+          value(sc.allocation)
         ])
       ),
       button(
@@ -12095,7 +11602,7 @@ function category_details_target_ui(cat, target_edit_option) {
                       class$("form-control"),
                       type_("text"),
                       styles(toList([["width", "120px"]])),
-                      value2(target_edit.target_amount)
+                      value(target_edit.target_amount)
                     ])
                   ),
                   input(
@@ -12108,7 +11615,7 @@ function category_details_target_ui(cat, target_edit_option) {
                       placeholder("date"),
                       class$("form-control mt-1"),
                       type_("date"),
-                      value2(target_date2)
+                      value(target_date2)
                     ])
                   )
                 ])
@@ -12129,7 +11636,7 @@ function category_details_target_ui(cat, target_edit_option) {
                       class$("form-control"),
                       type_("text"),
                       styles(toList([["width", "120px"]])),
-                      value2(target_edit.target_amount)
+                      value(target_edit.target_amount)
                     ])
                   )
                 ])
@@ -12318,7 +11825,7 @@ function init2(_) {
       false,
       "",
       "",
-      new ImportForm(new$3())
+      toList([])
     ),
     batch(
       toList([init(on_route_change), load_user_eff()])
@@ -12351,7 +11858,7 @@ function money_value(m) {
 function transaction_form_to_transaction(tef, categories) {
   let _block;
   let _pipe = tef.date;
-  let _pipe$1 = from_date_string(_pipe);
+  let _pipe$1 = string_to_date(_pipe);
   _block = from_result(_pipe$1);
   let date_option = _block;
   let _block$1;
@@ -12427,7 +11934,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -12458,7 +11965,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       login_eff(
@@ -12519,7 +12026,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -12560,7 +12067,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       batch(
@@ -12605,7 +12112,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       get_transactions()
@@ -12647,7 +12154,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -12681,7 +12188,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -12747,7 +12254,7 @@ function update2(model, msg) {
             });
             return unwrap2(_pipe$2, "");
           })(),
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -12792,7 +12299,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -12824,7 +12331,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       add_category(model.user_category_name_input, group_id)
@@ -12856,7 +12363,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -12887,7 +12394,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       get_categories()
@@ -12933,7 +12440,7 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.import_form
+            _record.imported_transactions
           );
         })(),
         add_transaction_eff(
@@ -12983,7 +12490,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13033,7 +12540,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13074,7 +12581,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13122,7 +12629,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13163,7 +12670,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13204,7 +12711,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13251,7 +12758,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13283,7 +12790,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       update_category_target_eff(c, model.target_edit_form)
@@ -13315,7 +12822,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       delete_target_eff(c)
@@ -13344,8 +12851,8 @@ function update2(model, msg) {
             let _pipe = model.target_edit_form;
             return map(
               _pipe,
-              (form2) => {
-                let _record$1 = form2;
+              (form) => {
+                let _record$1 = form;
                 return new TargetEditForm(
                   _record$1.cat_id,
                   amount,
@@ -13361,7 +12868,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13390,8 +12897,8 @@ function update2(model, msg) {
             let _pipe = model.target_edit_form;
             return map(
               _pipe,
-              (form2) => {
-                let _record$1 = form2;
+              (form) => {
+                let _record$1 = form;
                 return new TargetEditForm(
                   _record$1.cat_id,
                   _record$1.target_amount,
@@ -13407,7 +12914,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13436,8 +12943,8 @@ function update2(model, msg) {
             let _pipe = model.target_edit_form;
             return map(
               _pipe,
-              (form2) => {
-                let _record$1 = form2;
+              (form) => {
+                let _record$1 = form;
                 return new TargetEditForm(
                   _record$1.cat_id,
                   _record$1.target_amount,
@@ -13456,7 +12963,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13503,7 +13010,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13535,7 +13042,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       delete_transaction_eff(id2)
@@ -13583,7 +13090,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13639,7 +13146,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13687,7 +13194,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13735,7 +13242,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13783,7 +13290,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13831,7 +13338,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -13862,7 +13369,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       (() => {
@@ -13910,7 +13417,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       (() => {
@@ -13950,7 +13457,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       (() => {
@@ -14014,7 +13521,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -14089,7 +13596,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -14128,7 +13635,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       batch(toList([get_transactions(), get_allocations()]))
@@ -14160,7 +13667,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -14192,7 +13699,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -14233,7 +13740,7 @@ function update2(model, msg) {
           !model.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -14265,7 +13772,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           input_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -14298,7 +13805,7 @@ function update2(model, msg) {
           false,
           "",
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       get_category_groups()
@@ -14332,7 +13839,7 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
@@ -14395,7 +13902,7 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             "",
-            _record.import_form
+            _record.imported_transactions
           );
         })(),
         update_category_eff(
@@ -14439,13 +13946,18 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           group_name,
-          _record.import_form
+          _record.imported_transactions
         );
       })(),
       none()
     ];
-  } else {
-    let fields = msg[0];
+  } else if (msg instanceof UserUpdatedFile) {
+    return [model, get_file_content2()];
+  } else if (msg instanceof SystemReadFile) {
+    let content = msg[0];
+    return [model, import_csv(content)];
+  } else if (msg instanceof ImportTransactionResult && msg.t.isOk()) {
+    let import_transactions2 = msg.t[0];
     return [
       (() => {
         let _record = model;
@@ -14471,11 +13983,13 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.import_form
+          import_transactions2
         );
       })(),
       none()
     ];
+  } else {
+    return [model, none()];
   }
 }
 function main() {

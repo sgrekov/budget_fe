@@ -15,6 +15,7 @@ import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/string
 import lustre/attribute
+import lustre/effect
 import lustre/element
 import lustre/element/html
 import lustre/event
@@ -789,31 +790,48 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
   ])
 }
 
+@external(javascript, "./app.ffi.mjs", "get_file_content")
+pub fn do_get_file_content(callback: fn(String) -> Nil) -> Nil
+
+pub fn get_file_content() -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    let file_read_callback = fn(file_content: String) -> Nil {
+      file_content
+      |> msg.SystemReadFile
+      |> dispatch
+    }
+    do_get_file_content(file_read_callback)
+  })
+}
+
 fn import_transactions(model: Model) -> element.Element(Msg) {
-  html.form(
-    [
-      attribute.class("p-8 w-full border rounded-2xl shadow-lg space-y-4"),
-      // The message provided to the built-in `on_submit` handler receives the
-      // `FormData` associated with the form as a List of (name, value) tuples.
-      // 
-      // The event handler also calls `preventDefault()` on the form, such that
-      // Lustre can handle the submission instead off being sent off to the server.
-      event.on_submit(msg.UserSubmittedImportForm),    
-    ],
-    [
-      //
-      view_input(
-        model.import_form.form,
-        is: "file",
-        name: "file",
-        label: "Upload file",
-      ),
-      //
-      html.div([attribute.class("flex justify-end")], [
-        html.button([], [html.text("Import")]),
+  html.div([], [
+    html.input([
+      attribute.type_("file"),
+      attribute.accept([".xml", ".csv"]),
+      attribute.id("file-input"),
+      event.on_change(fn(str) -> Msg {      
+        msg.UserUpdatedFile
+      }),
+    ]),
+    html.table([attribute.class("table table-sm table-hover")], [
+      html.thead([], [
+        html.tr([], [
+          //"Booking Date","Value Date","Partner Name","Partner Iban",Type,"Payment Reference","Account Name","Amount (EUR)"
+          html.th([], [html.text("Date")]),
+          html.th([], [html.text("Partner Name")]),
+          html.th([], [html.text("Type")]),
+          html.th([], [html.text("Reference")]),
+          html.th([], [html.text("Amount (EUR)")]),
+        ]),
       ]),
-    ],
-  )
+      html.tbody(
+        [],
+        model.imported_transactions
+          |> list.map(imported_transaction_list_item_html(_, model)),
+      ),
+    ]),
+  ])
 }
 
 fn view_input(
@@ -894,6 +912,20 @@ fn transaction_list_item_html(
         ],
       )
   }
+}
+
+fn imported_transaction_list_item_html(
+  it: m.ImportTransaction,
+  model: Model,
+) -> element.Element(Msg) {
+  html.tr([], [
+    //"Booking Date","Value Date","Partner Name","Partner Iban",Type,"Payment Reference","Account Name","Amount (EUR)"
+    html.td([], [html.text(date_utils.to_date_string(it.date))]),
+    html.td([], [html.text(it.payee)]),
+    html.td([], [html.text(it.transaction_type)]),
+    html.td([], [html.text(it.reference)]),
+    html.td([], [html.text(it.value |> m.money_to_string)]),
+  ])
 }
 
 fn transaction_edit_ui(
