@@ -77,6 +77,10 @@ pub type Msg {
   ImportTransactionResult(
     t: Result(List(ImportTransaction), lustre_http.HttpError),
   )
+  ImportSelectedTransactions
+  ImportSelectedTransactionsResult(
+    t: Result(List(String), lustre_http.HttpError),
+  )
 }
 
 pub type Model {

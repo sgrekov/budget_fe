@@ -574,6 +574,14 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     msg.ImportTransactionResult(Error(_)) -> {
       #(model, effect.none())
     }
+    msg.ImportSelectedTransactions -> #(
+      Model(..model, imported_transactions: []),
+      eff.import_selected_transactions(model.imported_transactions),
+    )
+    msg.ImportSelectedTransactionsResult(Ok(imported)) -> {
+      #(Model(..model), effect.none())
+    }
+    msg.ImportSelectedTransactionsResult(Error(_)) -> #(model, effect.none())
   }
 }
 

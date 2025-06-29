@@ -805,14 +805,21 @@ pub fn get_file_content() -> effect.Effect(Msg) {
 }
 
 fn import_transactions(model: Model) -> element.Element(Msg) {
-  html.div([], [
-    html.input([
-      attribute.type_("file"),
-      attribute.accept([".xml", ".csv"]),
-      attribute.id("file-input"),
-      event.on_change(fn(str) -> Msg {      
-        msg.UserUpdatedFile
-      }),
+  html.div([attribute.class("w-100")], [
+    html.div([], [
+      html.input([
+        attribute.type_("file"),
+        attribute.accept([".xml", ".csv"]),
+        attribute.id("file-input"),
+        event.on_change(fn(str) -> Msg { msg.UserUpdatedFile }),
+      ]),
+      html.button(
+        [
+          attribute.class("float-end"),
+          event.on_click(msg.ImportSelectedTransactions),
+        ],
+        [element.text("Import")],
+      ),
     ]),
     html.table([attribute.class("table table-sm table-hover")], [
       html.thead([], [
@@ -822,7 +829,7 @@ fn import_transactions(model: Model) -> element.Element(Msg) {
           html.th([], [html.text("Partner Name")]),
           html.th([], [html.text("Type")]),
           html.th([], [html.text("Reference")]),
-          html.th([], [html.text("Amount (EUR)")]),
+          html.th([], [html.text("Amount")]),
         ]),
       ]),
       html.tbody(

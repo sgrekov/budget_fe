@@ -3039,6 +3039,9 @@ function object(entries) {
 function identity2(x) {
   return x;
 }
+function array(list4) {
+  return list4.toArray();
+}
 function do_null() {
   return null;
 }
@@ -3178,6 +3181,14 @@ function nullable(input2, inner_type) {
 }
 function object2(entries) {
   return object(entries);
+}
+function preprocessed_array(from2) {
+  return array(from2);
+}
+function array2(entries, inner_type) {
+  let _pipe = entries;
+  let _pipe$1 = map2(_pipe, inner_type);
+  return preprocessed_array(_pipe$1);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
@@ -4956,6 +4967,15 @@ function id_decoder() {
     }
   );
 }
+function hash_decoder() {
+  return field(
+    "hash",
+    string2,
+    (id2) => {
+      return success(id2);
+    }
+  );
+}
 function user_with_token_decoder() {
   return field(
     "id",
@@ -5053,6 +5073,30 @@ function month_in_year_encode(month2) {
 }
 function money_encode(money) {
   return object2(toList([["money_value", int3(money.value)]]));
+}
+function encode_import_transaction(import_transaction) {
+  let id2 = import_transaction.id;
+  let date = import_transaction.date;
+  let payee = import_transaction.payee;
+  let transaction_type = import_transaction.transaction_type;
+  let value3 = import_transaction.value;
+  let reference = import_transaction.reference;
+  return object2(
+    toList([
+      ["id", string3(id2)],
+      [
+        "date",
+        (() => {
+          let _pipe = to_rata_die(import_transaction.date);
+          return int3(_pipe);
+        })()
+      ],
+      ["payee", string3(payee)],
+      ["transaction_type", string3(transaction_type)],
+      ["value", money_encode(import_transaction.value)],
+      ["reference", string3(reference)]
+    ])
+  );
 }
 function allocation_encode(a2) {
   return object2(
@@ -9216,6 +9260,14 @@ var ImportTransactionResult = class extends CustomType {
     this.t = t;
   }
 };
+var ImportSelectedTransactions = class extends CustomType {
+};
+var ImportSelectedTransactionsResult = class extends CustomType {
+  constructor(t) {
+    super();
+    this.t = t;
+  }
+};
 var Model = class extends CustomType {
   constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit_form, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input, imported_transactions) {
     super();
@@ -9409,7 +9461,7 @@ var is_prod = false;
 function request_with_auth() {
   let _block;
   let _pipe = read_localstorage("jwt");
-  echo(_pipe, "src/budget_fe/internals/effects.gleam", 35);
+  echo(_pipe, "src/budget_fe/internals/effects.gleam", 36);
   _block = unwrap2(_pipe, "");
   let jwt = _block;
   let _block$1;
@@ -9525,6 +9577,24 @@ function get_allocations() {
         return new Allocations(var0);
       }
     )
+  );
+}
+function import_selected_transactions(transactions) {
+  let body = to_string2(
+    array2(
+      transactions,
+      (t) => {
+        return encode_import_transaction(t);
+      }
+    )
+  );
+  return make_post(
+    "import/selected",
+    body,
+    list2(hash_decoder()),
+    (var0) => {
+      return new ImportSelectedTransactionsResult(var0);
+    }
   );
 }
 function send_csv_request(body, decoder, to_msg) {
@@ -10524,16 +10594,28 @@ function imported_transaction_list_item_html(it, model) {
 }
 function import_transactions(model) {
   return div(
-    toList([]),
+    toList([class$("w-100")]),
     toList([
-      input(
+      div(
+        toList([]),
         toList([
-          type_("file"),
-          accept(toList([".xml", ".csv"])),
-          id("file-input"),
-          on_change((str) => {
-            return new UserUpdatedFile();
-          })
+          input(
+            toList([
+              type_("file"),
+              accept(toList([".xml", ".csv"])),
+              id("file-input"),
+              on_change((str) => {
+                return new UserUpdatedFile();
+              })
+            ])
+          ),
+          button(
+            toList([
+              class$("float-end"),
+              on_click(new ImportSelectedTransactions())
+            ]),
+            toList([text2("Import")])
+          )
         ])
       ),
       table(
@@ -10549,7 +10631,7 @@ function import_transactions(model) {
                   th(toList([]), toList([text3("Partner Name")])),
                   th(toList([]), toList([text3("Type")])),
                   th(toList([]), toList([text3("Reference")])),
-                  th(toList([]), toList([text3("Amount (EUR)")]))
+                  th(toList([]), toList([text3("Amount")]))
                 ])
               )
             ])
@@ -13984,6 +14066,71 @@ function update2(model, msg) {
           _record.new_category_group_name,
           _record.category_group_change_input,
           import_transactions2
+        );
+      })(),
+      none()
+    ];
+  } else if (msg instanceof ImportTransactionResult && !msg.t.isOk()) {
+    return [model, none()];
+  } else if (msg instanceof ImportSelectedTransactions) {
+    return [
+      (() => {
+        let _record = model;
+        return new Model(
+          _record.login_form,
+          _record.current_user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit_form,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          _record.category_group_change_input,
+          toList([])
+        );
+      })(),
+      import_selected_transactions(model.imported_transactions)
+    ];
+  } else if (msg instanceof ImportSelectedTransactionsResult && msg.t.isOk()) {
+    let imported = msg.t[0];
+    return [
+      (() => {
+        let _record = model;
+        return new Model(
+          _record.login_form,
+          _record.current_user,
+          _record.cycle,
+          _record.route,
+          _record.cycle_end_day,
+          _record.show_all_transactions,
+          _record.categories_groups,
+          _record.categories,
+          _record.transactions,
+          _record.allocations,
+          _record.selected_category,
+          _record.show_add_category_ui,
+          _record.user_category_name_input,
+          _record.transaction_add_input,
+          _record.target_edit_form,
+          _record.selected_transaction,
+          _record.transaction_edit_form,
+          _record.suggestions,
+          _record.show_add_category_group_ui,
+          _record.new_category_group_name,
+          _record.category_group_change_input,
+          _record.imported_transactions
         );
       })(),
       none()

@@ -8,6 +8,7 @@ import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
 import gleam/json
+import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/result
@@ -163,6 +164,22 @@ pub fn import_csv(content: String) -> effect.Effect(Msg) {
     content,
     decode.list(m.import_transaction_decoder()),
     msg.ImportTransactionResult,
+  )
+}
+
+pub fn import_selected_transactions(
+  transactions: List(m.ImportTransaction),
+) -> effect.Effect(Msg) {
+  let body =
+    json.to_string(
+      json.array(transactions, fn(t) { m.encode_import_transaction(t) }),
+    )
+
+  make_post(
+    "import/selected",
+    body,
+    decode.list(m.hash_decoder()),
+    msg.ImportSelectedTransactionsResult,
   )
 }
 
