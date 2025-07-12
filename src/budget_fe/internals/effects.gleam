@@ -12,10 +12,12 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/result
+import gleam/time/calendar as cal
+import gleam/time/duration
+import gleam/time/timestamp as t
 import gleam/uri.{type Uri}
 import lustre/effect
 import lustre_http
-import rada/date as d
 
 const is_prod: Bool = False
 
@@ -91,7 +93,8 @@ pub fn add_transaction_eff(
       id: uuid.guidv4(),
       date: transaction_form.date
         |> budget_shared.string_to_date
-        |> result.unwrap(d.today()),
+        |> result.unwrap(cal.Date(2025, cal.January, 1))
+        |> t.from_calendar(cal.TimeOfDay(10, 0, 0, 0), cal.utc_offset),
       payee: transaction_form.payee,
       category_id: cat.id,
       value: amount,
@@ -330,15 +333,14 @@ pub fn update_category_target_eff(
   let target =
     target_edit
     |> option.map(fn(target_edit_form) {
-      case target_edit_form.is_custom {
-        True ->
+      case target_edit_form.target_custom_date {
+        Some(date) ->
           m.Custom(
             target: target_edit_form.target_amount |> m.string_to_money,
-            date: target_edit_form.target_custom_date
-              |> option.map(fn(str) { budget_shared.date_string_to_month(str) })
-              |> option.unwrap(m.MonthInYear(0, 0)),
+            date: budget_shared.string_to_date(date)
+              |> result.unwrap(cal.Date(2025, cal.January, 1)),
           )
-        False ->
+        None ->
           m.Monthly(target: target_edit_form.target_amount |> m.string_to_money)
       }
     })

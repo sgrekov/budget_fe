@@ -14,10 +14,11 @@ import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/time/calendar as cal
+import gleam/time/timestamp as t
 import lustre
 import lustre/effect
 import modem
-import rada/date as d
 
 pub fn main() {
   let app = lustre.application(init, update, v.view)
@@ -130,7 +131,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(
         ..model,
         transactions: t
-          |> list.sort(by: fn(t1, t2) { d.compare(t2.date, t1.date) }),
+          |> list.sort(by: fn(t1, t2) { t.compare(t2.date, t1.date) }),
       ),
       effect.none(),
     )
@@ -207,7 +208,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(
         ..model,
         transactions: list.flatten([model.transactions, [t]])
-          |> list.sort(by: fn(t1, t2) { d.compare(t2.date, t1.date) }),
+          |> list.sort(by: fn(t1, t2) { t.compare(t2.date, t1.date) }),
       ),
       effect.none(),
     )
@@ -281,7 +282,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
               |> option.map(m.money_to_string_no_sign)
               |> option.unwrap(""),
             target_custom_date: m.target_date(c.target)
-              |> option.map(budget_shared.month_in_year_to_str),
+              |> option.map(budget_shared.to_date_string),
             is_custom: m.is_target_custom(c.target),
           )
           |> option.Some,
@@ -363,7 +364,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         ..model,
         transaction_edit_form: option.Some(msg.TransactionEditForm(
           id: t.id,
-          date: t.date |> date_utils.to_date_string_input,
+          date: t.date |> date_utils.timestamp_string_input,
           payee: t.payee,
           category_name: category_name,
           amount: t.value |> m.money_to_string_no_sign,
@@ -614,7 +615,7 @@ fn transaction_form_to_transaction(
     Some(date), Some(category) ->
       Some(Transaction(
         id: tef.id,
-        date: date,
+        date: date |> date_utils.date_to_timestamp,
         payee: tef.payee,
         category_id: category.id,
         value: amount,

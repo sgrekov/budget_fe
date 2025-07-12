@@ -3,8 +3,7 @@ import budget_fe/internals/msg.{
   type LoginForm, type Model, type Msg, type SelectedCategory,
 } as _
 import budget_shared.{
-  type Allocation, type Category, type Cycle, type Money, type MonthInYear,
-  type Transaction,
+  type Allocation, type Category, type Cycle, type Money, type Transaction,
 } as m
 import date_utils
 import formal/form.{type Form}
@@ -19,7 +18,9 @@ import lustre/effect
 import lustre/element
 import lustre/element/html
 import lustre/event
-import rada/date.{type Date} as d
+import gleam/time/calendar as cal
+import gleam/time/duration
+import gleam/time/timestamp as t
 
 pub fn view(model: Model) -> element.Element(Msg) {
   html.div([attribute.class("container-fluid")], [
@@ -299,36 +300,35 @@ fn cycle_to_text(c: Cycle) -> String {
 
 fn current_cycle_transactions(model: Model) -> List(Transaction) {
   let #(start, end) = cycle_bounds(model.cycle, model.cycle_end_day)
-  list.filter(model.transactions, fn(t) { d.is_between(t.date, start, end) })
+  list.filter(model.transactions, fn(t) {
+    let #(date, _) = t.date |> t.to_calendar(cal.utc_offset)
+    date_utils.is_between(date, start, end)
+  })
 }
 
-fn prev_month(year: Int, month: d.Month) -> #(Int, Int) {
-  let mon_num = d.month_to_number(month)
+fn prev_month(year: Int, month: cal.Month) -> #(Int, Int) {
+  let mon_num = cal.month_to_int(month)
   case mon_num {
     1 -> #(year - 1, 12)
     _ -> #(year, mon_num - 1)
   }
 }
 
-fn cycle_bounds(c: Cycle, cycle_end_day: Option(Int)) -> #(Date, Date) {
+fn cycle_bounds(c: Cycle, cycle_end_day: Option(Int)) -> #(cal.Date, cal.Date) {
   case cycle_end_day {
     None -> #(
-      d.from_calendar_date(c.year, c.month, 1),
-      d.from_calendar_date(
-        c.year,
-        c.month,
-        date_utils.days_in_month(c.year, c.month),
-      ),
+      cal.Date(c.year, c.month, 1),
+      cal.Date(c.year, c.month, date_utils.days_in_month(c.month)),
     )
     Some(last_day) -> {
       let #(prev_year, prev_month) = prev_month(c.year, c.month)
       #(
-        d.from_calendar_date(
+        cal.Date(
           prev_year,
           date_utils.month_by_number(prev_month),
           last_day + 1,
         ),
-        d.from_calendar_date(c.year, c.month, last_day),
+        cal.Date(c.year, c.month, last_day),
       )
     }
   }
@@ -672,7 +672,7 @@ fn target_string(category: Category) -> String {
       "Monthly: "
       <> custom_target_money_in_month(amount, date_till) |> m.money_to_string
       <> "\n till date: "
-      <> month_to_string(date_till)
+      <> date_utils.to_date_string(date_till)
       <> " Total amount: "
       <> m.money_to_string(amount)
     option.Some(m.Monthly(amount)) -> "Monthly: " <> m.money_to_string(amount)
@@ -688,10 +688,11 @@ fn target_money(category: Category) -> m.Money {
   }
 }
 
-fn custom_target_money_in_month(m: m.Money, date: MonthInYear) -> m.Money {
-  let final_date =
-    d.from_calendar_date(date.year, d.number_to_month(date.month), 28)
-  let months_count = d.diff(d.Months, d.today(), final_date) + 1
+fn custom_target_money_in_month(m: m.Money, date: cal.Date) -> m.Money {
+  let today = t.system_time() |> date_utils.timestamp_to_date
+  let months_count =
+    { today.month |> cal.month_to_int } - { date.month |> cal.month_to_int } + 1
+  // let months_count = d.diff(d.Months, d.today(), final_date) + 1
   m.divide_money(m, months_count)
 }
 
@@ -909,7 +910,7 @@ fn transaction_list_item_html(
           attribute.class(active_class),
         ],
         [
-          html.td([], [html.text(date_utils.to_date_string(t.date))]),
+          html.td([], [html.text(date_utils.timestamp_date_to_string(t.date))]),
           html.td([], [html.text(t.payee)]),
           html.td([], [html.text(category_name)]),
           html.td([], [
@@ -927,7 +928,7 @@ fn imported_transaction_list_item_html(
 ) -> element.Element(Msg) {
   html.tr([], [
     //"Booking Date","Value Date","Partner Name","Partner Iban",Type,"Payment Reference","Account Name","Amount (EUR)"
-    html.td([], [html.text(date_utils.to_date_string(it.date))]),
+    html.td([], [html.text(date_utils.timestamp_date_to_string(it.date))]),
     html.td([], [html.text(it.payee)]),
     html.td([], [html.text(it.transaction_type)]),
     html.td([], [html.text(it.reference)]),
@@ -1318,15 +1319,14 @@ fn div_context(text: String, color: String) -> element.Element(Msg) {
     [html.text(text)],
   )
 }
-
-pub fn month_to_string(value: MonthInYear) -> String {
-  value.month
-  |> int.to_string
-  |> string.pad_start(2, "0")
-  <> "."
-  <> {
-    value.year
-    |> int.to_string
-    |> string.pad_start(2, "0")
-  }
-}
+// pub fn month_to_string(value: MonthInYear) -> String {
+//   value.month
+//   |> int.to_string
+//   |> string.pad_start(2, "0")
+//   <> "."
+//   <> {
+//     value.year
+//     |> int.to_string
+//     |> string.pad_start(2, "0")
+//   }
+// }
