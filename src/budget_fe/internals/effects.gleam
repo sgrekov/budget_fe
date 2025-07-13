@@ -99,6 +99,7 @@ pub fn add_transaction_eff(
       category_id: cat.id,
       value: amount,
       user_id: "",
+      import_hash: "", // TODO: add import hash
     )
 
   make_post(

@@ -2093,8 +2093,8 @@ function parse_int(value3) {
 function to_string(term) {
   return term.toString();
 }
-function float_to_string(float4) {
-  const string5 = float4.toString().replace("+", "");
+function float_to_string(float3) {
+  const string5 = float3.toString().replace("+", "");
   if (string5.indexOf(".") >= 0) {
     return string5;
   } else {
@@ -2260,11 +2260,11 @@ function print_debug(string5) {
     console.log(string5);
   }
 }
-function floor(float4) {
-  return Math.floor(float4);
+function floor(float3) {
+  return Math.floor(float3);
 }
-function round2(float4) {
-  return Math.round(float4);
+function round2(float3) {
+  return Math.round(float3);
 }
 function random_uniform() {
   const random_uniform_result = Math.random();
@@ -2686,10 +2686,6 @@ function dict(data) {
   }
   return new Error("Dict");
 }
-function float(data) {
-  if (typeof data === "number") return new Ok(data);
-  return new Error(0);
-}
 function int(data) {
   if (Number.isInteger(data)) return new Ok(data);
   return new Error(0);
@@ -2828,12 +2824,8 @@ function decode_bool2(data) {
 function decode_int2(data) {
   return run_dynamic_function(data, "Int", int);
 }
-function decode_float2(data) {
-  return run_dynamic_function(data, "Float", float);
-}
 var bool = /* @__PURE__ */ new Decoder(decode_bool2);
 var int2 = /* @__PURE__ */ new Decoder(decode_int2);
-var float2 = /* @__PURE__ */ new Decoder(decode_float2);
 function decode_string2(data) {
   return run_dynamic_function(data, "String", string);
 }
@@ -3142,7 +3134,7 @@ function bool2(input2) {
 function int3(input2) {
   return identity2(input2);
 }
-function float3(input2) {
+function float2(input2) {
   return identity2(input2);
 }
 function null$() {
@@ -3545,9 +3537,196 @@ function from_calendar(date, time, offset) {
   );
 }
 
+// build/dev/javascript/budget_shared/date_utils.mjs
+function to_date_string(d) {
+  return (() => {
+    let _pipe = d.day;
+    let _pipe$1 = to_string(_pipe);
+    return pad_start(_pipe$1, 2, "0");
+  })() + "." + (() => {
+    let _pipe = d.month;
+    let _pipe$1 = month_to_int(_pipe);
+    let _pipe$2 = to_string(_pipe$1);
+    return pad_start(_pipe$2, 2, "0");
+  })() + "." + (() => {
+    let _pipe = d.year;
+    return to_string(_pipe);
+  })();
+}
+function to_date_string_input(d) {
+  return (() => {
+    let _pipe = d.year;
+    return to_string(_pipe);
+  })() + "-" + (() => {
+    let _pipe = d.month;
+    let _pipe$1 = month_to_int(_pipe);
+    let _pipe$2 = to_string(_pipe$1);
+    return pad_start(_pipe$2, 2, "0");
+  })() + "-" + (() => {
+    let _pipe = d.day;
+    let _pipe$1 = to_string(_pipe);
+    return pad_start(_pipe$1, 2, "0");
+  })();
+}
+function timestamp_to_date(ts) {
+  let $ = to_calendar(ts, utc_offset);
+  let date = $[0];
+  return date;
+}
+function timestamp_string_input(t) {
+  let _pipe = t;
+  let _pipe$1 = timestamp_to_date(_pipe);
+  return to_date_string_input(_pipe$1);
+}
+function date_to_timestamp(date) {
+  return from_calendar(date, new TimeOfDay(0, 0, 0, 0), utc_offset);
+}
+function timestamp_date_to_string(ts) {
+  let $ = to_calendar(ts, utc_offset);
+  let date = $[0];
+  return to_date_string(date);
+}
+function month_to_name(month) {
+  return month_to_string(month);
+}
+function days_in_month(month) {
+  if (month instanceof January) {
+    return 31;
+  } else if (month instanceof February) {
+    return 28;
+  } else if (month instanceof March) {
+    return 31;
+  } else if (month instanceof April) {
+    return 30;
+  } else if (month instanceof May) {
+    return 31;
+  } else if (month instanceof June) {
+    return 30;
+  } else if (month instanceof July) {
+    return 31;
+  } else if (month instanceof August) {
+    return 31;
+  } else if (month instanceof September) {
+    return 30;
+  } else if (month instanceof October) {
+    return 31;
+  } else if (month instanceof November) {
+    return 30;
+  } else {
+    return 31;
+  }
+}
+function month_by_number(month) {
+  let _pipe = month_from_int(month);
+  return unwrap2(_pipe, new January());
+}
+function list_to_date(list4) {
+  if (list4 instanceof Empty) {
+    return new Error("Invalid date format");
+  } else {
+    let $ = list4.tail;
+    if ($ instanceof Empty) {
+      return new Error("Invalid date format");
+    } else {
+      let $1 = $.tail;
+      if ($1 instanceof Empty) {
+        return new Error("Invalid date format");
+      } else {
+        let $2 = $1.tail;
+        if ($2 instanceof Empty) {
+          let year = list4.head;
+          let month = $.head;
+          let day = $1.head;
+          let _pipe = base_parse(year, 10);
+          let _pipe$1 = map_error(
+            _pipe,
+            (_) => {
+              return "Invalid year";
+            }
+          );
+          return try$(
+            _pipe$1,
+            (y) => {
+              let _pipe$2 = base_parse(month, 10);
+              let _pipe$3 = map_error(
+                _pipe$2,
+                (_) => {
+                  return "Invalid month";
+                }
+              );
+              return try$(
+                _pipe$3,
+                (m_int) => {
+                  let month2 = month_by_number(m_int);
+                  let _pipe$4 = base_parse(day, 10);
+                  let _pipe$5 = map_error(
+                    _pipe$4,
+                    (_) => {
+                      return "Invalid day";
+                    }
+                  );
+                  return map3(
+                    _pipe$5,
+                    (d) => {
+                      return new Date2(y, month2, d);
+                    }
+                  );
+                }
+              );
+            }
+          );
+        } else {
+          return new Error("Invalid date format");
+        }
+      }
+    }
+  }
+}
+function string_to_date(date) {
+  let _pipe = date;
+  let _pipe$1 = split2(_pipe, "-");
+  return list_to_date(_pipe$1);
+}
+function is_between(d, start4, end) {
+  let _block;
+  let _pipe = d;
+  _block = date_to_timestamp(_pipe);
+  let t = _block;
+  let _block$1;
+  let _pipe$1 = start4;
+  _block$1 = date_to_timestamp(_pipe$1);
+  let start_t = _block$1;
+  let _block$2;
+  let _pipe$2 = end;
+  _block$2 = date_to_timestamp(_pipe$2);
+  let end_date_t = _block$2;
+  let $ = compare3(t, start_t);
+  if ($ instanceof Lt) {
+    return false;
+  } else if ($ instanceof Eq) {
+    let $1 = compare3(t, end_date_t);
+    if ($1 instanceof Lt) {
+      return true;
+    } else if ($1 instanceof Eq) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    let $1 = compare3(t, end_date_t);
+    if ($1 instanceof Lt) {
+      return true;
+    } else if ($1 instanceof Eq) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
 // build/dev/javascript/budget_shared/budget_shared.mjs
 var ImportTransaction = class extends CustomType {
-  constructor(id2, date, payee, transaction_type, value3, reference) {
+  constructor(id2, date, payee, transaction_type, value3, reference, hash, is_imported) {
     super();
     this.id = id2;
     this.date = date;
@@ -3555,6 +3734,8 @@ var ImportTransaction = class extends CustomType {
     this.transaction_type = transaction_type;
     this.value = value3;
     this.reference = reference;
+    this.hash = hash;
+    this.is_imported = is_imported;
   }
 };
 var User = class extends CustomType {
@@ -3622,7 +3803,7 @@ var Cycle = class extends CustomType {
   }
 };
 var Transaction = class extends CustomType {
-  constructor(id2, date, payee, category_id, value3, user_id) {
+  constructor(id2, date, payee, category_id, value3, user_id, import_hash) {
     super();
     this.id = id2;
     this.date = date;
@@ -3630,6 +3811,7 @@ var Transaction = class extends CustomType {
     this.category_id = category_id;
     this.value = value3;
     this.user_id = user_id;
+    this.import_hash = import_hash;
   }
 };
 var Money = class extends CustomType {
@@ -3775,30 +3957,6 @@ function month_in_year_encode(month) {
 function money_encode(money) {
   return object2(toList([["money_value", int3(money.value)]]));
 }
-function encode_import_transaction(import_transaction) {
-  let id2 = import_transaction.id;
-  let date = import_transaction.date;
-  let payee = import_transaction.payee;
-  let transaction_type = import_transaction.transaction_type;
-  let value3 = import_transaction.value;
-  let reference = import_transaction.reference;
-  return object2(
-    toList([
-      ["id", string3(id2)],
-      [
-        "date",
-        (() => {
-          let _pipe = to_unix_seconds(import_transaction.date);
-          return float3(_pipe);
-        })()
-      ],
-      ["payee", string3(payee)],
-      ["transaction_type", string3(transaction_type)],
-      ["value", money_encode(import_transaction.value)],
-      ["reference", string3(reference)]
-    ])
-  );
-}
 function allocation_encode(a2) {
   return object2(
     toList([
@@ -3888,7 +4046,8 @@ function transaction_encode(t) {
       ["payee", string3(t.payee)],
       ["category_id", string3(t.category_id)],
       ["value", money_encode(t.value)],
-      ["user_id", string3(t.user_id)]
+      ["user_id", string3(t.user_id)],
+      ["import_hash", string3(t.import_hash)]
     ])
   );
 }
@@ -3909,7 +4068,7 @@ function import_transaction_decoder() {
     (id2) => {
       return field(
         "date",
-        float2,
+        int2,
         (date) => {
           return field(
             "payee",
@@ -3927,20 +4086,29 @@ function import_transaction_decoder() {
                         "reference",
                         string2,
                         (reference) => {
-                          return success(
-                            new ImportTransaction(
-                              id2,
-                              from_unix_seconds(
-                                (() => {
-                                  let _pipe = date;
-                                  return round(_pipe);
-                                })()
-                              ),
-                              payee,
-                              transaction_type,
-                              value3,
-                              reference
-                            )
+                          return field(
+                            "hash",
+                            string2,
+                            (hash) => {
+                              return field(
+                                "is_imported",
+                                bool,
+                                (is_imported) => {
+                                  return success(
+                                    new ImportTransaction(
+                                      id2,
+                                      from_unix_seconds(date),
+                                      payee,
+                                      transaction_type,
+                                      value3,
+                                      reference,
+                                      hash,
+                                      is_imported
+                                    )
+                                  );
+                                }
+                              );
+                            }
                           );
                         }
                       );
@@ -4082,15 +4250,22 @@ function transaction_decoder() {
                         "user_id",
                         string2,
                         (user_id) => {
-                          return success(
-                            new Transaction(
-                              id2,
-                              from_unix_seconds(date),
-                              payee,
-                              category_id,
-                              value3,
-                              user_id
-                            )
+                          return field(
+                            "import_hash",
+                            string2,
+                            (import_hash) => {
+                              return success(
+                                new Transaction(
+                                  id2,
+                                  from_unix_seconds(date),
+                                  payee,
+                                  category_id,
+                                  value3,
+                                  user_id,
+                                  import_hash
+                                )
+                              );
+                            }
                           );
                         }
                       );
@@ -4284,199 +4459,47 @@ function money_to_string(m) {
   let sign = sign_symbols(m);
   return sign + "\u20AC" + money_to_string_no_sign(m);
 }
+function transaction_hash(date, payee, value3) {
+  let date_str = to_date_string(date);
+  let value_str = money_to_string(value3);
+  let hash_input = date_str + payee + value_str;
+  return hash_input;
+}
+function encode_import_transaction(import_transaction) {
+  let id2 = import_transaction.id;
+  let date = import_transaction.date;
+  let payee = import_transaction.payee;
+  let transaction_type = import_transaction.transaction_type;
+  let value3 = import_transaction.value;
+  let reference = import_transaction.reference;
+  let hash = import_transaction.hash;
+  let is_imported = import_transaction.is_imported;
+  let h = transaction_hash(timestamp_to_date(date), payee, value3);
+  return object2(
+    toList([
+      ["id", string3(id2)],
+      [
+        "date",
+        (() => {
+          let _pipe = to_unix_seconds(date);
+          return float2(_pipe);
+        })()
+      ],
+      ["payee", string3(payee)],
+      ["transaction_type", string3(transaction_type)],
+      ["value", money_encode(value3)],
+      ["reference", string3(reference)],
+      ["hash", string3(h)],
+      ["is_imported", bool2(is_imported)]
+    ])
+  );
+}
 function is_zero_euro(m) {
   let $ = m.value;
   if ($ === 0) {
     return true;
   } else {
     return false;
-  }
-}
-
-// build/dev/javascript/budget_shared/date_utils.mjs
-function to_date_string(d) {
-  return (() => {
-    let _pipe = d.day;
-    let _pipe$1 = to_string(_pipe);
-    return pad_start(_pipe$1, 2, "0");
-  })() + "." + (() => {
-    let _pipe = d.month;
-    let _pipe$1 = month_to_int(_pipe);
-    let _pipe$2 = to_string(_pipe$1);
-    return pad_start(_pipe$2, 2, "0");
-  })() + "." + (() => {
-    let _pipe = d.year;
-    return to_string(_pipe);
-  })();
-}
-function to_date_string_input(d) {
-  return (() => {
-    let _pipe = d.year;
-    return to_string(_pipe);
-  })() + "-" + (() => {
-    let _pipe = d.month;
-    let _pipe$1 = month_to_int(_pipe);
-    let _pipe$2 = to_string(_pipe$1);
-    return pad_start(_pipe$2, 2, "0");
-  })() + "-" + (() => {
-    let _pipe = d.day;
-    let _pipe$1 = to_string(_pipe);
-    return pad_start(_pipe$1, 2, "0");
-  })();
-}
-function timestamp_to_date(ts) {
-  let $ = to_calendar(ts, utc_offset);
-  let date = $[0];
-  return date;
-}
-function timestamp_string_input(t) {
-  let _pipe = t;
-  let _pipe$1 = timestamp_to_date(_pipe);
-  return to_date_string_input(_pipe$1);
-}
-function date_to_timestamp(date) {
-  return from_calendar(date, new TimeOfDay(0, 0, 0, 0), utc_offset);
-}
-function timestamp_date_to_string(ts) {
-  let $ = to_calendar(ts, utc_offset);
-  let date = $[0];
-  return to_date_string(date);
-}
-function month_to_name(month) {
-  return month_to_string(month);
-}
-function days_in_month(month) {
-  if (month instanceof January) {
-    return 31;
-  } else if (month instanceof February) {
-    return 28;
-  } else if (month instanceof March) {
-    return 31;
-  } else if (month instanceof April) {
-    return 30;
-  } else if (month instanceof May) {
-    return 31;
-  } else if (month instanceof June) {
-    return 30;
-  } else if (month instanceof July) {
-    return 31;
-  } else if (month instanceof August) {
-    return 31;
-  } else if (month instanceof September) {
-    return 30;
-  } else if (month instanceof October) {
-    return 31;
-  } else if (month instanceof November) {
-    return 30;
-  } else {
-    return 31;
-  }
-}
-function month_by_number(month) {
-  let _pipe = month_from_int(month);
-  return unwrap2(_pipe, new January());
-}
-function list_to_date(list4) {
-  if (list4 instanceof Empty) {
-    return new Error("Invalid date format");
-  } else {
-    let $ = list4.tail;
-    if ($ instanceof Empty) {
-      return new Error("Invalid date format");
-    } else {
-      let $1 = $.tail;
-      if ($1 instanceof Empty) {
-        return new Error("Invalid date format");
-      } else {
-        let $2 = $1.tail;
-        if ($2 instanceof Empty) {
-          let year = list4.head;
-          let month = $.head;
-          let day = $1.head;
-          let _pipe = base_parse(year, 10);
-          let _pipe$1 = map_error(
-            _pipe,
-            (_) => {
-              return "Invalid year";
-            }
-          );
-          return try$(
-            _pipe$1,
-            (y) => {
-              let _pipe$2 = base_parse(month, 10);
-              let _pipe$3 = map_error(
-                _pipe$2,
-                (_) => {
-                  return "Invalid month";
-                }
-              );
-              return try$(
-                _pipe$3,
-                (m_int) => {
-                  let month2 = month_by_number(m_int);
-                  let _pipe$4 = base_parse(day, 10);
-                  let _pipe$5 = map_error(
-                    _pipe$4,
-                    (_) => {
-                      return "Invalid day";
-                    }
-                  );
-                  return map3(
-                    _pipe$5,
-                    (d) => {
-                      return new Date2(y, month2, d);
-                    }
-                  );
-                }
-              );
-            }
-          );
-        } else {
-          return new Error("Invalid date format");
-        }
-      }
-    }
-  }
-}
-function string_to_date(date) {
-  let _pipe = date;
-  let _pipe$1 = split2(_pipe, "-");
-  return list_to_date(_pipe$1);
-}
-function is_between(d, start4, end) {
-  let _block;
-  let _pipe = d;
-  _block = date_to_timestamp(_pipe);
-  let t = _block;
-  let _block$1;
-  let _pipe$1 = start4;
-  _block$1 = date_to_timestamp(_pipe$1);
-  let start_t = _block$1;
-  let _block$2;
-  let _pipe$2 = end;
-  _block$2 = date_to_timestamp(_pipe$2);
-  let end_date_t = _block$2;
-  let $ = compare3(start_t, t);
-  if ($ instanceof Lt) {
-    return false;
-  } else if ($ instanceof Eq) {
-    let $1 = compare3(t, end_date_t);
-    if ($1 instanceof Lt) {
-      return true;
-    } else if ($1 instanceof Eq) {
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    let $1 = compare3(t, end_date_t);
-    if ($1 instanceof Lt) {
-      return true;
-    } else if ($1 instanceof Eq) {
-      return true;
-    } else {
-      return false;
-    }
   }
 }
 
@@ -8761,6 +8784,7 @@ function add_transaction_eff(transaction_form, amount, cat) {
     transaction_form.payee,
     cat.id,
     amount,
+    "",
     ""
   );
   return make_post(
@@ -9842,6 +9866,21 @@ function imported_transaction_list_item_html(it, model) {
             })()
           )
         ])
+      ),
+      td(
+        toList([]),
+        toList([
+          text3(
+            (() => {
+              let $ = it.is_imported;
+              if ($) {
+                return "\u2705";
+              } else {
+                return "\u274C";
+              }
+            })()
+          )
+        ])
       )
     ])
   );
@@ -9885,7 +9924,8 @@ function import_transactions(model) {
                   th(toList([]), toList([text3("Partner Name")])),
                   th(toList([]), toList([text3("Type")])),
                   th(toList([]), toList([text3("Reference")])),
-                  th(toList([]), toList([text3("Amount")]))
+                  th(toList([]), toList([text3("Amount")])),
+                  th(toList([]), toList([text3("Imported")]))
                 ])
               )
             ])
@@ -11149,10 +11189,10 @@ var FILEPATH = "src/budget_fe.gleam";
 function init2(_) {
   return [
     new Model(
-      new LoginForm(new None(), new None(), false),
+      new LoginForm(new Some("sergey"), new Some("3646"), false),
       new None(),
       calculate_current_cycle(),
-      new ImportTransactions(),
+      new TransactionsRoute(),
       new Some(26),
       false,
       toList([]),
@@ -11245,6 +11285,7 @@ function transaction_form_to_transaction(tef, categories) {
           tef.payee,
           category$1.id,
           amount,
+          "",
           ""
         )
       );
@@ -13398,33 +13439,7 @@ function update2(model, msg) {
     }
   } else if (msg instanceof ImportSelectedTransactions) {
     return [
-      (() => {
-        let _record = model;
-        return new Model(
-          _record.login_form,
-          _record.current_user,
-          _record.cycle,
-          _record.route,
-          _record.cycle_end_day,
-          _record.show_all_transactions,
-          _record.categories_groups,
-          _record.categories,
-          _record.transactions,
-          _record.allocations,
-          _record.selected_category,
-          _record.show_add_category_ui,
-          _record.user_category_name_input,
-          _record.transaction_add_input,
-          _record.target_edit_form,
-          _record.selected_transaction,
-          _record.transaction_edit_form,
-          _record.suggestions,
-          _record.show_add_category_group_ui,
-          _record.new_category_group_name,
-          _record.category_group_change_input,
-          toList([])
-        );
-      })(),
+      model,
       import_selected_transactions(model.imported_transactions)
     ];
   } else {

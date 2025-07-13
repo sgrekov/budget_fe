@@ -32,7 +32,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
     msg.Model(
       current_user: option.None,
       cycle: m.calculate_current_cycle(),
-      route: msg.ImportTransactions,
+      route: msg.TransactionsRoute,
       cycle_end_day: option.Some(26),
       show_all_transactions: False,
       categories_groups: [],
@@ -50,7 +50,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       suggestions: dict.new(),
       new_category_group_name: "",
       category_group_change_input: "",
-      login_form: msg.LoginForm(None, None, False),
+      login_form: msg.LoginForm(Some("sergey"), Some("3646"), False),
       imported_transactions: [],
     ),
     effect.batch([
@@ -576,7 +576,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       #(model, effect.none())
     }
     msg.ImportSelectedTransactions -> #(
-      Model(..model, imported_transactions: []),
+      model,
       eff.import_selected_transactions(model.imported_transactions),
     )
     msg.ImportSelectedTransactionsResult(Ok(imported)) -> {
@@ -620,6 +620,7 @@ fn transaction_form_to_transaction(
         category_id: category.id,
         value: amount,
         user_id: "",
+        import_hash: "",
       ))
     _, _ -> None
   }

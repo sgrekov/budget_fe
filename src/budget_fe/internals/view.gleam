@@ -7,20 +7,21 @@ import budget_shared.{
 } as m
 import date_utils
 import formal/form.{type Form}
+import gleam/bool
 import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/string
+import gleam/time/calendar as cal
+import gleam/time/duration
+import gleam/time/timestamp as t
 import lustre/attribute
 import lustre/effect
 import lustre/element
 import lustre/element/html
 import lustre/event
-import gleam/time/calendar as cal
-import gleam/time/duration
-import gleam/time/timestamp as t
 
 pub fn view(model: Model) -> element.Element(Msg) {
   html.div([attribute.class("container-fluid")], [
@@ -831,6 +832,7 @@ fn import_transactions(model: Model) -> element.Element(Msg) {
           html.th([], [html.text("Type")]),
           html.th([], [html.text("Reference")]),
           html.th([], [html.text("Amount")]),
+          html.th([], [html.text("Imported")]),
         ]),
       ]),
       html.tbody(
@@ -933,6 +935,12 @@ fn imported_transaction_list_item_html(
     html.td([], [html.text(it.transaction_type)]),
     html.td([], [html.text(it.reference)]),
     html.td([], [html.text(it.value |> m.money_to_string)]),
+    html.td([], [
+      html.text(case it.is_imported {
+        True -> "✅"
+        False -> "❌"
+      }),
+    ]),
   ])
 }
 
