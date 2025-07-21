@@ -81,6 +81,9 @@ pub type Msg {
   ImportSelectedTransactionsResult(
     t: Result(List(String), lustre_http.HttpError),
   )
+  GetUsersResult(
+    users: Result(List(User), lustre_http.HttpError),
+  )
 }
 
 pub type Model {
@@ -107,6 +110,7 @@ pub type Model {
     new_category_group_name: String,
     category_group_change_input: String,
     imported_transactions: List(ImportTransaction),
+    users: List(User),
   )
 }
 

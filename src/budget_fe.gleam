@@ -3,7 +3,7 @@ import budget_fe/internals/msg.{type Model, type Msg, Model}
 import budget_fe/internals/view as v
 import budget_shared.{
   type Allocation, type Category, type Cycle, type Transaction, Category,
-  Transaction,
+  ImportTransaction, Transaction,
 } as m
 import date_utils
 import date_utils as budget_shared
@@ -52,6 +52,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
       category_group_change_input: "",
       login_form: msg.LoginForm(Some("sergey"), Some("3646"), False),
       imported_transactions: [],
+      users: [],
     ),
     effect.batch([
       modem.init(eff.on_route_change),
@@ -62,7 +63,7 @@ fn init(_flags) -> #(Model, effect.Effect(Msg)) {
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
-  io.debug(msg)
+//  echo msg
   case msg {
     msg.OnRouteChange(route) -> {
       #(Model(..model, route: route), effect.none())
@@ -116,6 +117,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           eff.get_transactions(),
           eff.get_allocations(),
           eff.get_category_suggestions(),
+          eff.get_users_eff(),
         ]),
       )
     }
@@ -580,9 +582,26 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       eff.import_selected_transactions(model.imported_transactions),
     )
     msg.ImportSelectedTransactionsResult(Ok(imported)) -> {
-      #(Model(..model), effect.none())
+      #(
+        Model(
+          ..model,
+          imported_transactions: model.imported_transactions
+            |> list.map(fn(it) {
+              case list.contains(imported, it.id) {
+                True -> ImportTransaction(..it, is_imported: True)
+                False -> it
+              }
+            }),
+        ),
+        effect.none(),
+      )
     }
     msg.ImportSelectedTransactionsResult(Error(_)) -> #(model, effect.none())
+    msg.GetUsersResult(Ok(users)) -> #(
+      Model(..model, users: users),
+      effect.none(),
+    )
+    msg.GetUsersResult(Error(_)) -> #(model, effect.none())
   }
 }
 

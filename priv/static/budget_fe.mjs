@@ -938,6 +938,26 @@ function find(loop$list, loop$is_desired) {
     }
   }
 }
+function find_map(loop$list, loop$fun) {
+  while (true) {
+    let list4 = loop$list;
+    let fun = loop$fun;
+    if (list4 instanceof Empty) {
+      return new Error(void 0);
+    } else {
+      let first$1 = list4.head;
+      let rest$1 = list4.tail;
+      let $ = fun(first$1);
+      if ($ instanceof Ok) {
+        let first$2 = $[0];
+        return new Ok(first$2);
+      } else {
+        loop$list = rest$1;
+        loop$fun = fun;
+      }
+    }
+  }
+}
 function unique_loop(loop$list, loop$seen, loop$acc) {
   while (true) {
     let list4 = loop$list;
@@ -3829,12 +3849,18 @@ function id_decoder() {
     }
   );
 }
-function hash_decoder() {
+function user_decoder() {
   return field(
-    "hash",
+    "id",
     string2,
     (id2) => {
-      return success(id2);
+      return field(
+        "name",
+        string2,
+        (name2) => {
+          return success(new User(id2, name2));
+        }
+      );
     }
   );
 }
@@ -8499,8 +8525,14 @@ var ImportSelectedTransactionsResult = class extends CustomType {
     this.t = t;
   }
 };
+var GetUsersResult = class extends CustomType {
+  constructor(users) {
+    super();
+    this.users = users;
+  }
+};
 var Model = class extends CustomType {
-  constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit_form, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input, imported_transactions) {
+  constructor(login_form, current_user, cycle, route, cycle_end_day, show_all_transactions, categories_groups, categories, transactions, allocations, selected_category, show_add_category_ui, user_category_name_input, transaction_add_input, target_edit_form, selected_transaction, transaction_edit_form, suggestions, show_add_category_group_ui, new_category_group_name, category_group_change_input, imported_transactions, users) {
     super();
     this.login_form = login_form;
     this.current_user = current_user;
@@ -8524,6 +8556,7 @@ var Model = class extends CustomType {
     this.new_category_group_name = new_category_group_name;
     this.category_group_change_input = category_group_change_input;
     this.imported_transactions = imported_transactions;
+    this.users = users;
   }
 };
 var SelectedCategory = class extends CustomType {
@@ -8614,46 +8647,10 @@ function guidv4() {
   return format_uuid(concatened);
 }
 
-// build/dev/javascript/budget_fe/budget_fe/internals/gleam.mjs
-var CustomType2 = class {
-  withFields(fields) {
-    let properties = Object.keys(this).map(
-      (label2) => label2 in fields ? fields[label2] : this[label2]
-    );
-    return new this.constructor(...properties);
-  }
-};
-var Result2 = class _Result extends CustomType2 {
-  // @internal
-  static isResult(data) {
-    return data instanceof _Result;
-  }
-};
-var Ok2 = class extends Result2 {
-  constructor(value3) {
-    super();
-    this[0] = value3;
-  }
-  // @internal
-  isOk() {
-    return true;
-  }
-};
-var Error2 = class extends Result2 {
-  constructor(detail) {
-    super();
-    this[0] = detail;
-  }
-  // @internal
-  isOk() {
-    return false;
-  }
-};
-
 // build/dev/javascript/budget_fe/budget_fe/internals/app.ffi.mjs
 function read_localstorage(key) {
   const value3 = window.localStorage.getItem(key);
-  return value3 ? new Ok2(value3) : new Error2(void 0);
+  return value3 ? value3 : void 0;
 }
 function write_localstorage(key, value3) {
   window.localStorage.setItem(key, value3);
@@ -8700,30 +8697,27 @@ function write_localstorage2(key, value3) {
 }
 var is_prod = false;
 function request_with_auth() {
+  let jwt = read_localstorage("jwt");
+  echo("jwt:" + jwt, "src/budget_fe/internals/effects.gleam", 44);
   let _block;
-  let _pipe = read_localstorage("jwt");
-  echo(_pipe, "src/budget_fe/internals/effects.gleam", 38);
-  _block = unwrap2(_pipe, "");
-  let jwt = _block;
-  let _block$1;
   let $ = is_prod;
   if ($) {
-    let _pipe$12 = new$7();
-    let _pipe$22 = set_host(_pipe$12, "budget-be.fly.dev");
-    let _pipe$32 = set_port(_pipe$22, 443);
-    _block$1 = set_scheme(_pipe$32, new Https());
+    let _pipe2 = new$7();
+    let _pipe$12 = set_host(_pipe2, "budget-be.fly.dev");
+    let _pipe$22 = set_port(_pipe$12, 443);
+    _block = set_scheme(_pipe$22, new Https());
   } else {
-    let _pipe$12 = new$7();
-    let _pipe$22 = set_host(_pipe$12, "127.0.0.1");
-    let _pipe$32 = set_port(_pipe$22, 8080);
-    _block$1 = set_scheme(_pipe$32, new Http());
+    let _pipe2 = new$7();
+    let _pipe$12 = set_host(_pipe2, "127.0.0.1");
+    let _pipe$22 = set_port(_pipe$12, 8080);
+    _block = set_scheme(_pipe$22, new Http());
   }
-  let req = _block$1;
-  let _pipe$1 = req;
-  let _pipe$2 = set_method(_pipe$1, new Get());
-  let _pipe$3 = set_header(_pipe$2, "Content-Type", "application/json");
-  let _pipe$4 = set_header(_pipe$3, "Accept", "application/json");
-  return set_header(_pipe$4, "Authorization", "Bearer " + jwt);
+  let req = _block;
+  let _pipe = req;
+  let _pipe$1 = set_method(_pipe, new Get());
+  let _pipe$2 = set_header(_pipe$1, "Content-Type", "application/json");
+  let _pipe$3 = set_header(_pipe$2, "Accept", "application/json");
+  return set_header(_pipe$3, "Authorization", "Bearer " + jwt);
 }
 function make_request(method, path, json2, decoder, to_msg) {
   let _block;
@@ -8753,6 +8747,17 @@ function load_user_eff() {
     user_with_token_decoder(),
     (user_with_token) => {
       return new LoginResult(user_with_token, calculate_current_cycle());
+    }
+  );
+}
+function get_users_eff() {
+  return make_request(
+    new Get(),
+    "users",
+    new None(),
+    list2(user_decoder()),
+    (users) => {
+      return new GetUsersResult(users);
     }
   );
 }
@@ -8841,7 +8846,7 @@ function import_selected_transactions(transactions) {
   return make_post(
     "import/selected",
     body,
-    list2(hash_decoder()),
+    list2(string2),
     (var0) => {
       return new ImportSelectedTransactionsResult(var0);
     }
@@ -9845,6 +9850,21 @@ function get_file_content2() {
     }
   );
 }
+function find_user_name(users, user_id) {
+  let _pipe = users;
+  let _pipe$1 = find_map(
+    _pipe,
+    (user) => {
+      let $ = user.id === user_id;
+      if ($) {
+        return new Ok(user.name);
+      } else {
+        return new Error("");
+      }
+    }
+  );
+  return unwrap2(_pipe$1, "");
+}
 function imported_transaction_list_item_html(it, model) {
   return tr(
     toList([]),
@@ -10166,6 +10186,10 @@ function transaction_list_item_html(t, model) {
               ),
               manage_transaction_buttons(t, selected_id, category_name, false)
             ])
+          ),
+          td(
+            toList([]),
+            toList([text3(find_user_name(model.users, t.user_id))])
           )
         ])
       );
@@ -10194,6 +10218,10 @@ function transaction_list_item_html(t, model) {
             ),
             manage_transaction_buttons(t, selected_id, category_name, false)
           ])
+        ),
+        td(
+          toList([]),
+          toList([text3(find_user_name(model.users, t.user_id))])
         )
       ])
     );
@@ -10311,7 +10339,12 @@ function add_transaction_ui(transactions, categories, transaction_edit_form) {
               styles(toList([["width", "120px"]])),
               value(transaction_edit_form.amount)
             ])
-          ),
+          )
+        ])
+      ),
+      td(
+        toList([]),
+        toList([
           check_box(
             "is inflow",
             transaction_edit_form.is_inflow,
@@ -10354,7 +10387,8 @@ function budget_transactions(model) {
                   th(toList([]), toList([text3("Date")])),
                   th(toList([]), toList([text3("Payee")])),
                   th(toList([]), toList([text3("Category")])),
-                  th(toList([]), toList([text3("Amount")]))
+                  th(toList([]), toList([text3("Amount")])),
+                  th(toList([]), toList([text3("User")]))
                 ])
               )
             ])
@@ -11210,6 +11244,7 @@ function init2(_) {
       false,
       "",
       "",
+      toList([]),
       toList([])
     ),
     batch(
@@ -11306,7 +11341,6 @@ function find_alloc_by_cat_id(cat_id, cycle, allocations) {
   );
 }
 function update2(model, msg) {
-  debug(msg);
   if (msg instanceof OnRouteChange) {
     let route = msg.route;
     return [
@@ -11334,7 +11368,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -11386,7 +11421,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -11417,7 +11453,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       login_eff(
@@ -11469,7 +11506,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         batch(
@@ -11479,7 +11517,8 @@ function update2(model, msg) {
             get_categories(),
             get_transactions(),
             get_allocations(),
-            get_category_suggestions()
+            get_category_suggestions(),
+            get_users_eff()
           ])
         )
       ];
@@ -11517,7 +11556,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         get_transactions()
@@ -11562,7 +11602,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         none()
@@ -11599,7 +11640,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         none()
@@ -11636,7 +11678,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         none()
@@ -11703,7 +11746,8 @@ function update2(model, msg) {
             });
             return unwrap2(_pipe$2, "");
           })(),
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -11748,7 +11792,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -11780,7 +11825,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -11812,7 +11858,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       add_category(model.user_category_name_input, group_id)
@@ -11845,7 +11892,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         get_categories()
@@ -11892,7 +11940,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         add_transaction_eff(
@@ -11943,7 +11992,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -11991,7 +12041,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12039,7 +12090,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12080,7 +12132,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12121,7 +12174,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12165,7 +12219,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         none()
@@ -12215,7 +12270,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12247,7 +12303,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       update_category_target_eff(c, model.target_edit_form)
@@ -12279,7 +12336,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       delete_target_eff(c)
@@ -12325,7 +12383,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12371,7 +12430,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12420,7 +12480,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12470,7 +12531,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12518,7 +12580,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12549,7 +12612,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       (() => {
@@ -12598,7 +12662,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       delete_transaction_eff(id2)
@@ -12660,7 +12725,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12708,7 +12774,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12756,7 +12823,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12804,7 +12872,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12852,7 +12921,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12897,7 +12967,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -12929,7 +13000,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       (() => {
@@ -12979,7 +13051,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       (() => {
@@ -13068,7 +13141,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -13107,7 +13181,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       batch(toList([get_transactions(), get_allocations()]))
@@ -13139,7 +13214,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -13178,7 +13254,8 @@ function update2(model, msg) {
           !model.show_add_category_group_ui,
           _record.new_category_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -13210,7 +13287,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           input_group_name,
           _record.category_group_change_input,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -13245,7 +13323,8 @@ function update2(model, msg) {
             false,
             "",
             _record.category_group_change_input,
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         get_category_groups()
@@ -13282,7 +13361,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         none()
@@ -13328,7 +13408,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             "",
-            _record.imported_transactions
+            _record.imported_transactions,
+            _record.users
           );
         })(),
         update_category_eff(
@@ -13374,7 +13455,8 @@ function update2(model, msg) {
           _record.show_add_category_group_ui,
           _record.new_category_group_name,
           group_name,
-          _record.imported_transactions
+          _record.imported_transactions,
+          _record.users
         );
       })(),
       none()
@@ -13429,7 +13511,8 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            import_transactions2
+            import_transactions2,
+            _record.users
           );
         })(),
         none()
@@ -13442,7 +13525,7 @@ function update2(model, msg) {
       model,
       import_selected_transactions(model.imported_transactions)
     ];
-  } else {
+  } else if (msg instanceof ImportSelectedTransactionsResult) {
     let $ = msg.t;
     if ($ instanceof Ok) {
       let imported = $[0];
@@ -13471,7 +13554,69 @@ function update2(model, msg) {
             _record.show_add_category_group_ui,
             _record.new_category_group_name,
             _record.category_group_change_input,
-            _record.imported_transactions
+            (() => {
+              let _pipe = model.imported_transactions;
+              return map2(
+                _pipe,
+                (it) => {
+                  let $1 = contains(imported, it.id);
+                  if ($1) {
+                    let _record$1 = it;
+                    return new ImportTransaction(
+                      _record$1.id,
+                      _record$1.date,
+                      _record$1.payee,
+                      _record$1.transaction_type,
+                      _record$1.value,
+                      _record$1.reference,
+                      _record$1.hash,
+                      true
+                    );
+                  } else {
+                    return it;
+                  }
+                }
+              );
+            })(),
+            _record.users
+          );
+        })(),
+        none()
+      ];
+    } else {
+      return [model, none()];
+    }
+  } else {
+    let $ = msg.users;
+    if ($ instanceof Ok) {
+      let users = $[0];
+      return [
+        (() => {
+          let _record = model;
+          return new Model(
+            _record.login_form,
+            _record.current_user,
+            _record.cycle,
+            _record.route,
+            _record.cycle_end_day,
+            _record.show_all_transactions,
+            _record.categories_groups,
+            _record.categories,
+            _record.transactions,
+            _record.allocations,
+            _record.selected_category,
+            _record.show_add_category_ui,
+            _record.user_category_name_input,
+            _record.transaction_add_input,
+            _record.target_edit_form,
+            _record.selected_transaction,
+            _record.transaction_edit_form,
+            _record.suggestions,
+            _record.show_add_category_group_ui,
+            _record.new_category_group_name,
+            _record.category_group_change_input,
+            _record.imported_transactions,
+            users
           );
         })(),
         none()
@@ -13492,7 +13637,7 @@ function main() {
       25,
       "main",
       "Pattern match failed, no pattern matched the value.",
-      { value: $, start: 653, end: 702, pattern_start: 664, pattern_end: 669 }
+      { value: $, start: 672, end: 721, pattern_start: 683, pattern_end: 688 }
     );
   }
   return void 0;

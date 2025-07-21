@@ -35,7 +35,13 @@ fn uri_to_route(uri: Uri) -> msg.Route {
 }
 
 fn request_with_auth() -> request.Request(String) {
-  let jwt = do_read_localstorage("jwt") |> echo |> result.unwrap("")
+//  echo "request_with_auth"
+  let jwt = do_read_localstorage("jwt")
+//  |> echo |> result.map ( fn(token) {
+//    echo "token"
+//    echo token
+//  } )|> result.unwrap("error_token")
+  echo "jwt:" <> jwt
   let req = case is_prod {
     True ->
       request.new()
@@ -65,6 +71,18 @@ pub fn load_user_eff() -> effect.Effect(Msg) {
     fn(user_with_token) {
       msg.LoginResult(user_with_token, m.calculate_current_cycle())
     },
+  )
+}
+
+pub fn get_users_eff() -> effect.Effect(Msg) {
+  make_request(
+  http.Get,
+  "users",
+  option.None,
+  decode.list(m.user_decoder()),
+  fn(users) {
+    msg.GetUsersResult(users)
+  },
   )
 }
 
@@ -182,7 +200,7 @@ pub fn import_selected_transactions(
   make_post(
     "import/selected",
     body,
-    decode.list(m.hash_decoder()),
+    decode.list(decode.string),
     msg.ImportSelectedTransactionsResult,
   )
 }
@@ -391,8 +409,8 @@ pub fn login_eff(login: String, pass: String) -> effect.Effect(Msg) {
 }
 
 @external(javascript, "./app.ffi.mjs", "read_localstorage")
-fn do_read_localstorage(_key: String) -> Result(String, Nil) {
-  Error(Nil)
+fn do_read_localstorage(_key: String) -> String {
+  "error"
 }
 
 pub fn write_localstorage(key: String, value: String) -> effect.Effect(msg) {

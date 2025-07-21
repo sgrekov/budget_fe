@@ -13,6 +13,7 @@ import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
+import gleam/result
 import gleam/string
 import gleam/time/calendar as cal
 import gleam/time/duration
@@ -764,6 +765,7 @@ fn budget_transactions(model: Model) -> element.Element(Msg) {
           html.th([], [html.text("Payee")]),
           html.th([], [html.text("Category")]),
           html.th([], [html.text("Amount")]),
+          html.th([], [html.text("User")]),
         ]),
       ]),
       html.tbody(
@@ -919,9 +921,21 @@ fn transaction_list_item_html(
             html.text(t.value |> m.money_to_string),
             manage_transaction_buttons(t, selected_id, category_name, False),
           ]),
+          html.td([], [html.text(find_user_name(model.users, t.user_id))]),
         ],
       )
   }
+}
+
+fn find_user_name(users: List(m.User), user_id: String) -> String {
+  users
+  |> list.find_map(fn(user) {
+    case user.id == user_id {
+      True -> Ok(user.name)
+      False -> Error("")
+    }
+  })
+  |> result.unwrap("")
 }
 
 fn imported_transaction_list_item_html(
@@ -1108,6 +1122,8 @@ fn add_transaction_ui(
         attribute.styles([#("width", "120px")]),
         attribute.value(transaction_edit_form.amount),
       ]),
+    ]),
+    html.td([], [
       check_box(
         "is inflow",
         transaction_edit_form.is_inflow,
