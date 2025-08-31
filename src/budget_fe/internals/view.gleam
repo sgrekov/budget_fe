@@ -6,17 +6,12 @@ import budget_shared.{
   type Allocation, type Category, type Cycle, type Money, type Transaction,
 } as m
 import date_utils
-import formal/form.{type Form}
-import gleam/bool
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/option.{type Option} as _
 import gleam/result
-import gleam/string
 import gleam/time/calendar as cal
-import gleam/time/duration
 import gleam/time/timestamp as t
 import lustre/attribute
 import lustre/effect
@@ -571,7 +566,6 @@ fn category_details_target_ui(
           target_switcher_ui(target_edit),
           case target_edit.is_custom {
             True -> {
-              io.debug(target_edit.target_custom_date)
               let target_date =
                 target_edit.target_custom_date |> option.unwrap("")
               html.div([attribute.class("mt-1")], [
@@ -846,48 +840,48 @@ fn import_transactions(model: Model) -> element.Element(Msg) {
   ])
 }
 
-fn view_input(
-  form: Form,
-  is type_: String,
-  name name: String,
-  label label: String,
-) -> element.Element(msg) {
-  let state = form.field_state(form, name)
-
-  html.div([], [
-    html.label(
-      [attribute.for(name), attribute.class("text-xs font-bold text-slate-600")],
-      [html.text(label), html.text(": ")],
-    ),
-    html.input([
-      attribute.type_(type_),
-      // attribute.class(
-      //   "block mt-1 w-full px-3 py-1 border rounded-lg focus:shadow",
-      // ),
-      // case state {
-      //   Ok(_) -> attribute.class("focus:outline focus:outline-purple-600")
-      //   Error(_) -> attribute.class("outline outline-red-500")
-      // },
-      // we use the `id` in the associated `for` attribute on the label.
-      attribute.id(name),
-      // the `name` attribute is used as the first element of the tuple
-      // we receive for this input.
-      attribute.name(name),
-      // Associating a value with this element does _not_ make the element
-      // controlled without an event listener, allowing us to set a default.
-      attribute.value(form.value(form, name)),
-    ]),
-    // formal provides us with a customisable error message for every element
-    // in case its validation fails, which we can show right below the input.
-    case state {
-      Ok(_) -> element.none()
-      Error(error_message) ->
-        html.p([attribute.class("mt-0.5 text-xs text-red-500")], [
-          html.text(error_message),
-        ])
-    },
-  ])
-}
+//fn view_input(
+//  form: Form,
+//  is type_: String,
+//  name name: String,
+//  label label: String,
+//) -> element.Element(msg) {
+//  let state = form.field_state(form, name)
+//
+//  html.div([], [
+//    html.label(
+//      [attribute.for(name), attribute.class("text-xs font-bold text-slate-600")],
+//      [html.text(label), html.text(": ")],
+//    ),
+//    html.input([
+//      attribute.type_(type_),
+//      // attribute.class(
+//      //   "block mt-1 w-full px-3 py-1 border rounded-lg focus:shadow",
+//      // ),
+//      // case state {
+//      //   Ok(_) -> attribute.class("focus:outline focus:outline-purple-600")
+//      //   Error(_) -> attribute.class("outline outline-red-500")
+//      // },
+//      // we use the `id` in the associated `for` attribute on the label.
+//      attribute.id(name),
+//      // the `name` attribute is used as the first element of the tuple
+//      // we receive for this input.
+//      attribute.name(name),
+//      // Associating a value with this element does _not_ make the element
+//      // controlled without an event listener, allowing us to set a default.
+//      attribute.value(form.value(form, name)),
+//    ]),
+//    // formal provides us with a customisable error message for every element
+//    // in case its validation fails, which we can show right below the input.
+//    case state {
+//      Ok(_) -> element.none()
+//      Error(error_message) ->
+//        html.p([attribute.class("mt-0.5 text-xs text-red-500")], [
+//          html.text(error_message),
+//        ])
+//    },
+//  ])
+//}
 
 fn transaction_list_item_html(
   t: Transaction,

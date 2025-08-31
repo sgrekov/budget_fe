@@ -7,7 +7,6 @@ import budget_shared.{
 } as m
 import date_utils
 import date_utils as budget_shared
-import formal/form
 import gleam/dict
 import gleam/int
 import gleam/io
@@ -122,7 +121,6 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       )
     }
     msg.LoginResult(Error(err), _) -> {
-      io.debug(err)
       #(model, effect.none())
     }
     msg.Categories(Ok(cats)) -> {
